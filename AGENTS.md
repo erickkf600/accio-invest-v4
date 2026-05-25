@@ -21,3 +21,9 @@
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+# Custom Skills Guideline
+
+- **Custom Skills Directory**: ALWAYS query, read, and apply the instructions of the custom skills stored in `C:\Users\dever\.agents\skills` before executing tasks. If a task matches a skill in this folder, use the `view_file` tool to read its `SKILL.md` or instructions and follow them exactly.
+- **Acesso às Skills**: SEMPRE consulte, leia e utilize as instruções das skills customizadas armazenadas em `C:\Users\dever\.agents\skills` durante a execução das tarefas.
+

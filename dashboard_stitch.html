@@ -1,0 +1,315 @@
+<!DOCTYPE html><html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Qubix - Dashboard de Investimentos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"bg-main": "#0b0e14", "bg-card-dark": "#121620", "primary-success": "#75d33b", "text-light": "#f8fafc", "text-muted": "#94a3b8", primary: "#deffc4", background: "#10131a", surface: "#10131a", "on-surface": "#e1e2eb", "on-surface-variant": "#bfcab3", "surface-container-high": "#272a31", "on-primary-fixed-variant": "#215100", "tertiary-container": "#ffd09a", "tertiary-fixed-dim": "#ffb95f", "on-error": "#690005", "inverse-on-surface": "#2e3037", "primary-container": "#90f055", "on-error-container": "#ffdad6", "secondary-container": "#0566d9", "on-tertiary-container": "#855300", "primary-fixed-dim": "#7fdd44", "on-primary-fixed": "#092100", "on-secondary-fixed": "#001a42", "secondary-fixed-dim": "#adc6ff", "surface-tint": "#7fdd44", "surface-container-highest": "#32353c", "on-tertiary-fixed": "#2a1700", "primary-fixed": "#9afa5e", "surface-dim": "#10131a", "on-tertiary-fixed-variant": "#653e00", "surface-bright": "#363940", "surface-container-lowest": "#0b0e14", "inverse-primary": "#2e6c00", "surface-variant": "#32353c", tertiary: "#fff3e8", "secondary-fixed": "#d8e2ff", "on-secondary-fixed-variant": "#004395", "on-secondary-container": "#e6ecff", "inverse-surface": "#e1e2eb", "on-primary-container": "#2e6b00", "on-tertiary": "#472a00", secondary: "#adc6ff", "on-secondary": "#002e6a", "tertiary-fixed": "#ffddb8", "on-background": "#e1e2eb", "surface-container-low": "#191c22", error: "#ffb4ab", "error-container": "#93000a", "outline-variant": "#404a38", "surface-container": "#1d2026", "on-primary": "#153800", outline: "#8a947f"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "40px", unit: "4px", "container-max": "1440px", "margin-mobile": "16px", gutter: "24px"}, fontFamily: {body: ["Plus Jakarta Sans"], headline: ["Plus Jakarta Sans"], display: ["Plus Jakarta Sans"], label: ["Plus Jakarta Sans"]}, fontSize: {"body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}], "body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["24px", {lineHeight: "32px", fontWeight: "600"}], "title-lg": ["20px", {lineHeight: "28px", fontWeight: "600"}], "headline-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "700"}], "label-md": ["12px", {lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500"}], "display-lg": ["48px", {lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700"}]}}}};</script>
+<style>
+        body {
+            background-color: #0b0e14;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: #121620;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .chart-grid {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+<svg aria-hidden="true" class="inline-defs-container" style="position:absolute;width:0;height:0;overflow:hidden"></svg>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-bg-main/80 backdrop-blur-md border-b border-white/5">
+<div class="max-w-container-max mx-auto px-margin-desktop h-16 flex justify-between items-center">
+<!-- Brand Logo -->
+<div class="flex items-center gap-3">
+<img alt="Qubix Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ADBb0uiuN_0fozPL2WHFpj-m1zn3HIipPNMHu5MHV8ZYY-ACcUry9_VKTfORHZ8FWK7TVCzaEBg-diqLRP-kHVgPE8JLth6QGn1HslCOePPGSOrq2eSu27zUtVP17ecy5mvc-kk_pF53JJczJyVoUn7ir-je8ImEwnrpigizUcOu8BEFalT4LKrju1RuFDbw70EoMwkMHGQxiGON4XVKs04uG5mpPlTeXGBojLGZPWKdrNeDukRF4ElPR1sE_aQ">
+</div>
+<!-- Central Navigation -->
+<nav class="hidden md:flex items-center gap-2">
+<a class="text-text-light font-bold bg-white/5 px-4 py-1.5 rounded-full text-label-md transition-all active:scale-95" href="#">Dashboard</a>
+<a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-label-md transition-colors duration-200" href="#">Movimentações</a>
+<a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-label-md transition-colors duration-200" href="#">Portfólio</a>
+<a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-label-md transition-colors duration-200" href="#">Relatórios</a>
+</nav>
+<!-- Profile -->
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-success/20 cursor-pointer hover:border-primary-success transition-all">
+<img alt="Foto de perfil do usuário" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6kTLiEGbJPFYaRpxwT-kOaBSAF9QtzxGpT15LkVGARALcYqXKOZtaW52E6EXZ0hlXNyl2A-69q21-CcVFFVGr-qnefd3T9g24saQjN4mde2tOTr35ESCat1uzSd0iok86VSJ_kzwb3Kei37FCz_y4b-RMjXUuh8pq-Vi7xn3OEphS_5y1JO9qY8kNOEMb98xUlMjkSbmSJETkjVY4tz-VqjOBG1LZwMyLVl5TTb_eJmCN-2GA5CpidxG8je9BQh7zcSF8-KRvanPN">
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-20 md:pb-8 max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop space-y-gutter">
+<!-- Main Chart Section -->
+<section class="glass-card rounded-xl p-6 relative overflow-hidden transition-all duration-300">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+<div>
+<div class="flex items-center gap-3">
+<h2 class="text-title-lg font-bold text-text-light">Rendimento da Carteira</h2>
+<select class="bg-white/5 border-white/10 rounded-lg text-label-md text-text-light px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary-success/50 cursor-pointer transition-all">
+<option value="2024">2024</option>
+<option value="2023">2023</option>
+<option value="2022">2022</option>
+<option value="tudo">Histórico Total</option>
+</select>
+</div>
+<p class="text-text-muted text-body-md mt-1">Comparação histórica contra o benchmark CDI</p>
+</div>
+<div class="flex items-center gap-4 bg-white/5 p-1.5 rounded-lg border border-white/5">
+<div class="flex items-center gap-2 px-3">
+<span class="w-3 h-3 rounded-full bg-primary-success"></span>
+<span class="text-label-md text-text-light">Minha Carteira</span>
+</div>
+<div class="flex items-center gap-2 px-3">
+<span class="w-3 h-3 rounded-full bg-blue-400"></span>
+<span class="text-label-md text-text-light">CDI</span>
+</div>
+</div>
+</div>
+<!-- Visual Representation of Chart -->
+<div class="h-[300px] w-full relative chart-grid border-l border-b border-white/10">
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 300">
+<!-- CDI Line -->
+<path d="M0 250 L100 240 L200 245 L300 230 L400 235 L500 220 L600 215 L700 210 L800 205 L900 195 L1000 190" fill="none" stroke="#60a5fa" stroke-dasharray="4" stroke-width="1.5"></path>
+<!-- Portfolio Line -->
+<path d="M0 250 Q100 260 200 180 T400 200 T600 120 T800 150 T1000 80" fill="none" stroke="#75d33b" stroke-width="2"></path>
+<defs>
+<linearGradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#75d33b;stop-opacity:0.2"></stop>
+<stop offset="100%" style="stop-color:#75d33b;stop-opacity:0"></stop>
+</linearGradient>
+</defs>
+<path d="M0 250 Q100 260 200 180 T400 200 T600 120 T800 150 T1000 80 V300 H0 Z" fill="url(#grad1)"></path>
+</svg>
+<!-- Tooltip Example -->
+<div class="absolute top-1/4 left-[60%] -translate-x-1/2 -translate-y-1/2 bg-bg-card-dark border border-white/10 rounded-lg p-3 shadow-2xl z-10 pointer-events-none">
+<p class="text-label-md text-text-muted mb-1">Maio 2024</p>
+<div class="space-y-1">
+<p class="flex items-center justify-between gap-4">
+<span class="text-text-light text-body-md">Carteira</span>
+<span class="text-primary-success font-bold text-body-md">+14.2%</span>
+</p>
+<p class="flex items-center justify-between gap-4">
+<span class="text-text-light text-body-md">CDI</span>
+<span class="text-blue-400 text-body-md">+1.08%</span>
+</p>
+</div>
+</div>
+</div>
+<div class="mt-4 flex justify-between text-text-muted text-label-md">
+<span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Patrimônio (Left Column) -->
+<div class="lg:col-span-4 space-y-gutter flex flex-col">
+<div class="glass-card rounded-xl p-6 flex-col flex-grow transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-label-md text-text-muted uppercase tracking-wider">Patrimônio Total</p>
+<h2 class="text-display-lg text-[32px] font-bold text-text-light">R$ 142.845,20</h2>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex h-3 w-full rounded-full overflow-hidden bg-white/5">
+<div class="h-full bg-primary-success" style="width: 60%"></div>
+<div class="h-full bg-blue-500" style="width: 20%"></div>
+<div class="h-full bg-orange-400" style="width: 12%"></div>
+<div class="h-full bg-slate-600" style="width: 8%"></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary-success"></span><span class="text-label-md text-text-muted">Ações (60%)</span></div>
+<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-label-md text-text-muted">FIIs (20%)</span></div>
+<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-400"></span><span class="text-label-md text-text-muted">Renda Fixa (12%)</span></div>
+<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-600"></span><span class="text-label-md text-text-muted">Outros (8%)</span></div>
+</div>
+</div>
+<div class="mt-6 grid grid-cols-2 gap-3">
+<button class="bg-primary-success text-bg-main py-2.5 rounded-lg text-label-md font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px] font-bold">add_circle</span> Aporte
+                    </button>
+<button class="py-2.5 bg-white/5 rounded-lg text-label-md text-text-light hover:bg-white/10 transition-colors border border-white/5">Gerenciar</button>
+</div>
+</div>
+<div class="glass-card rounded-xl p-4 transition-all duration-300">
+<p class="text-label-md text-text-muted mb-2">Proventos Totais</p>
+<p class="text-title-lg font-bold text-text-light">R$ 5.2k</p>
+</div>
+</div>
+<!-- Meus Aportes (Central Column) -->
+<div class="lg:col-span-4">
+<div class="glass-card rounded-xl p-6 h-full flex flex-col transition-all duration-300">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-title-lg font-bold text-text-light">Meus Aportes</h3>
+<button class="text-text-muted hover:text-text-light transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<div class="flex-grow space-y-2">
+<div class="grid grid-cols-4 px-4 py-2 text-text-muted text-label-md border-b border-white/5">
+<span class="">Mês</span>
+<span class="text-center">Taxas</span>
+<span class="text-center">Total</span>
+<span class="text-right">Ações</span>
+</div>
+<!-- Row 1 -->
+<div class="grid grid-cols-4 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-colors cursor-default">
+<span class="text-body-md text-text-light">Maio</span>
+<span class="text-center text-body-md text-text-muted">R$ 12,50</span>
+<span class="text-center text-body-md font-bold text-text-light">R$ 3.842</span>
+<div class="text-right">
+<span class="material-symbols-outlined text-text-muted hover:text-primary-success cursor-pointer text-[20px]">visibility</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-4 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-colors cursor-default">
+<span class="text-body-md text-text-light">Abril</span>
+<span class="text-center text-body-md text-text-muted">R$ 8,20</span>
+<span class="text-center text-body-md font-bold text-text-light">R$ 3.125</span>
+<div class="text-right">
+<span class="material-symbols-outlined text-text-muted hover:text-primary-success cursor-pointer text-[20px]">visibility</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-4 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-colors cursor-default">
+<span class="text-body-md text-text-light">Março</span>
+<span class="text-center text-body-md text-text-muted">R$ 15,40</span>
+<span class="text-center text-body-md font-bold text-text-light">R$ 5.400</span>
+<div class="text-right">
+<span class="material-symbols-outlined text-text-muted hover:text-primary-success cursor-pointer text-[20px]">visibility</span>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-4 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-colors cursor-default">
+<span class="text-body-md text-text-light">Fevereiro</span>
+<span class="text-center text-body-md text-text-muted">R$ 5,10</span>
+<span class="text-center text-body-md font-bold text-text-light">R$ 1.710</span>
+<div class="text-right">
+<span class="material-symbols-outlined text-text-muted hover:text-primary-success cursor-pointer text-[20px]">visibility</span>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-white/10">
+<button class="w-full text-center text-text-muted text-label-md hover:text-primary-success transition-colors">Visualizar todos</button>
+</div>
+</div>
+</div>
+<!-- Próximos pagamentos (Right Column) -->
+<div class="lg:col-span-4">
+<div class="glass-card rounded-xl p-6 h-full flex flex-col transition-all duration-300">
+<div class="flex justify-between items-center mb-6 gap-2">
+<h3 class="text-title-lg font-bold text-text-light whitespace-nowrap">Próximos pagamentos</h3>
+</div>
+<div class="flex-grow space-y-2">
+<!-- Column headers -->
+<div class="grid grid-cols-3 px-4 py-2 text-text-muted text-label-md border-b border-white/5">
+<span class="">Ticker</span>
+<span class="text-center">Tipo</span>
+<span class="text-right">Valor</span>
+</div>
+<!-- Item 1 (PAGO) -->
+<div class="grid grid-cols-3 px-4 py-4 items-center bg-primary-success/10 rounded-xl border border-primary-success/20 transition-all cursor-default">
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center justify-center bg-primary-success text-bg-main w-10 h-10 rounded-lg shrink-0">
+<span class="text-[8px] font-bold uppercase leading-none">MAI</span>
+<span class="text-body-lg font-bold leading-none">15</span>
+</div>
+<span class="text-body-md font-bold text-primary-success">PETR4</span>
+</div>
+<span class="text-center text-body-md text-primary-success">Dividendos</span>
+<div class="text-right flex flex-col">
+<span class="text-body-md font-bold text-primary-success">R$ 145,20</span>
+<span class="text-[10px] font-bold text-primary-success uppercase">PAGO</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="grid grid-cols-3 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-all cursor-default group">
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center justify-center bg-white/5 border border-white/10 w-10 h-10 rounded-lg shrink-0 group-hover:border-primary-success/30 transition-colors">
+<span class="text-[8px] font-bold text-text-muted uppercase leading-none">MAI</span>
+<span class="text-body-lg font-bold text-text-light leading-none">22</span>
+</div>
+<span class="text-body-md font-bold text-text-light">ITUB4</span>
+</div>
+<span class="text-center text-body-md text-text-muted">JCP</span>
+<span class="text-right text-body-md font-bold text-text-light">R$ 82,15</span>
+</div>
+<!-- Item 3 -->
+<div class="grid grid-cols-3 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-all cursor-default group">
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center justify-center bg-white/5 border border-white/10 w-10 h-10 rounded-lg shrink-0 group-hover:border-primary-success/30 transition-colors">
+<span class="text-[8px] font-bold text-text-muted uppercase leading-none">JUN</span>
+<span class="text-body-lg font-bold text-text-light leading-none">05</span>
+</div>
+<span class="text-body-md font-bold text-text-light">XPML11</span>
+</div>
+<span class="text-center text-body-md text-text-muted">Rendimento</span>
+<span class="text-right text-body-md font-bold text-text-light">R$ 14,80</span>
+</div>
+<!-- Footer Summary -->
+<div class="p-4 rounded-xl bg-white/5 border border-white/10 mt-4">
+<div class="flex justify-between items-center">
+<span class="text-label-md text-text-muted">Total Estimado</span>
+<span class="text-body-lg font-bold text-primary-success">R$ 242,15</span>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-white/10">
+<button class="w-full text-center text-text-muted text-label-md hover:text-primary-success transition-colors">Visualizar todos</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-bg-card-dark/95 backdrop-blur-xl border-t border-white/5 md:hidden px-4 py-2 flex justify-around items-center">
+<a class="bg-primary-success/10 text-primary-success rounded-xl p-2 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">dashboard</span>
+<span class="text-label-md">Dashboard</span>
+</a>
+<a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">swap_horiz</span>
+<span class="text-label-md">Aportes</span>
+</a>
+<a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-label-md">Pagamentos</span>
+</a>
+<a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-label-md">Relatórios</span>
+</a>
+</nav>
+<script>
+    // Micro-interaction for cards following new design system
+    document.querySelectorAll('.glass-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-2px)';
+            card.style.borderColor = 'rgba(117, 211, 59, 0.2)';
+            card.style.transition = 'all 0.3s ease';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0)';
+            card.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+        });
+    });
+</script>
+</body></html>
