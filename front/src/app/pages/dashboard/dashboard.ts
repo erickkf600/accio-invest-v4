@@ -27,6 +27,16 @@ export default class Dashboard {
     { dataDia: '15', dataMes: 'MAI', ticker: 'PETR4', tipo: 'Dividendos', valor: 'R$ 145,20', pago: true },
     { dataDia: '22', dataMes: 'MAI', ticker: 'ITUB4', tipo: 'JCP', valor: 'R$ 82,15', pago: false },
     { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
+    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
   ]);
 
   constructor() {
