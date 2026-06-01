@@ -11,7 +11,7 @@
       "url": "https://stitch.googleapis.com/mcp",
       "enabled": true,
       "headers": {
-        "X-Goog-Api-Key": "api_key"
+        "X-Goog-Api-Key": "sua apikey em https://stitch.withgoogle.com/settings"
       }
     }
   }
