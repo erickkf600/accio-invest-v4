@@ -5,6 +5,14 @@
       "type": "local",
       "command": ["npx", "nx", "mcp"],
       "enabled": true
+    },
+    "stitch": {
+      "type": "remote",
+      "url": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Goog-Api-Key": "AQ.Ab8RN6L7IzK-JnNFLdS8noc1EHDE5Ei_-YD8uq3WHMkwSt5CtQ"
+      }
     }
   }
 }
