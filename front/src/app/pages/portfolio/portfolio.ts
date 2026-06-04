@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-portifolio',
+  selector: 'app-portfolio',
   standalone: true,
   imports: [],
-  templateUrl: './portifolio.html',
-  styleUrl: './portifolio.scss',
+  templateUrl: './portfolio.html',
+  styleUrl: './portfolio.scss',
 })
-export default class Portifolio {
+export default class Portfolio {
   protected readonly title = 'Portfólio';
 }

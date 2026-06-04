@@ -15,8 +15,8 @@ export const appRoutes: Route[] = [
     loadComponent: () => import('./pages/movimentacoes/movimentacoes').then((m) => m.default),
   },
   {
-    path: 'portifolio',
-    loadComponent: () => import('./pages/portifolio/portifolio').then((m) => m.default),
+    path: 'portfolio',
+    loadComponent: () => import('./pages/portfolio/portfolio').then((m) => m.default),
   },
   {
     path: 'relatorios',
