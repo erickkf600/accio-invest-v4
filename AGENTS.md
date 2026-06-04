@@ -24,6 +24,6 @@
 
 # Custom Skills Guideline
 
-- **Custom Skills Directory**: ALWAYS query, read, and apply the instructions of the custom skills stored in `C:\Users\dever\.agents\skills` before executing tasks. If a task matches a skill in this folder, use the `view_file` tool to read its `SKILL.md` or instructions and follow them exactly.
-- **Acesso às Skills**: SEMPRE consulte, leia e utilize as instruções das skills customizadas armazenadas em `C:\Users\dever\.agents\skills` durante a execução das tarefas.
-
+- **Custom Skills Directory**: ALWAYS query, read, and apply the instructions of the custom skills stored in `.agents\skills` before executing tasks. If a task matches a skill in this folder, use the `view_file` tool to read its `SKILL.md` or instructions and follow them exactly.
+- **Acesso às Skills**: SEMPRE consulte, leia e utilize as instruções das skills customizadas armazenadas em `.agents\skills` durante a execução das tarefas.
+- **Strict Execution Rule**: You MUST analyze, guide yourself by, and adhere to these custom skills in ALL prompts and interactions, regardless of whether the user explicitly requests it or not. This is a foundational behavior that applies to every single task.
