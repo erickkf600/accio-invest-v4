@@ -5,80 +5,64 @@
     <h1 class="text-3xl font-bold text-text-light mb-2">Movimentações</h1>
     <p class="text-text-muted text-sm">Gerencie e visualize seu histórico completo de operações financeiras.</p>
   </div>
-  <div class="flex items-center gap-3">
-      <button class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-success text-bg-main font-bold text-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-        Novo Aporte
-      </button>
-    </div>
-  <!-- <div>
-    <select
-      class="w-full bg-primary-success border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none cursor-pointer appearance-none"
-      (change)="onOperationTypeChange($event)"
+  <div>
+    <button
+      type="button"
+      class="flex items-center gap-2 bg-primary-success text-bg-main px-6 py-2.5 rounded-lg text-md font-bold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+      (click)="appMenu.toggle()"
     >
-      <option value="" selected disabled>Novo Aporte</option>
-      <option value="NovaCompra" id="NovaCompra">Nova compra</option>
-      <option value="NovoProvento" id="NovoProvento">novo provento</option>
-      <option value="RendaFixa" id="RendaFixa">renda fixa</option>
-      <option value="Venda" id="Venda">venda</option>
-      <option value="Reposicionamento" id="Reposicionamento">Reposicionamento</option>
-    </select>
-  </div> -->
+      <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+      Novo aporte
+    </button>
+    <app-menu #appMenu>
+      <div class="flex flex-col">
+        <button
+          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+          (click)="onOperationTypeChange('1'); appMenu.close()"
+        >
+          <span class="material-symbols-outlined text-[20px] text-primary">shopping_cart</span>
+          <span class="font-semibold">Nova compra</span>
+        </button>
+        <button
+          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+          (click)="onOperationTypeChange('2'); appMenu.close()"
+        >
+          <span class="material-symbols-outlined text-[20px] text-secondary">payments</span>
+          <span class="font-semibold">Novo provento</span>
+        </button>
+        <button
+          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+          (click)="onOperationTypeChange('3'); appMenu.close()"
+        >
+          <span class="material-symbols-outlined text-[20px] text-[#f59e0b]">account_balance</span>
+          <span class="font-semibold">Renda fixa</span>
+        </button>
+        <button
+          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+          (click)="onOperationTypeChange('4'); appMenu.close()"
+        >
+          <span class="material-symbols-outlined text-[20px] text-error">sell</span>
+          <span class="font-semibold">Venda</span>
+        </button>
+        <button
+          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+          (click)="onOperationTypeChange('5'); appMenu.close()"
+        >
+          <span class="material-symbols-outlined text-[20px] text-[#bfcab3]">published_with_changes</span>
+          <span class="font-semibold">Reposicionamento</span>
+        </button>
+      </div>
+    </app-menu>
+  </div>
 </div>
 
   <!-- Filters Section -->
-  <form [formGroup]="filterForm" (ngSubmit)="onFilterSubmit()" class="glass-card p-6 rounded-2xl grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 items-end">
-    <div class="lg:col-span-4">
-      <label class="block text-xs font-semibold text-text-muted mb-2">Buscar ativo</label>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted text-[20px]">search</span>
-        <input
-          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
-          placeholder="Ex: AAPL, PETR4..."
-          type="text"
-          formControlName="searchTerm"
-        />
-      </div>
-    </div>
-    <div class="lg:col-span-3">
-      <label class="block text-xs font-semibold text-text-muted mb-2">Tipo de operação</label>
-      <div class="relative">
-        <select
-          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none cursor-pointer appearance-none"
-          formControlName="selectedType"
-        >
-          <option value="Todos">Todos</option>
-          <option value="Compra">Compra</option>
-          <option value="Venda">Venda</option>
-          <option value="Proventos">Proventos</option>
-        </select>
-        <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">keyboard_arrow_down</span>
-      </div>
-    </div>
-    <div class="lg:col-span-3">
-      <label class="block text-xs font-semibold text-text-muted mb-2">Período</label>
-      <div class="relative">
-        <input
-          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
-          placeholder="Últimos 30 dias"
-          type="text"
-          disabled
-        />
-        <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">calendar_today</span>
-      </div>
-    </div>
-    <div class="lg:col-span-2">
-      <div class="flex gap-2">
-        <button type="submit" class="flex-1 h-[46px] rounded-lg border border-primary-success/30 text-primary-success font-bold hover:bg-primary-success/10 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm">
-          <span class="material-symbols-outlined text-[20px]">filter_list</span>
-          Filtrar
-        </button>
-        <button type="button" (click)="onClearFilters()" [disabled]="!hasActiveFilters()" class="w-[46px] h-[46px] shrink-0 rounded-lg border border-white/10 text-text-muted hover:text-text-light hover:bg-white/5 transition-all flex items-center justify-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-50" title="Limpar Filtros">
-          <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
-        </button>
-      </div>
-    </div>
-  </form>
+  <div class="mb-5">
+    <app-filter-card
+      (filterApplied)="onFilterApplied($event)"
+      (filtersCleared)="onFiltersCleared()"
+    />
+  </div>
 
   <!-- Transactions Table Card -->
   <div class="glass-card rounded-2xl overflow-hidden">

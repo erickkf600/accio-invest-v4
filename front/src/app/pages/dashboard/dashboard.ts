@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
+import { ToastService } from '../../components/Toast/toast.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -39,6 +40,7 @@ export default class Dashboard {
     { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
   ]);
 
+  
   constructor() {
     this.initChart();
   }

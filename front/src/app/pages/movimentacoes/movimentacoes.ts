@@ -1,8 +1,9 @@
-import { Component, signal, computed, linkedSignal, inject } from '@angular/core';
+import { Component, signal, computed, linkedSignal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { TableComponent, TableColumn } from '../../components/Table/table.component';
 import { CellTemplateDirective } from '../../components/Table/cell-template.directive';
+import { FilterCardComponent } from '../../components/FilterCard/filter-card.component';
+import { MenuComponent } from '../../components/Menu/menu.component';
 
 export interface Operation {
   id: string;
@@ -16,14 +17,14 @@ export interface Operation {
 }
 
 export interface OperationTypeOption {
-  id: string;
+  value: number;
   label: string;
 }
 
 @Component({
   selector: 'app-movimentacoes',
   standalone: true,
-  imports: [DecimalPipe, TableComponent, CellTemplateDirective, ReactiveFormsModule],
+  imports: [DecimalPipe, TableComponent, CellTemplateDirective, FilterCardComponent, MenuComponent],
   templateUrl: './movimentacoes.html',
   styleUrl: './movimentacoes.scss',
 })
@@ -31,20 +32,12 @@ export default class Movimentacoes {
   protected readonly title = 'Movimentações';
 
   public operationTypeOptions = signal<OperationTypeOption[]>([
-    { id: 'NovaCompra', label: 'Nova compra' },
-    { id: 'NovoProvento', label: 'novo provento' },
-    { id: 'RendaFixa', label: 'renda fixa' },
-    { id: 'Venda', label: 'venda' },
-    { id: 'Reposicionamento', label: 'Reposicionamento' },
+    { value: 1, label: 'Nova compra' },
+    { value: 2, label: 'Novo provento' },
+    { value: 3, label: 'Renda fixa' },
+    { value: 4, label: 'Venda' },
+    { value: 5, label: 'Reposicionamento' },
   ]);
-
-  private fb = inject(FormBuilder);
-
-  // Form Group for Reactive Forms
-  public filterForm = this.fb.group({
-    searchTerm: [''],
-    selectedType: ['Todos']
-  });
 
   // Applied filter signals
   public appliedSearchTerm = signal('');
@@ -116,25 +109,14 @@ export default class Movimentacoes {
   // Total count for current filtered set
   public totalItems = computed(() => this.filteredOperations().length);
 
-  // Submits the reactive form filters
-  public onFilterSubmit() {
-    const val = this.filterForm.value;
-    this.appliedSearchTerm.set(val.searchTerm || '');
-    this.appliedSelectedType.set(val.selectedType || 'Todos');
+  // Handles filter applied from FilterCard component
+  public onFilterApplied(model: { searchTerm: string; selectedType: string }) {
+    this.appliedSearchTerm.set(model.searchTerm);
+    this.appliedSelectedType.set(model.selectedType);
   }
 
-  // Checks if any filter has a value
-  public hasActiveFilters(): boolean {
-    const val = this.filterForm.value;
-    return !!(val.searchTerm?.trim() || (val.selectedType && val.selectedType !== 'Todos'));
-  }
-
-  // Clears all filters and resets form controls
-  public onClearFilters() {
-    this.filterForm.patchValue({
-      searchTerm: '',
-      selectedType: 'Todos'
-    });
+  // Handles filters cleared from FilterCard component
+  public onFiltersCleared() {
     this.appliedSearchTerm.set('');
     this.appliedSelectedType.set('Todos');
   }
@@ -144,8 +126,7 @@ export default class Movimentacoes {
     this.currentPage.set(page);
   }
 
-  public onOperationTypeChange(event: Event) {
-    const value = (event.target as HTMLSelectElement).value;
+  public onOperationTypeChange(value: string) {
     console.log('Operation type selected:', value);
   }
 
