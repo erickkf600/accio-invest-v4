@@ -2,47 +2,54 @@ import { Component, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ToastService } from '../../components/Toast/toast.service';
+import { DashboardService } from './service/dashboard.service';
+import DashboardEmptyState from './component/dashboard-empty-state/dashboard-empty-state';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [NgClass, NgApexchartsModule],
+  imports: [NgClass, NgApexchartsModule, DashboardEmptyState],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export default class Dashboard {
   protected readonly title = 'Dashboard';
 
-  // Configurações do gráfico
+  protected dashboardService = inject(DashboardService);
+  protected hasData = signal(false);
+
   public chartOptions = signal<any>(null);
 
-  // Dados das tabelas
-  public aportes = signal([
-    { mes: 'Maio', taxas: 'R$ 12,50', total: 'R$ 3.842' },
-    { mes: 'Abril', taxas: 'R$ 8,20', total: 'R$ 3.125' },
-    { mes: 'Março', taxas: 'R$ 15,40', total: 'R$ 5.400' },
-    { mes: 'Fevereiro', taxas: 'R$ 5,10', total: 'R$ 1.710' },
-  ]);
+  public aportes = signal<{ mes: string; taxas: string; total: string }[]>([]);
 
-  public pagamentos = signal([
-    { dataDia: '15', dataMes: 'MAI', ticker: 'PETR4', tipo: 'Dividendos', valor: 'R$ 145,20', pago: true },
-    { dataDia: '22', dataMes: 'MAI', ticker: 'ITUB4', tipo: 'JCP', valor: 'R$ 82,15', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-    { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-  ]);
+  public pagamentos = signal<{ dataDia: string; dataMes: string; ticker: string; tipo: string; valor: string; pago: boolean }[]>([]);
 
-  
   constructor() {
-    this.initChart();
+    this.dashboardService.carregarComDados();
+    const data = this.dashboardService.state$().data;
+    this.hasData.set(data.temDados);
+    this.aportes.set(data.aportes);
+    this.pagamentos.set(data.pagamentos);
+    if (data.temDados) {
+      this.initChart();
+    }
+  }
+
+  alternarEstado(): void {
+    const atual = this.dashboardService.state$().data;
+    if (atual.temDados) {
+      this.dashboardService.carregarSemDados();
+      this.hasData.set(false);
+      this.aportes.set([]);
+      this.pagamentos.set([]);
+    } else {
+      this.dashboardService.carregarComDados();
+      this.hasData.set(true);
+      const data = this.dashboardService.state$().data;
+      this.aportes.set(data.aportes);
+      this.pagamentos.set(data.pagamentos);
+      this.initChart();
+    }
   }
 
   private initChart() {

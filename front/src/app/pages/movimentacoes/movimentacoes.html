@@ -1,4 +1,5 @@
 <main class="pt-24 pb-12 px-4 md:px-10 max-w-[1440px] mx-auto space-y-8">
+  
   <!-- Page Header -->
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
   <div>
@@ -6,131 +7,138 @@
     <p class="text-text-muted text-sm">Gerencie e visualize seu histórico completo de operações financeiras.</p>
   </div>
   <div>
-    <button
-      type="button"
-      class="flex items-center gap-2 bg-primary-success text-bg-main px-6 py-2.5 rounded-lg text-md font-bold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
-      (click)="appMenu.toggle()"
-    >
-      <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-      Novo aporte
-    </button>
-    <app-menu #appMenu>
-      <div class="flex flex-col">
-        <button
-          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
-          (click)="onOperationTypeChange('1'); appMenu.close()"
-        >
-          <span class="material-symbols-outlined text-[20px] text-primary">shopping_cart</span>
-          <span class="font-semibold">Nova compra</span>
-        </button>
-        <button
-          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
-          (click)="onOperationTypeChange('2'); appMenu.close()"
-        >
-          <span class="material-symbols-outlined text-[20px] text-secondary">payments</span>
-          <span class="font-semibold">Novo provento</span>
-        </button>
-        <button
-          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
-          (click)="onOperationTypeChange('3'); appMenu.close()"
-        >
-          <span class="material-symbols-outlined text-[20px] text-[#f59e0b]">account_balance</span>
-          <span class="font-semibold">Renda fixa</span>
-        </button>
-        <button
-          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
-          (click)="onOperationTypeChange('4'); appMenu.close()"
-        >
-          <span class="material-symbols-outlined text-[20px] text-error">sell</span>
-          <span class="font-semibold">Venda</span>
-        </button>
-        <button
-          class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
-          (click)="onOperationTypeChange('5'); appMenu.close()"
-        >
-          <span class="material-symbols-outlined text-[20px] text-[#bfcab3]">published_with_changes</span>
-          <span class="font-semibold">Reposicionamento</span>
-        </button>
-      </div>
-    </app-menu>
+     @if (hasData()) {
+       <button
+         type="button"
+         class="flex items-center gap-2 bg-primary-success text-bg-main px-6 py-2.5 rounded-lg text-md font-bold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+         (click)="appMenu.toggle()"
+       >
+         <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+         Novo aporte
+       </button>
+       <app-menu #appMenu>
+         <div class="flex flex-col">
+           <button
+             class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+             (click)="onOperationTypeChange('1'); appMenu.close()"
+           >
+             <span class="material-symbols-outlined text-[20px] text-primary">shopping_cart</span>
+             <span class="font-semibold">Nova compra</span>
+           </button>
+           <button
+             class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+             (click)="onOperationTypeChange('2'); appMenu.close()"
+           >
+             <span class="material-symbols-outlined text-[20px] text-secondary">payments</span>
+             <span class="font-semibold">Novo provento</span>
+           </button>
+           <button
+             class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+             (click)="onOperationTypeChange('3'); appMenu.close()"
+           >
+             <span class="material-symbols-outlined text-[20px] text-[#f59e0b]">account_balance</span>
+             <span class="font-semibold">Renda fixa</span>
+           </button>
+           <button
+             class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+             (click)="onOperationTypeChange('4'); appMenu.close()"
+           >
+             <span class="material-symbols-outlined text-[20px] text-error">sell</span>
+             <span class="font-semibold">Venda</span>
+           </button>
+           <button
+             class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+             (click)="onOperationTypeChange('5'); appMenu.close()"
+           >
+             <span class="material-symbols-outlined text-[20px] text-[#bfcab3]">published_with_changes</span>
+             <span class="font-semibold">Reposicionamento</span>
+           </button>
+         </div>
+       </app-menu>
+     }
   </div>
 </div>
 
-  <!-- Filters Section -->
-  <div class="mb-5">
-    <app-filter-card
-      (filterApplied)="onFilterApplied($event)"
-      (filtersCleared)="onFiltersCleared()"
-    />
-  </div>
+@if (!hasData()) {
+  <app-movimentacoes-empty-state
+  (operationTypeChange)="onOperationTypeChange($event)"
+  />
+} @else {
+    <!-- Filters Section -->
+    <div class="mb-5">
+      <app-filter-card
+        (filterApplied)="onFilterApplied($event)"
+        (filtersCleared)="onFiltersCleared()"
+      />
+    </div>
+    <!-- Transactions Table Card -->
+    <div class="glass-card rounded-2xl overflow-hidden">
+      <app-table
+        [data]="paginatedOperations()"
+        [columns]="columns"
+        [totalItems]="totalItems()"
+        [pageSize]="pageSize"
+        [currentPage]="currentPage()"
+        (pageChange)="onPageChange($event)"
+      >
+        <!-- Column Data Templates -->
+        <ng-template appCellTemplate="ativo" let-row="row">
+          <span class="font-bold text-text-light">{{ row.ativo }}</span>
+        </ng-template>
 
-  <!-- Transactions Table Card -->
-  <div class="glass-card rounded-2xl overflow-hidden">
-    <app-table
-      [data]="paginatedOperations()"
-      [columns]="columns"
-      [totalItems]="totalItems()"
-      [pageSize]="pageSize"
-      [currentPage]="currentPage()"
-      (pageChange)="onPageChange($event)"
-    >
-      <!-- Column Data Templates -->
-      <ng-template appCellTemplate="ativo" let-row="row">
-        <span class="font-bold text-text-light">{{ row.ativo }}</span>
-      </ng-template>
+        <ng-template appCellTemplate="tipo" let-row="row">
+          @if (row.tipo === 'Compra') {
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase">
+              Compra
+            </span>
+          } @else if (row.tipo === 'Venda') {
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-error/10 text-error border border-error/20 uppercase">
+              Venda
+            </span>
+          } @else if (row.tipo === 'Proventos') {
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
+              Proventos
+            </span>
+          }
+        </ng-template>
 
-      <ng-template appCellTemplate="tipo" let-row="row">
-        @if (row.tipo === 'Compra') {
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase">
-            Compra
-          </span>
-        } @else if (row.tipo === 'Venda') {
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-error/10 text-error border border-error/20 uppercase">
-            Venda
-          </span>
-        } @else if (row.tipo === 'Proventos') {
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
-            Proventos
-          </span>
-        }
-      </ng-template>
+        <ng-template appCellTemplate="qtd" let-row="row">
+          <span>{{ row.qtd !== null ? row.qtd : '-' }}</span>
+        </ng-template>
 
-      <ng-template appCellTemplate="qtd" let-row="row">
-        <span>{{ row.qtd !== null ? row.qtd : '-' }}</span>
-      </ng-template>
+        <ng-template appCellTemplate="precoUn" let-row="row">
+          <span>R$ {{ row.precoUn | number:'1.2-2' }}</span>
+        </ng-template>
 
-      <ng-template appCellTemplate="precoUn" let-row="row">
-        <span>R$ {{ row.precoUn | number:'1.2-2' }}</span>
-      </ng-template>
+        <ng-template appCellTemplate="taxas" let-row="row">
+          <span>{{ row.taxas !== null ? 'R$ ' + (row.taxas | number:'1.2-2') : '-' }}</span>
+        </ng-template>
 
-      <ng-template appCellTemplate="taxas" let-row="row">
-        <span>{{ row.taxas !== null ? 'R$ ' + (row.taxas | number:'1.2-2') : '-' }}</span>
-      </ng-template>
+        <ng-template appCellTemplate="total" let-row="row">
+          @if (row.tipo === 'Proventos') {
+            <span class="font-bold text-primary-success">+ R$ {{ row.total | number:'1.2-2' }}</span>
+          } @else {
+            <span class="font-bold text-text-light">R$ {{ row.total | number:'1.2-2' }}</span>
+          }
+        </ng-template>
 
-      <ng-template appCellTemplate="total" let-row="row">
-        @if (row.tipo === 'Proventos') {
-          <span class="font-bold text-primary-success">+ R$ {{ row.total | number:'1.2-2' }}</span>
-        } @else {
-          <span class="font-bold text-text-light">R$ {{ row.total | number:'1.2-2' }}</span>
-        }
-      </ng-template>
-
-      <ng-template appCellTemplate="actions" let-row="row">
-        <div class="flex items-center justify-end gap-1">
-          <button
-            (click)="onEdit(row)"
-            class="p-2 text-text-muted hover:text-primary-success hover:bg-primary-success/10 rounded-lg transition-all cursor-pointer"
-          >
-            <span class="material-symbols-outlined text-[20px]">edit</span>
-          </button>
-          <button
-            (click)="onDelete(row)"
-            class="p-2 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-all cursor-pointer"
-          >
-            <span class="material-symbols-outlined text-[20px]">delete</span>
-          </button>
-        </div>
-      </ng-template>
-    </app-table>
-  </div>
+        <ng-template appCellTemplate="actions" let-row="row">
+          <div class="flex items-center justify-end gap-1">
+            <button
+              (click)="onEdit(row)"
+              class="p-2 text-text-muted hover:text-primary-success hover:bg-primary-success/10 rounded-lg transition-all cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-[20px]">edit</span>
+            </button>
+            <button
+              (click)="onDelete(row)"
+              class="p-2 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-all cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-[20px]">delete</span>
+            </button>
+          </div>
+        </ng-template>
+      </app-table>
+    </div>
+  }
 </main>
