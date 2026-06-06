@@ -1,0 +1,95 @@
+<div class="space-y-6">
+  <!-- Key Metrics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="glass-card p-6 rounded-2xl">
+      <p class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Custo Total Aplicado</p>
+      <h3 class="text-2xl font-bold text-text-light">R$ {{ totalCost() | number:'1.2-2' }}</h3>
+    </div>
+    <div class="glass-card p-6 rounded-2xl">
+      <p class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Patrimônio Atual</p>
+      <h3 class="text-2xl font-bold text-[#75d33b]">R$ {{ totalValue() | number:'1.2-2' }}</h3>
+    </div>
+    <div class="glass-card p-6 rounded-2xl">
+      <p class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Resultado (Rentabilidade)</p>
+      <div class="flex items-baseline gap-2">
+        <h3 class="text-2xl font-bold" [class.text-[#75d33b]]="totalProfit() >= 0" [class.text-error]="totalProfit() < 0">
+          R$ {{ totalProfit() | number:'1.2-2' }}
+        </h3>
+        <span class="text-sm font-semibold" [class.text-[#75d33b]]="totalProfit() >= 0" [class.text-error]="totalProfit() < 0">
+          ({{ totalProfit() >= 0 ? '+' : '' }}{{ totalProfitPct() | number:'1.2-2' }}%)
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart and breakdown -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-4 glass-card p-6 rounded-2xl flex flex-col justify-between items-center">
+      <h4 class="text-sm font-bold text-text-light w-full mb-4">Distribuição de Carteira</h4>
+      @if (allocationChartOptions()) {
+        <apx-chart
+          [series]="allocationChartOptions().series"
+          [chart]="allocationChartOptions().chart"
+          [labels]="allocationChartOptions().labels"
+          [colors]="allocationChartOptions().colors"
+          [stroke]="allocationChartOptions().stroke"
+          [legend]="allocationChartOptions().legend"
+          [dataLabels]="allocationChartOptions().dataLabels"
+          [plotOptions]="allocationChartOptions().plotOptions"
+        ></apx-chart>
+      }
+    </div>
+
+    <!-- Table of holdings -->
+    <div class="lg:col-span-8 glass-card p-6 rounded-2xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h4 class="text-sm font-bold text-text-light">Meus Ativos</h4>
+        <app-pdf-button
+          title="Relatório de Ativos em Carteira"
+          [columns]="columns"
+          [data]="products()"
+          filename="meus_ativos.pdf"
+        ></app-pdf-button>
+      </div>
+
+      <app-table
+        [data]="products()"
+        [columns]="columns"
+        [totalItems]="products().length"
+        [pageSize]="100"
+        [currentPage]="1"
+      >
+        <ng-template appCellTemplate="ticker" let-row="row">
+          <span class="font-bold text-text-light">{{ row.ticker }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="precoMedio" let-row="row">
+          <span>R$ {{ row.precoMedio | number:'1.2-2' }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="custoTotal" let-row="row">
+          <span>R$ {{ row.custoTotal | number:'1.2-2' }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="precoAtual" let-row="row">
+          <span>R$ {{ row.precoAtual | number:'1.2-2' }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="valorAtual" let-row="row">
+          <span class="font-semibold text-text-light">R$ {{ row.valorAtual | number:'1.2-2' }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="lucroPrejuizo" let-row="row">
+          <span class="font-semibold" [class.text-[#75d33b]]="row.lucroPrejuizo >= 0" [class.text-error]="row.lucroPrejuizo < 0">
+            {{ row.lucroPrejuizo >= 0 ? '+' : '' }}R$ {{ row.lucroPrejuizo | number:'1.2-2' }}
+            <span class="text-xs font-normal">({{ row.lucroPrejuizo >= 0 ? '+' : '' }}{{ row.lucroPrejuizoPct | number:'1.2-2' }}%)</span>
+          </span>
+        </ng-template>
+
+        <ng-template appCellTemplate="participacao" let-row="row">
+          <span class="font-bold text-[#deffc4]">{{ row.participacao | number:'1.1-1' }}%</span>
+        </ng-template>
+      </app-table>
+    </div>
+  </div>
+</div>

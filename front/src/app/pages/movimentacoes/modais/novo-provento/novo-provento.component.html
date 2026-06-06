@@ -1,0 +1,207 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="bg-bg-card-dark border border-white/10 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl relative">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+      <div>
+        <h3 class="text-base font-bold text-text-light">Novo Provento - Recebimento</h3>
+        <p class="text-[10px] text-text-muted mt-1">Insira os proventos recebidos manualmente ou busque por período</p>
+      </div>
+      <button (click)="onClose()" class="text-text-muted hover:text-text-light transition-colors cursor-pointer flex items-center">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form (submit)="onSubmit(); $event.preventDefault()" class="p-6 space-y-4">
+      <!-- Search Dividends Action Bar -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0b0e14]/40 border border-white/5 p-4 rounded-xl">
+        <div>
+          <span class="text-xs font-bold text-text-light">Buscar Dividendos Automaticamente</span>
+          <p class="text-[10px] text-text-muted mt-0.5">Selecione o período de busca na B3</p>
+        </div>
+        <!-- DateRangePicker Component -->
+        <app-date-range-picker (rangeSelected)="onDateRangeSelected($event)"></app-date-range-picker>
+      </div>
+
+      <!-- Assets list header -->
+      <div class="flex justify-between items-center border-t border-white/5 pt-4">
+        <h4 class="text-xs font-bold text-text-light uppercase tracking-wider">Linha de Ativos</h4>
+        <button
+          type="button"
+          (click)="addAtivo()"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#75d33b]/30 text-[#75d33b] hover:bg-[#75d33b]/10 text-xs font-bold transition-all cursor-pointer"
+        >
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          Adicionar Ativo
+        </button>
+      </div>
+
+      <!-- Assets List Container -->
+      <div class="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+        @for (item of proventoForm.ativos; track $index) {
+          <div class="grid grid-cols-12 gap-3 items-end bg-[#0b0e14]/20 border border-white/5 p-3 rounded-xl relative group">
+            
+            <!-- Type -->
+            <div class="col-span-12 md:col-span-3">
+              <label class="block text-[10px] font-semibold text-text-muted mb-1">Tipo</label>
+              <div class="relative">
+                <select
+                  [formField]="$any(item.tipo)"
+                  class="w-full bg-bg-main border border-white/10 rounded-lg py-2 px-3 text-text-light text-xs focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none cursor-pointer appearance-none"
+                >
+                  <option [value]="1">Dividendos</option>
+                  <option [value]="2">JCP</option>
+                  <option [value]="3">Rendimento</option>
+                </select>
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[16px]">keyboard_arrow_down</span>
+              </div>
+            </div>
+
+            <!-- Ticker -->
+            <div class="col-span-12 md:col-span-3">
+              <label class="block text-[10px] font-semibold text-text-muted mb-1">Ticker</label>
+              <input
+                type="text"
+                placeholder="Ex: PETR4"
+                [formField]="item.ticker"
+                list="tickers"
+                class="w-full bg-bg-main border border-white/10 rounded-lg py-2 px-3 text-text-light text-xs focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all uppercase"
+              />
+              <datalist id="tickers">
+                @for (t of tickerDatalist; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </datalist>
+            </div>
+
+            <!-- Quantidade -->
+            <div class="col-span-12 md:col-span-2">
+              <label class="block text-[10px] font-semibold text-text-muted mb-1">Qtd.</label>
+              <input
+                type="number"
+                [formField]="item.quantidade"
+                class="w-full bg-bg-main border border-white/10 rounded-lg py-2 px-3 text-text-light text-xs focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
+            <!-- Preço Unitário -->
+            <div class="col-span-12 md:col-span-3">
+              <label class="block text-[10px] font-semibold text-text-muted mb-1">Valor Unitário</label>
+              <input
+                type="text"
+                placeholder="R$ 0,00"
+                appCurrencyMask
+                [formField]="item.valorUnitario"
+                class="w-full bg-bg-main border border-white/10 rounded-lg py-2 px-3 text-text-light text-xs focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+              />
+            </div>
+
+            <!-- Remove action -->
+            <div class="col-span-12 md:col-span-1 flex justify-end">
+              <button
+                type="button"
+                (click)="removeAtivo($index)"
+                [disabled]="proventoForm.ativos.length === 1"
+                class="p-2 text-text-muted hover:text-error hover:bg-error/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                title="Remover linha"
+              >
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+              </button>
+            </div>
+
+          </div>
+        }
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-3 pt-4 border-t border-white/5">
+        <button
+          type="button"
+          (click)="onClose()"
+          class="px-5 py-2.5 rounded-lg border border-white/10 text-text-light font-bold hover:bg-white/5 active:scale-95 transition-all cursor-pointer text-sm"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          [disabled]="proventoForm().invalid()"
+          class="px-6 py-2.5 bg-[#75d33b] text-[#0b0e14] font-bold rounded-lg hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer text-sm"
+        >
+          Salvar Proventos
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRMATION SUBMODAL -->
+@if (showSubmodal()) {
+  <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="bg-bg-card-dark border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative">
+      <!-- Header -->
+      <div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+        <h3 class="text-base font-bold text-text-light">Confirmar Proventos</h3>
+        <button (click)="showSubmodal.set(false)" class="text-text-muted hover:text-text-light transition-colors cursor-pointer">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="p-6 space-y-6">
+        <p class="text-xs text-text-muted">
+          Resumo dos lançamentos de proventos identificados:
+        </p>
+
+        <!-- Summary Table -->
+        <div class="border border-white/5 rounded-xl overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-white/[0.02] border-b border-white/5 text-text-muted">
+                <th class="px-4 py-3 font-bold uppercase">Ticker</th>
+                <th class="px-4 py-3 font-bold uppercase">Tipo</th>
+                <th class="px-4 py-3 font-bold uppercase text-right">Qtd</th>
+                <th class="px-4 py-3 font-bold uppercase text-right">Val. Unitário</th>
+                <th class="px-4 py-3 font-bold uppercase text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-text-light">
+              @for (row of confirmationAtivos(); track $index) {
+                <tr class="hover:bg-white/[0.01]">
+                  <td class="px-4 py-3 font-bold">{{ row.ticker }}</td>
+                  <td class="px-4 py-3">{{ row.tipoLabel }}</td>
+                  <td class="px-4 py-3 text-right">{{ row.quantidade }}</td>
+                  <td class="px-4 py-3 text-right">R$ {{ row.valorUnitario | number:'1.2-4' }}</td>
+                  <td class="px-4 py-3 text-right font-bold text-[#75d33b]">R$ {{ row.total | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Total summary card -->
+        <div class="bg-bg-main p-4 rounded-xl border border-[#75d33b]/20">
+          <span class="text-[10px] font-bold text-text-muted uppercase text-center block">Valor Total Recebido</span>
+          <p class="text-lg font-bold text-[#75d33b] text-center mt-1">R$ {{ operationTotal() | number:'1.2-2' }}</p>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="px-6 py-4 border-t border-white/5 bg-white/[0.01] flex justify-end gap-3">
+        <button
+          type="button"
+          (click)="showSubmodal.set(false)"
+          class="px-5 py-2.5 rounded-lg border border-white/10 text-text-light font-bold hover:bg-white/5 active:scale-95 transition-all cursor-pointer text-sm"
+        >
+          Voltar e Editar
+        </button>
+        <button
+          type="button"
+          (click)="confirmFinal()"
+          class="px-6 py-2.5 bg-[#75d33b] text-[#0b0e14] font-bold rounded-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer text-sm"
+        >
+          Confirmar Lançamento
+        </button>
+      </div>
+    </div>
+  </div>
+}

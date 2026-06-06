@@ -1,0 +1,54 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="bg-bg-card-dark border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+      <h3 class="text-base font-bold text-text-light">Detalhes do Aporte</h3>
+      <button (click)="onClose()" class="text-text-muted hover:text-text-light transition-colors cursor-pointer flex items-center">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 space-y-5">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Mês / Ano</label>
+          <p class="text-sm font-semibold text-text-light mt-1">{{ aporte().mes }} / {{ aporte().ano }}</p>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Data da Operação</label>
+          <p class="text-sm font-semibold text-text-light mt-1">{{ aporte().data }}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+        <div>
+          <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Valor do Aporte</label>
+          <p class="text-lg font-bold text-[#75d33b] mt-1">R$ {{ aporte().valor | number:'1.2-2' }}</p>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Taxas Pagas</label>
+          <p class="text-lg font-semibold text-text-light mt-1">R$ {{ aporte().taxas | number:'1.2-2' }}</p>
+        </div>
+      </div>
+
+      <div class="border-t border-white/5 pt-4">
+        <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Descrição / Nota</label>
+        <p class="text-xs text-on-surface bg-[#0b0e14] border border-white/5 rounded-lg p-3 mt-1.5 leading-relaxed">
+          {{ aporte().detalhes }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-white/5 bg-white/[0.01] flex justify-end">
+      <button
+        type="button"
+        (click)="onClose()"
+        class="px-5 py-2 bg-white/5 text-text-light hover:bg-white/10 rounded-lg text-xs font-bold transition-all cursor-pointer border border-white/5"
+      >
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>

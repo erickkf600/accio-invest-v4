@@ -25,7 +25,7 @@ export interface ToastOptions {
 export class ToastService {
   readonly toasts = signal<Toast[]>([]);
 
-  private addToast(type: ToastType, options: ToastOptions): void {
+  private addToast(type: ToastType, options: ToastOptions): string {
     const toast: Toast = {
       id: crypto.randomUUID(),
       type,
@@ -39,18 +39,19 @@ export class ToastService {
     if (toast.duration > 0) {
       setTimeout(() => this.remove(toast.id), toast.duration);
     }
+    return toast.id;
   }
 
-  success(options: ToastOptions): void {
-    this.addToast('success', options);
+  success(options: ToastOptions): string {
+    return this.addToast('success', options);
   }
 
-  warning(options: ToastOptions): void {
-    this.addToast('warning', options);
+  warning(options: ToastOptions): string {
+    return this.addToast('warning', options);
   }
 
-  error(options: ToastOptions): void {
-    this.addToast('error', options);
+  error(options: ToastOptions): string {
+    return this.addToast('error', options);
   }
 
   remove(id: string): void {

@@ -1,0 +1,151 @@
+import { Component, signal, computed, output, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
+import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { MovimentacoesService } from '../../service/movimentacoes.service';
+
+interface CompraAsset {
+  tipo: number; // 1 = Ações, 2 = FII
+  ticker: string;
+  quantidade: number;
+  valorUnitario: string; // Formatted with mask in input
+}
+
+interface ConfirmacionAsset {
+  ticker: string;
+  tipoLabel: string;
+  quantidade: number;
+  valorUnitario: number;
+  taxa: number;
+  total: number;
+}
+
+@Component({
+  selector: 'app-nova-compra',
+  standalone: true,
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective],
+  templateUrl: './nova-compra.component.html',
+})
+export class NovaCompraComponent {
+  private movimentacoesService = inject(MovimentacoesService);
+
+  close = output<void>();
+  confirmed = output<void>();
+
+  // Mock datalist for tickers
+  tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
+
+  // Signal model matching Signal Forms
+  model = signal({
+    taxasTotal: '',
+    ativos: [
+      { tipo: 1, ticker: '', quantidade: 1, valorUnitario: '' }
+    ] as CompraAsset[],
+  });
+
+  compraForm = form(this.model, (s) => {
+    required(s.taxasTotal, { message: 'Campo obrigatório' });
+    applyEach(s.ativos, (item) => {
+      required(item.tipo, { message: 'Obrigatório' });
+      required(item.ticker, { message: 'Obrigatório' });
+      required(item.quantidade, { message: 'Obrigatório' });
+      required(item.valorUnitario, { message: 'Obrigatório' });
+    });
+  });
+
+  // Modal and submodal states
+  showSubmodal = signal(false);
+  confirmationAtivos = signal<ConfirmacionAsset[]>([]);
+  operationTotalCost = signal<number>(0);
+  operationTotalTaxes = signal<number>(0);
+
+  addAtivo(): void {
+    this.model.update((m) => ({
+      ...m,
+      ativos: [...m.ativos, { tipo: 1, ticker: '', quantidade: 1, valorUnitario: '' }],
+    }));
+  }
+
+  removeAtivo(index: number): void {
+    if (this.model().ativos.length > 1) {
+      this.model.update((m) => ({
+        ...m,
+        ativos: m.ativos.filter((_, i) => i !== index),
+      }));
+    }
+  }
+
+  onSubmit(): void {
+    submit(this.compraForm, async () => {
+      this.calculateRatesAndSummary();
+      this.showSubmodal.set(true);
+    });
+  }
+
+  calculateRatesAndSummary(): void {
+    const rawForm = this.model();
+    const totalTaxes = parseCurrencyBRL(rawForm.taxasTotal);
+    
+    // Calculate subtotal for each asset (Qtd * Price) and note cost total
+    let totalCustoNota = 0;
+    const parsedAssets = rawForm.ativos.map(a => {
+      const preco = parseCurrencyBRL(a.valorUnitario);
+      const sub = a.quantidade * preco;
+      totalCustoNota += sub;
+      return {
+        ticker: a.ticker,
+        tipoLabel: a.tipo === 1 ? 'Ações' : 'FII',
+        quantidade: a.quantidade,
+        valorUnitario: preco,
+        subtotal: sub
+      };
+    });
+
+    if (totalCustoNota === 0) totalCustoNota = 1; // Avoid div by zero
+
+    // Proportional taxes: Taxa_Proporcional = (Subtotal / Custo_Total_Nota) * Taxa_Total_Nota
+    // Rounding to 3 decimal places
+    let sumProportionalTaxes = 0;
+    const confirmationList: ConfirmacionAsset[] = parsedAssets.map(pa => {
+      const rawProportionalTax = (pa.subtotal / totalCustoNota) * totalTaxes;
+      const roundedTax = parseFloat(rawProportionalTax.toFixed(3));
+      sumProportionalTaxes += roundedTax;
+
+      return {
+        ticker: pa.ticker,
+        tipoLabel: pa.tipoLabel,
+        quantidade: pa.quantidade,
+        valorUnitario: pa.valorUnitario,
+        taxa: roundedTax,
+        total: pa.subtotal + roundedTax
+      };
+    });
+
+    // Rounding correction to guarantee: sum taxas = total tax
+    const diff = totalTaxes - sumProportionalTaxes;
+    if (diff !== 0 && confirmationList.length > 0) {
+      // Add correction diff to the first asset
+      confirmationList[0].taxa = parseFloat((confirmationList[0].taxa + diff).toFixed(3));
+      confirmationList[0].total = parseFloat((confirmationList[0].total + diff).toFixed(3));
+    }
+
+    this.confirmationAtivos.set(confirmationList);
+    this.operationTotalTaxes.set(totalTaxes);
+    this.operationTotalCost.set(confirmationList.reduce((acc, c) => acc + c.total, 0));
+  }
+
+  confirmFinal(): void {
+    // Save operation in Mock service
+    // Add operations from summary
+    this.confirmationAtivos().forEach(ca => {
+      // Add each operation to movimentacoes service
+      // We can simulate an addition
+    });
+    this.confirmed.emit();
+    this.close.emit();
+  }
+
+  onClose(): void {
+    this.close.emit();
+  }
+}

@@ -1,0 +1,104 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="bg-bg-card-dark border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+      <div>
+        <h3 class="text-base font-bold text-text-light">Nova Venda</h3>
+        <p class="text-[10px] text-text-muted mt-1">Registre a venda de um ativo da sua carteira</p>
+      </div>
+      <button (click)="onClose()" class="text-text-muted hover:text-text-light transition-colors cursor-pointer flex items-center">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form (submit)="onSubmit(); $event.preventDefault()" class="p-6 space-y-4">
+      <!-- Ticker -->
+      <div>
+        <label class="block text-[10px] font-semibold text-text-muted mb-1">Ativo</label>
+        <input
+          type="text"
+          placeholder="Ex: PETR4"
+          [formField]="vendaForm.ticker"
+          list="vendaTickerList"
+          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all uppercase"
+        />
+        <datalist id="vendaTickerList">
+          @for (t of tickerDatalist; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </datalist>
+      </div>
+
+      <!-- Quantidade -->
+      <div>
+        <label class="block text-[10px] font-semibold text-text-muted mb-1">Quantidade</label>
+        <input
+          type="number"
+          [formField]="vendaForm.quantidade"
+          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+      </div>
+
+      <!-- Preço Unitário -->
+      <div>
+        <label class="block text-[10px] font-semibold text-text-muted mb-1">Preço Unitário</label>
+        <input
+          type="text"
+          placeholder="R$ 0,00"
+          appCurrencyMask
+          [formField]="vendaForm.precoUnitario"
+          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+        />
+      </div>
+
+      <!-- Taxas (optional) -->
+      <div>
+        <label class="block text-[10px] font-semibold text-text-muted mb-1">Taxas (opcional)</label>
+        <input
+          type="text"
+          placeholder="R$ 0,00"
+          appCurrencyMask
+          [formField]="vendaForm.taxas"
+          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+        />
+      </div>
+
+      <!-- Data da Operação -->
+      <div>
+        <label class="block text-[10px] font-semibold text-text-muted mb-1">Data da Operação</label>
+        <input
+          type="text"
+          appDateMask
+          [formField]="vendaForm.data"
+          placeholder="DD/MM/AAAA"
+          class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+        />
+      </div>
+
+      <!-- Total and Actions -->
+      <div class="flex justify-between items-center pt-4 border-t border-white/5">
+        <div class="bg-bg-main p-4 rounded-xl border border-[#75d33b]/20">
+          <span class="text-[10px] font-bold text-text-muted uppercase">Total Estimado</span>
+          <p class="text-lg font-bold text-[#75d33b] mt-1">R$ {{ totalValor() | number:'1.2-2' }}</p>
+        </div>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            (click)="onClose()"
+            class="px-5 py-2.5 rounded-lg border border-white/10 text-text-light font-bold hover:bg-white/5 active:scale-95 transition-all cursor-pointer text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="vendaForm().invalid()"
+            class="px-6 py-2.5 bg-[#75d33b] text-[#0b0e14] font-bold rounded-lg hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer text-sm"
+          >
+            Registrar Venda
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

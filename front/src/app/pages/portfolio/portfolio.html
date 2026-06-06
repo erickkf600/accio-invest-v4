@@ -1,4 +1,27 @@
-<main class="pt-24 pb-20 md:pb-8 max-w-[1440px] mx-auto px-4 md:px-10">
-  <h1 class="text-2xl font-bold text-text-light">Portfólio</h1>
-  <p class="text-text-muted mt-2">Visualize a composição completa dos seus investimentos.</p>
+<main class="pt-24 pb-20 md:pb-12 max-w-[1440px] mx-auto px-4 md:px-10 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-text-light mb-2">Portfólio</h1>
+      <p class="text-text-muted text-sm">Visualize a composição, proventos e rendimentos da sua carteira de investimentos.</p>
+    </div>
+    
+    <!-- Tab Selector -->
+    <app-tabs
+      [options]="tabOptions()"
+      [activeTab]="activeTabId()"
+      (tabChange)="onTabChange($event)"
+    ></app-tabs>
+  </div>
+
+  <!-- Tab Contents -->
+  <div class="pt-2">
+    @if (activeTabId() === 'produtos') {
+      <app-meus-produtos></app-meus-produtos>
+    } @else if (activeTabId() === 'proventos') {
+      <app-proventos-tab></app-proventos-tab>
+    } @else if (activeTabId() === 'rendimentos') {
+      <app-rendimentos-tab></app-rendimentos-tab>
+    }
+  </div>
 </main>

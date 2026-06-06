@@ -1,0 +1,61 @@
+<div class="relative inline-block text-left">
+  <button
+    type="button"
+    (click)="toggle()"
+    class="flex items-center gap-2 bg-[#121620] border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm hover:border-primary-success transition-all cursor-pointer font-medium"
+  >
+    <span class="material-symbols-outlined text-[20px] text-text-muted">calendar_today</span>
+    @if (model().startDate && model().endDate) {
+      <span>{{ model().startDate }} - {{ model().endDate }}</span>
+    } @else {
+      <span>Selecionar período</span>
+    }
+  </button>
+
+  @if (isOpen()) {
+    <div class="absolute right-0 mt-2 w-72 bg-[#121620] border border-white/10 rounded-xl p-4 shadow-2xl z-50 space-y-4">
+      <h4 class="text-xs font-bold text-text-light uppercase tracking-wider">Período de Busca</h4>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] font-semibold text-text-muted mb-1">Início</label>
+          <input
+            type="text"
+            placeholder="DD/MM/AAAA"
+            appDateMask
+            [formField]="dateForm.startDate"
+            class="w-full bg-[#0b0e14] border border-white/10 rounded-lg py-2 px-2.5 text-text-light text-xs focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+          />
+        </div>
+        <div>
+          <label class="block text-[10px] font-semibold text-text-muted mb-1">Fim</label>
+          <input
+            type="text"
+            placeholder="DD/MM/AAAA"
+            appDateMask
+            [formField]="dateForm.endDate"
+            class="w-full bg-[#0b0e14] border border-white/10 rounded-lg py-2 px-2.5 text-text-light text-xs focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button
+          type="button"
+          (click)="close()"
+          class="flex-1 py-1.5 rounded-lg border border-white/10 text-text-muted text-xs font-semibold hover:bg-white/5 hover:text-text-light transition-all cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirm()"
+          [disabled]="!model().startDate || !model().endDate"
+          class="flex-1 py-1.5 bg-[#75d33b] text-[#0b0e14] text-xs font-bold rounded-lg hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,4 +1,447 @@
-<main class="pt-24 pb-20 md:pb-8 max-w-[1440px] mx-auto px-4 md:px-10">
-  <h1 class="text-2xl font-bold text-text-light">Relatórios</h1>
-  <p class="text-text-muted mt-2">Gere e exporte relatórios detalhados da sua carteira.</p>
+<main class="pt-24 pb-20 md:pb-12 max-w-[1440px] mx-auto px-4 md:px-10 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-6 border-b border-white/5 pb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-text-light mb-2">Relatórios</h1>
+      <p class="text-text-muted text-sm">Gere e exporte relatórios detalhados da sua carteira.</p>
+    </div>
+    
+    <!-- Tabs Nav -->
+    <app-tabs
+      [options]="tabOptions()"
+      [activeTab]="activeTabId()"
+      (tabChange)="onTabChange($event)"
+    ></app-tabs>
+  </div>
+
+  <!-- Content Section -->
+  <div class="pt-2">
+    
+    <!-- 1. HISTÓRICO DE APORTES -->
+    @if (activeTabId() === 'aportes') {
+      <div class="space-y-6">
+        <!-- Interactive Chart Card -->
+        <div class="glass-card p-6 rounded-2xl">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h4 class="text-sm font-bold text-text-light">Histórico de Aportes Consolidados</h4>
+              <p class="text-xs text-text-muted mt-1">Evolução dos valores aportados mensalmente na carteira</p>
+            </div>
+            <select
+              [value]="selectedYear()"
+              (change)="selectedYear.set(yearSel.value); selectedMonthIndex.set(null)"
+              #yearSel
+              class="bg-white/5 border border-white/10 rounded-lg text-xs text-text-light px-3 py-1.5 outline-none cursor-pointer"
+            >
+              @for (y of availableYears; track y) {
+                <option [value]="y">{{ y }}</option>
+              }
+            </select>
+          </div>
+          
+          <div class="h-[250px]">
+            @if (aportesChartOptions()) {
+              <apx-chart
+                [series]="aportesChartOptions().series"
+                [chart]="aportesChartOptions().chart"
+                [colors]="aportesChartOptions().colors"
+                [plotOptions]="aportesChartOptions().plotOptions"
+                [dataLabels]="aportesChartOptions().dataLabels"
+                [grid]="aportesChartOptions().grid"
+                [xaxis]="aportesChartOptions().xaxis"
+                [yaxis]="aportesChartOptions().yaxis"
+                [tooltip]="aportesChartOptions().tooltip"
+              ></apx-chart>
+            }
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-bold text-text-light">Histórico de Aportes</h4>
+            <app-pdf-button
+              title="Relatório - Histórico de Aportes"
+              [columns]="aportesColumns"
+              [data]="filteredAportes()"
+              filename="historico_aportes.pdf"
+            ></app-pdf-button>
+          </div>
+
+          <app-table
+            [data]="filteredAportes()"
+            [columns]="aportesColumns"
+            [totalItems]="filteredAportes().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="valor" let-row="row">
+              <span class="font-semibold text-text-light">R$ {{ row.valor | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="taxas" let-row="row">
+              <span class="text-text-muted">R$ {{ row.taxas | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="actions" let-row="row">
+              <button
+                type="button"
+                (click)="viewDetails(row)"
+                class="px-3 py-1 rounded border border-[#75d33b]/30 text-[#75d33b] hover:bg-[#75d33b]/10 text-xs font-bold transition-all cursor-pointer"
+              >
+                Visualizar detalhes
+              </button>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+    <!-- 2. RECEBIDOS DE ALUGUÉIS -->
+    @if (activeTabId() === 'alugueis') {
+      <div class="space-y-6">
+        <app-filter-card
+          (filterApplied)="onGeneralFilterApplied($event)"
+          (filtersCleared)="onGeneralFiltersCleared()"
+        ></app-filter-card>
+
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-bold text-text-light">Recebidos de Aluguéis (FIIs)</h4>
+            <app-pdf-button
+              title="Relatório - Recebidos de Aluguéis (FIIs)"
+              [columns]="alugueisColumns"
+              [data]="filteredAlugueis()"
+              filename="recebidos_alugueis.pdf"
+            ></app-pdf-button>
+          </div>
+
+          <app-table
+            [data]="filteredAlugueis()"
+            [columns]="alugueisColumns"
+            [totalItems]="filteredAlugueis().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="ticker" let-row="row">
+              <span class="font-bold text-text-light">{{ row.ticker }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="precoUn" let-row="row">
+              <span>R$ {{ row.precoUn | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="total" let-row="row">
+              <span class="font-bold text-[#75d33b]">+ R$ {{ row.total | number:'1.2-2' }}</span>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+    <!-- 3. VENDAS -->
+    @if (activeTabId() === 'vendas') {
+      <div class="space-y-6">
+        <app-filtro-relatorio
+          (filterApplied)="onRelatorioFilterApplied($event)"
+          (filtersCleared)="onRelatorioFiltersCleared()"
+        ></app-filtro-relatorio>
+
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-bold text-text-light">Operações de Vendas</h4>
+            <app-pdf-button
+              title="Relatório - Histórico de Vendas"
+              [columns]="vendasColumns"
+              [data]="filteredVendas()"
+              filename="relatorio_vendas.pdf"
+            ></app-pdf-button>
+          </div>
+
+          <app-table
+            [data]="filteredVendas()"
+            [columns]="vendasColumns"
+            [totalItems]="filteredVendas().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="ticker" let-row="row">
+              <span class="font-bold text-text-light">{{ row.ticker }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="precoUn" let-row="row">
+              <span>R$ {{ row.precoUn | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="total" let-row="row">
+              <span>R$ {{ row.total | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="taxas" let-row="row">
+              <span class="text-text-muted">R$ {{ row.taxas | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="resultado" let-row="row">
+              <span class="font-bold" [class.text-[#75d33b]]="row.resultado >= 0" [class.text-error]="row.resultado < 0">
+                {{ row.resultado >= 0 ? '+' : '' }}R$ {{ row.resultado | number:'1.2-2' }}
+              </span>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+    <!-- 4. REPOSICIONAMENTO -->
+    @if (activeTabId() === 'reposicionamento') {
+      <div class="space-y-6">
+        <app-filtro-relatorio
+          (filterApplied)="onRelatorioFilterApplied($event)"
+          (filtersCleared)="onRelatorioFiltersCleared()"
+        ></app-filtro-relatorio>
+
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-bold text-text-light">Histórico de Reposicionamentos</h4>
+            <app-pdf-button
+              title="Relatório - Reposicionamentos"
+              [columns]="reposicionamentosColumns"
+              [data]="filteredReposicionamentos()"
+              filename="reposicionamentos.pdf"
+            ></app-pdf-button>
+          </div>
+
+          <app-table
+            [data]="filteredReposicionamentos()"
+            [columns]="reposicionamentosColumns"
+            [totalItems]="filteredReposicionamentos().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="ticker" let-row="row">
+              <span class="font-bold text-text-light">{{ row.ticker }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="tipo" let-row="row">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
+                {{ row.tipo }}
+              </span>
+            </ng-template>
+
+            <ng-template appCellTemplate="fator" let-row="row">
+              <span class="font-semibold" [class.text-blue-400]="row.fator === 'Agrupamento'" [class.text-amber-400]="row.fator === 'Desdobramento'">
+                {{ row.fator }}
+              </span>
+            </ng-template>
+
+            <ng-template appCellTemplate="proporcao" let-row="row">
+              <span class="font-bold text-text-light">{{ row.proporcaoDe }} : {{ row.proporcaoPara }}</span>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+    <!-- 5. NOTAS DE CORRETAGEM -->
+    @if (activeTabId() === 'notas') {
+      <div class="space-y-6">
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="text-sm font-bold text-text-light">Notas de Corretagem Arquivadas</h4>
+              <p class="text-xs text-text-muted mt-1">Envie e armazene seus comprovantes e notas de corretagem</p>
+            </div>
+            <button
+              type="button"
+              (click)="openNotaModal()"
+              class="flex items-center gap-2 bg-[#75d33b] text-[#0b0e14] px-5 py-2.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              Adicionar Nota
+            </button>
+          </div>
+
+          <app-table
+            [data]="filteredNotas()"
+            [columns]="notasColumns"
+            [totalItems]="filteredNotas().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="documento" let-row="row">
+              <div class="flex items-center gap-2 text-text-light hover:text-[#75d33b] cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">description</span>
+                <span class="font-medium text-xs">{{ row.documento }}</span>
+              </div>
+            </ng-template>
+
+            <ng-template appCellTemplate="tipo" let-row="row">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
+                {{ row.tipo }}
+              </span>
+            </ng-template>
+
+            <ng-template appCellTemplate="tamanho" let-row="row">
+              <span class="text-xs text-text-muted">{{ row.tamanho }}</span>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+    <!-- 6. PREÇO MÉDIO HISTÓRICO -->
+    @if (activeTabId() === 'preco-medio') {
+      <div class="space-y-6">
+        <app-filter-card
+          (filterApplied)="onGeneralFilterApplied($event)"
+          (filtersCleared)="onGeneralFiltersCleared()"
+        ></app-filter-card>
+
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-bold text-text-light">Preço Médio Histórico de Investimentos</h4>
+            <app-pdf-button
+              title="Relatório - Preço Médio Histórico"
+              [columns]="precoMedioColumns"
+              [data]="filteredPrecoMedio()"
+              filename="preco_medio_historico.pdf"
+            ></app-pdf-button>
+          </div>
+
+          <app-table
+            [data]="filteredPrecoMedio()"
+            [columns]="precoMedioColumns"
+            [totalItems]="filteredPrecoMedio().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="ticker" let-row="row">
+              <span class="font-bold text-text-light">{{ row.ticker }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="precoMedio" let-row="row">
+              <span>R$ {{ row.precoMedio | number:'1.2-2' }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="custoTotal" let-row="row">
+              <span class="font-bold text-text-light">R$ {{ row.custoTotal | number:'1.2-2' }}</span>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+    <!-- 7. RENDA FIXA -->
+    @if (activeTabId() === 'renda-fixa') {
+      <div class="space-y-6">
+        <app-filtro-relatorio
+          (filterApplied)="onRelatorioFilterApplied($event)"
+          (filtersCleared)="onRelatorioFiltersCleared()"
+        ></app-filtro-relatorio>
+
+        <!-- Dynamic Columns Settings Drawer/Row -->
+        <div class="glass-card p-4 rounded-xl flex flex-wrap items-center gap-6">
+          <span class="text-xs font-bold text-text-muted uppercase tracking-wider">Colunas Visíveis:</span>
+          
+          <label class="flex items-center gap-2 text-xs font-semibold text-text-light cursor-pointer">
+            <input
+              type="checkbox"
+              [checked]="rfShowLiquidez()"
+              (change)="rfShowLiquidez.set(!rfShowLiquidez())"
+              class="w-4 h-4 rounded border-white/10 bg-bg-main text-primary-success focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            />
+            Liquidez Diária
+          </label>
+
+          <label class="flex items-center gap-2 text-xs font-semibold text-text-light cursor-pointer">
+            <input
+              type="checkbox"
+              [checked]="rfShowVencimento()"
+              (change)="rfShowVencimento.set(!rfShowVencimento())"
+              class="w-4 h-4 rounded border-white/10 bg-bg-main text-primary-success focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            />
+            Vencimento
+          </label>
+
+          <label class="flex items-center gap-2 text-xs font-semibold text-text-light cursor-pointer">
+            <input
+              type="checkbox"
+              [checked]="rfShowImposto()"
+              (change)="rfShowImposto.set(!rfShowImposto())"
+              class="w-4 h-4 rounded border-white/10 bg-bg-main text-primary-success focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            />
+            Possui Imposto
+          </label>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="text-sm font-bold text-text-light">Carteira de Renda Fixa</h4>
+            <app-pdf-button
+              title="Relatório - Investimentos em Renda Fixa"
+              [columns]="rfColumns()"
+              [data]="filteredRendaFixa()"
+              filename="renda_fixa.pdf"
+            ></app-pdf-button>
+          </div>
+
+          <app-table
+            [data]="filteredRendaFixa()"
+            [columns]="rfColumns()"
+            [totalItems]="filteredRendaFixa().length"
+            [pageSize]="10"
+            [currentPage]="1"
+          >
+            <ng-template appCellTemplate="emissor" let-row="row">
+              <span class="font-bold text-text-light">{{ row.emissor }}</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="tipo" let-row="row">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
+                {{ row.tipo }}
+              </span>
+            </ng-template>
+
+            <ng-template appCellTemplate="taxaJuros" let-row="row">
+              <span class="font-semibold text-text-light">{{ row.taxaJuros | number:'1.2-2' }}%</span>
+            </ng-template>
+
+            <ng-template appCellTemplate="liquidezDiaria" let-row="row">
+              @if (row.liquidezDiaria) {
+                <span class="text-xs font-semibold text-[#75d33b]">Sim</span>
+              } @else {
+                <span class="text-xs font-semibold text-text-muted">Não</span>
+              }
+            </ng-template>
+
+            <ng-template appCellTemplate="possuiImposto" let-row="row">
+              @if (row.possuiImposto) {
+                <span class="text-xs font-semibold text-amber-400">Sim</span>
+              } @else {
+                <span class="text-xs font-semibold text-[#75d33b]">Isento</span>
+              }
+            </ng-template>
+
+            <ng-template appCellTemplate="valorAplicado" let-row="row">
+              <span class="font-bold text-text-light">R$ {{ row.valorAplicado | number:'1.2-2' }}</span>
+            </ng-template>
+          </app-table>
+        </div>
+      </div>
+    }
+
+  </div>
 </main>
+
+<!-- Overlays -->
+@if (selectedAporte(); as aporte) {
+  <app-detalhes-aporte
+    [aporte]="aporte"
+    (close)="closeDetailsModal()"
+  ></app-detalhes-aporte>
+}
+
+@if (showAdicionarNota()) {
+  <app-adicionar-nota
+    (close)="closeNotaModal()"
+  ></app-adicionar-nota>
+}

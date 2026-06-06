@@ -1,0 +1,266 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="bg-bg-card-dark border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+    
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+      <h3 class="text-base font-bold text-text-light">Nova Renda Fixa</h3>
+      <button (click)="onClose()" class="text-text-muted hover:text-text-light transition-colors cursor-pointer flex items-center">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Modal Sub-tabs -->
+    <div class="px-6 pt-4 flex gap-2 border-b border-white/5 bg-white/[0.005]">
+      <button
+        type="button"
+        (click)="setTab('compra')"
+        class="px-4 py-2 text-xs font-bold transition-all border-b-2 cursor-pointer"
+        [class.border-primary-success]="activeTab() === 'compra'"
+        [class.text-primary-success]="activeTab() === 'compra'"
+        [class.border-transparent]="activeTab() !== 'compra'"
+        [class.text-text-muted]="activeTab() !== 'compra'"
+      >
+        Compra
+      </button>
+      <button
+        type="button"
+        (click)="setTab('rendimento')"
+        class="px-4 py-2 text-xs font-bold transition-all border-b-2 cursor-pointer"
+        [class.border-primary-success]="activeTab() === 'rendimento'"
+        [class.text-primary-success]="activeTab() === 'rendimento'"
+        [class.border-transparent]="activeTab() !== 'rendimento'"
+        [class.text-[#94a3b8]]="activeTab() !== 'rendimento'"
+      >
+        Rendimento
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form (submit)="onSubmit(); $event.preventDefault()" class="p-6 space-y-4">
+      
+      @if (activeTab() === 'compra') {
+        <div class="space-y-4">
+          <!-- Emissor -->
+          <div>
+            <label class="block text-xs font-semibold text-text-muted mb-2">Emissor</label>
+            <input
+              type="text"
+              placeholder="Ex: BANCO ITAU"
+              [formField]="rendaFixaForm.emissor"
+              class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+            />
+            @if (rendaFixaForm.emissor().touched() && rendaFixaForm.emissor().errors().length) {
+              <span class="text-xs text-error mt-1 block">{{ rendaFixaForm.emissor().errors()[0].message }}</span>
+            }
+          </div>
+
+          <!-- Tipo and Indexador Grid -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Tipo</label>
+              <div class="relative">
+                <select
+                  [formField]="rendaFixaForm.tipo"
+                  class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none cursor-pointer appearance-none"
+                >
+                  <option value="Pós-fixado">Pós-fixado</option>
+                  <option value="Pré-fixado">Pré-fixado</option>
+                </select>
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">keyboard_arrow_down</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Indexador</label>
+              <div class="relative">
+                <select
+                  [formField]="rendaFixaForm.indexador"
+                  class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none cursor-pointer appearance-none"
+                >
+                  <option value="CDI">CDI</option>
+                  <option value="IPCA">IPCA</option>
+                  <option value="SELIC">SELIC</option>
+                </select>
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">keyboard_arrow_down</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Taxa Juros & Valor Aplicado Grid -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Taxa de Juros (%)</label>
+              <div class="relative">
+                <input
+                  type="text"
+                  placeholder="Ex: 10,50"
+                  [formField]="rendaFixaForm.taxaJuros"
+                  class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+                />
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-xs pointer-events-none">%</span>
+              </div>
+              @if (rendaFixaForm.taxaJuros().touched() && rendaFixaForm.taxaJuros().errors().length) {
+                <span class="text-xs text-error mt-1 block">{{ rendaFixaForm.taxaJuros().errors()[0].message }}</span>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Valor Aplicado</label>
+              <input
+                type="text"
+                placeholder="R$ 0,00"
+                appCurrencyMask
+                [formField]="rendaFixaForm.valorAplicado"
+                class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+              />
+              @if (rendaFixaForm.valorAplicado().touched() && rendaFixaForm.valorAplicado().errors().length) {
+                <span class="text-xs text-error mt-1 block">{{ rendaFixaForm.valorAplicado().errors()[0].message }}</span>
+              }
+            </div>
+          </div>
+
+          <!-- Data Compra & Vencimento -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Data da Compra</label>
+              <div class="relative">
+                <input
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  appDateMask
+                  [formField]="rendaFixaForm.dataCompra"
+                  class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+                />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">calendar_today</span>
+              </div>
+              @if (rendaFixaForm.dataCompra().touched() && rendaFixaForm.dataCompra().errors().length) {
+                <span class="text-xs text-error mt-1 block">{{ rendaFixaForm.dataCompra().errors()[0].message }}</span>
+              }
+            </div>
+
+            @if (!model().liquidezDiaria) {
+              <div>
+                <label class="block text-xs font-semibold text-text-muted mb-2">Data de Vencimento</label>
+                <div class="relative">
+                  <input
+                    type="text"
+                    placeholder="DD/MM/AAAA"
+                    appDateMask
+                    [formField]="rendaFixaForm.vencimento"
+                    class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+                  />
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">calendar_today</span>
+                </div>
+                @if (rendaFixaForm.vencimento().touched() && rendaFixaForm.vencimento().errors().length) {
+                  <span class="text-xs text-error mt-1 block">{{ rendaFixaForm.vencimento().errors()[0].message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Toggles Row -->
+          <div class="grid grid-cols-2 gap-4 bg-[#0b0e14]/40 border border-white/5 p-4 rounded-xl">
+            <!-- Liquidez -->
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-text-light block">Liquidez Diária</span>
+                <span class="text-[10px] text-text-muted">Resgate imediato</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  [checked]="model().liquidezDiaria"
+                  (change)="model.update(m => ({ ...m, liquidezDiaria: !m.liquidezDiaria }))"
+                  class="sr-only peer"
+                />
+                <div class="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#75d33b]"></div>
+              </label>
+            </div>
+
+            <!-- Imposto -->
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-text-light block">Possui Imposto</span>
+                <span class="text-[10px] text-text-muted">Incide IR na fonte</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  [checked]="model().possuiImposto"
+                  (change)="model.update(m => ({ ...m, possuiImposto: !m.possuiImposto }))"
+                  class="sr-only peer"
+                />
+                <div class="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#75d33b]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (activeTab() === 'rendimento') {
+        <div class="space-y-4">
+          <p class="text-xs text-text-muted">
+            Registre o rendimento periódico de um título de renda fixa em carteira:
+          </p>
+
+          <!-- Título Emissor -->
+          <div>
+            <label class="block text-xs font-semibold text-text-muted mb-2">Título Emissor</label>
+            <input
+              type="text"
+              placeholder="Ex: BANCO ITAU"
+              [formField]="rendaFixaForm.emissor"
+              class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+            />
+          </div>
+
+          <!-- Data Rendimento & Valor -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Data do Rendimento</label>
+              <div class="relative">
+                <input
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  appDateMask
+                  [formField]="rendaFixaForm.dataRendimento"
+                  class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+                />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted pointer-events-none text-[20px]">calendar_today</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-text-muted mb-2">Valor Bruto Rendimento</label>
+              <input
+                type="text"
+                placeholder="R$ 0,00"
+                appCurrencyMask
+                [formField]="rendaFixaForm.valorRendimento"
+                class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 px-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-3 pt-4 border-t border-white/5">
+        <button
+          type="button"
+          (click)="onClose()"
+          class="px-5 py-2.5 rounded-lg border border-white/10 text-text-light font-bold hover:bg-white/5 active:scale-95 transition-all cursor-pointer text-sm"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          [disabled]="rendaFixaForm().invalid()"
+          class="px-6 py-2.5 bg-[#75d33b] text-[#0b0e14] font-bold rounded-lg hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer text-sm"
+        >
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

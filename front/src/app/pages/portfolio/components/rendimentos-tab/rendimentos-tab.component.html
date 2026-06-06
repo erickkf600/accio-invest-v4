@@ -1,0 +1,84 @@
+<div class="space-y-6">
+  <!-- Chart Card -->
+  <div class="glass-card p-6 rounded-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h4 class="text-sm font-bold text-text-light">Histórico de Rendimentos de Renda Fixa</h4>
+        <p class="text-xs text-text-muted mt-1">Evolução dos rendimentos gerados por investimentos de renda fixa no ano</p>
+      </div>
+      <div>
+        <select
+          [value]="selectedYear()"
+          (change)="onYearChange(yearSelector.value)"
+          #yearSelector
+          class="bg-white/5 border border-white/10 rounded-lg text-xs text-text-light px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary-success/50 cursor-pointer transition-all"
+        >
+          @for (y of availableYears; track y) {
+            <option [value]="y">{{ y }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="h-[280px]">
+      @if (chartOptions()) {
+        <apx-chart
+          [series]="chartOptions().series"
+          [chart]="chartOptions().chart"
+          [colors]="chartOptions().colors"
+          [stroke]="chartOptions().stroke"
+          [fill]="chartOptions().fill"
+          [grid]="chartOptions().grid"
+          [dataLabels]="chartOptions().dataLabels"
+          [xaxis]="chartOptions().xaxis"
+          [yaxis]="chartOptions().yaxis"
+          [tooltip]="chartOptions().tooltip"
+        ></apx-chart>
+      }
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="glass-card p-6 rounded-2xl space-y-4">
+    <div class="flex justify-between items-center">
+      <h4 class="text-sm font-bold text-text-light">Títulos de Renda Fixa e Rendimentos</h4>
+      <app-pdf-button
+        title="Relatório de Rendimentos de Renda Fixa"
+        [columns]="columns"
+        [data]="tableData()"
+        filename="rendimentos_renda_fixa.pdf"
+      ></app-pdf-button>
+    </div>
+
+    <app-table
+      [data]="tableData()"
+      [columns]="columns"
+      [totalItems]="tableData().length"
+      [pageSize]="10"
+      [currentPage]="1"
+    >
+      <ng-template appCellTemplate="emissor" let-row="row">
+        <span class="font-bold text-text-light">{{ row.emissor }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="tipo" let-row="row">
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
+          {{ row.tipo }}
+        </span>
+      </ng-template>
+
+      <ng-template appCellTemplate="valorUn" let-row="row">
+        <span>R$ {{ row.valorUn | number:'1.2-2' }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="total" let-row="row">
+        <span>R$ {{ row.total | number:'1.2-2' }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="lucro" let-row="row">
+        <span class="font-bold text-[#75d33b]">+ R$ {{ row.lucro | number:'1.2-2' }}</span>
+      </ng-template>
+    </app-table>
+  </div>
+</div>
