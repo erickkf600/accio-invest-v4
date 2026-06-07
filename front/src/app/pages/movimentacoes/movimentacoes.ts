@@ -5,13 +5,20 @@ import { CellTemplateDirective } from '../../components/Table/cell-template.dire
 import { FilterCardComponent } from '../../components/FilterCard/filter-card.component';
 import { MenuComponent } from '../../components/Menu/menu.component';
 import { MovimentacoesService } from './service/movimentacoes.service';
+import { ToastService } from '../../components/Toast/toast.service';
 import MovimentacoesEmptyState from './component/movimentacoes-empty-state/movimentacoes-empty-state';
+import { NovaCompraComponent } from './modais/nova-compra/nova-compra.component';
+import { NovoProventoComponent } from './modais/novo-provento/novo-provento.component';
+import { NovaRendaFixaComponent } from './modais/nova-renda-fixa/nova-renda-fixa.component';
+import { NovaVendaComponent } from './modais/nova-venda/nova-venda.component';
+import { NovaPosicaoComponent } from './modais/nova-posicao/nova-posicao.component';
+import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
 
 export interface Operation {
   id: string;
   data: string;
   ativo: string;
-  tipo: 'Compra' | 'Venda' | 'Proventos';
+  tipo: 'Compra' | 'Venda' | 'Proventos' | 'Renda Fixa' | 'Reposicionamento';
   qtd: number | null;
   precoUn: number;
   taxas: number | null;
@@ -26,7 +33,7 @@ export interface OperationTypeOption {
 @Component({
   selector: 'app-movimentacoes',
   standalone: true,
-  imports: [DecimalPipe, TableComponent, CellTemplateDirective, FilterCardComponent, MenuComponent, MovimentacoesEmptyState],
+  imports: [DecimalPipe, TableComponent, CellTemplateDirective, FilterCardComponent, MenuComponent, MovimentacoesEmptyState, NovaCompraComponent, NovoProventoComponent, NovaRendaFixaComponent, NovaVendaComponent, NovaPosicaoComponent, AbbreviateNumberPipe],
   templateUrl: './movimentacoes.html',
   styleUrl: './movimentacoes.scss',
 })
@@ -34,7 +41,12 @@ export default class Movimentacoes {
   protected readonly title = 'Movimentações';
 
   protected movimentacoesService = inject(MovimentacoesService);
+  protected toastService = inject(ToastService);
   protected hasData = signal(false);
+
+  protected activeModalType = signal<number | null>(null);
+  protected editingOperation = signal<Operation | null>(null);
+  protected deletingOperation = signal<Operation | null>(null);
 
   public operationTypeOptions = signal<OperationTypeOption[]>([
     { value: 1, label: 'Nova compra' },
@@ -132,17 +144,54 @@ export default class Movimentacoes {
   }
 
   public onOperationTypeChange(value: string) {
-    console.log('Operation type selected:', value);
+    this.activeModalType.set(Number(value));
+  }
+
+  protected closeModal(): void {
+    this.activeModalType.set(null);
+    this.editingOperation.set(null);
+  }
+
+  protected onModalConfirmed(): void {
+    this.movimentacoesService.carregarComDados();
+    const data = this.movimentacoesService.state$().data;
+    this.hasData.set(data.temDados);
+    this.operations.set(data.operations);
+    this.closeModal();
   }
 
   // Action methods
   public onEdit(row: Operation) {
-    console.log('Editar operação:', row);
+    const tipoMap: Record<string, number> = {
+      'Compra': 1,
+      'Proventos': 2,
+      'Renda Fixa': 3,
+      'Venda': 4,
+      'Reposicionamento': 5,
+    };
+    const modalType = tipoMap[row.tipo];
+    if (modalType !== undefined) {
+      this.editingOperation.set(row);
+      this.activeModalType.set(modalType);
+    }
   }
 
   public onDelete(row: Operation) {
-    console.log('Excluir operação:', row);
-    // Delete operation from list for local reactivity demonstration
-    this.operations.update((list) => list.filter((item) => item.id !== row.id));
+    this.deletingOperation.set(row);
+  }
+
+  protected confirmDelete(): void {
+    const op = this.deletingOperation();
+    if (!op) return;
+    this.operations.update((list) => list.filter((item) => item.id !== op.id));
+    this.deletingOperation.set(null);
+    this.toastService.success({
+      title: 'Excluído',
+      message: `Operação ${op.ativo} excluída com sucesso.`,
+    });
+  }
+
+  protected cancelDelete(): void {
+    this.deletingOperation.set(null);
   }
 }

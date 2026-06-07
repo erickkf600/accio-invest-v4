@@ -1,0 +1,145 @@
+<div class="flex pt-24 min-h-screen">
+  <main class="flex-1 p-6 md:p-10 pb-24 md:pb-10 max-w-3xl mx-auto">
+    @if (user) {
+      <header class="mb-10 text-center">
+        <h1 class="text-headline-lg font-headline text-on-surface">Dados Pessoais</h1>
+        <p class="text-body-lg text-on-surface-variant mt-2">Atualize suas informações de identificação e contato.</p>
+      </header>
+
+      <section class="glass-card rounded-xl p-8">
+        <div class="flex flex-col items-center gap-8 mb-10 pb-10 border-b border-outline-variant">
+          <div class="relative group">
+            <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-primary/20 ring-4 ring-background">
+              <img alt="Profile Avatar" class="w-full h-full object-cover" [src]="user.avatar">
+            </div>
+          </div>
+          <div class="text-center">
+            <h3 class="text-title-lg font-bold">{{ user.name }}</h3>
+            <p class="text-body-md text-on-surface-variant mt-1">{{ user.email }}</p>
+          </div>
+        </div>
+
+        <form class="space-y-6" (ngSubmit)="saveChanges()">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-2">
+              <label for="perfil-name" class="text-label-md text-on-surface-variant uppercase tracking-wider">Nome Completo</label>
+              <input id="perfil-name" class="bg-surface-variant border-none rounded-lg p-4 text-on-surface font-body focus:ring-2 focus:ring-primary/50 transition-all" type="text" [(ngModel)]="user.name" name="name">
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="perfil-email" class="text-label-md text-on-surface-variant uppercase tracking-wider">E-mail</label>
+              <input id="perfil-email" class="bg-surface-variant border-none rounded-lg p-4 text-on-surface font-body focus:ring-2 focus:ring-primary/50 transition-all" type="email" [(ngModel)]="user.email" name="email">
+            </div>
+          </div>
+          <div class="pt-6 flex justify-end">
+            <button type="submit" [disabled]="saving" class="bg-primary-success text-bg-main font-bold px-8 py-4 rounded-lg shadow-xl shadow-primary/10 hover:brightness-110 active:scale-95 transition-all flex items-center gap-2">
+              @if (saving) {
+                <span class="material-symbols-outlined animate-spin">sync</span>
+                Salvando...
+              } @else {
+                <span class="material-symbols-outlined">save</span>
+                Salvar Alterações
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="glass-card rounded-xl p-8 mt-8">
+        <header class="mb-6">
+          <h2 class="text-headline-md font-headline text-on-surface">Segurança</h2>
+          <p class="text-body-md text-on-surface-variant mt-1">Proteja sua conta e gerencie seus acessos.</p>
+        </header>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 rounded-lg bg-surface-variant/30 border border-outline-variant">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary">lock</span>
+              <div>
+                <p class="font-semibold">Senha</p>
+                <p class="text-sm text-on-surface-variant">Alterada há 3 meses</p>
+              </div>
+            </div>
+            <button class="px-4 py-2 bg-surface-variant text-on-surface text-label-md rounded-lg hover:bg-surface-bright transition-colors">Alterar</button>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-lg bg-surface-variant/30 border border-outline-variant">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary">security</span>
+              <div>
+                <p class="font-semibold">Autenticação em Duas Etapas</p>
+                <p class="text-sm text-on-surface-variant">Ativado via App</p>
+              </div>
+            </div>
+            <button class="px-4 py-2 bg-surface-variant text-on-surface text-label-md rounded-lg hover:bg-surface-bright transition-colors">Configurar</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass-card rounded-xl p-8 mt-8">
+        <header class="mb-6">
+          <h2 class="text-headline-md font-headline text-on-surface">Integrações</h2>
+          <p class="text-body-md text-on-surface-variant mt-1">Conecte serviços para receber notificações e comandos.</p>
+        </header>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 rounded-lg bg-surface-variant/30 border border-outline-variant">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary">chat</span>
+              <div>
+                <p class="font-semibold">WhatsApp Bot</p>
+                <p class="text-sm text-on-surface-variant">Não conectado</p>
+              </div>
+            </div>
+            <button class="px-4 py-2 bg-surface-variant text-on-surface text-label-md rounded-lg hover:bg-surface-bright transition-colors">Conectar</button>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-lg bg-surface-variant/30 border border-outline-variant">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary">telegram</span>
+              <div>
+                <p class="font-semibold">Telegram Bot</p>
+                <p class="text-sm text-on-surface-variant">Conectado</p>
+              </div>
+            </div>
+            <button class="px-4 py-2 bg-surface-variant text-on-surface text-label-md rounded-lg hover:bg-surface-bright transition-colors">Gerenciar</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="mt-8 flex items-start gap-4 p-4 rounded-lg bg-surface-container-low border border-outline-variant">
+        <span class="material-symbols-outlined text-primary-fixed">info</span>
+        <p class="text-body-md text-on-surface-variant">Para alterar sua chave de segurança ou dados bancários vinculados, acesse a aba <strong>Segurança</strong> ou entre em contato com o suporte exclusivo Accio.</p>
+      </div>
+
+      <div class="mt-12 pt-8 border-t border-outline-variant flex flex-col items-center gap-4">
+        <p class="text-body-md text-on-surface-variant text-center">Deseja sair da sua conta?</p>
+        <button class="px-8 py-3 border border-error text-error font-bold rounded-lg hover:bg-error/10 transition-all active:scale-95 flex items-center gap-2" (click)="logout()">
+          <span class="material-symbols-outlined">logout</span>
+          Sair da Conta
+        </button>
+      </div>
+    } @else {
+      <div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <span class="material-symbols-outlined text-6xl text-on-surface-variant mb-4">account_circle</span>
+        <h2 class="text-2xl font-bold text-on-surface mb-2">Nenhum usuário logado</h2>
+        <p class="text-on-surface-variant mb-6">Faça login para acessar seu perfil.</p>
+        <a class="bg-primary-fixed text-on-primary-fixed font-bold px-8 py-4 rounded-lg hover:bg-primary-fixed-dim transition-all" routerLink="/login">Ir para Login</a>
+      </div>
+    }
+  </main>
+
+  <nav class="fixed bottom-0 w-full md:hidden bg-surface-container-highest/90 backdrop-blur-lg border-t border-outline-variant shadow-2xl flex justify-around items-center py-3 px-6 z-50 rounded-t-xl">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant p-2 transition-all" routerLink="/dashboard">
+      <span class="material-symbols-outlined">grid_view</span>
+      <span class="font-label text-[10px]">Home</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant p-2 transition-all" routerLink="/portfolio">
+      <span class="material-symbols-outlined">account_balance_wallet</span>
+      <span class="font-label text-[10px]">Ativos</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant p-2 transition-all" routerLink="/relatorios">
+      <span class="material-symbols-outlined">receipt_long</span>
+      <span class="font-label text-[10px]">Extrato</span>
+    </a>
+    <a class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full px-4 py-1 transition-all" routerLink="/meu-perfil">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+      <span class="font-label text-[10px]">Perfil</span>
+    </a>
+  </nav>
+</div>

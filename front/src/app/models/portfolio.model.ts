@@ -9,6 +9,8 @@ export interface PortfolioProduct {
   lucroPrejuizo: number;
   lucroPrejuizoPct: number;
   participacao: number;
+  rent30d: number;
+  rent12m: number;
 }
 
 export interface PortfolioDividend {

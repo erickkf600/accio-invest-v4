@@ -1,15 +1,19 @@
-import { Component, signal, computed, output, inject } from '@angular/core';
+import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
-import { CurrencyMaskDirective, parseCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { DateMaskDirective } from '../../../../directives/date-mask.directive';
+import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { DateRangePickerComponent } from '../../../../components/dateRangePicker/date-range-picker.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import type { Operation } from '../../movimentacoes';
 
 interface ProventoAsset {
-  tipo: number; // 1 = Dividendos, 2 = JCP, 3 = Rendimento
+  tipo: number | null;
   ticker: string;
-  quantidade: number;
+  quantidade: number | null;
   valorUnitario: string;
+  data?: string;
 }
 
 interface SummaryProventoAsset {
@@ -18,12 +22,13 @@ interface SummaryProventoAsset {
   quantidade: number;
   valorUnitario: number;
   total: number;
+  data: string;
 }
 
 @Component({
   selector: 'app-novo-provento',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateRangePickerComponent],
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, DateRangePickerComponent, AbbreviateNumberPipe],
   templateUrl: './novo-provento.component.html',
 })
 export class NovoProventoComponent {
@@ -32,15 +37,23 @@ export class NovoProventoComponent {
   close = output<void>();
   confirmed = output<void>();
 
+  operation = input<Operation | null>(null);
+  isEditing = computed(() => this.operation() !== null);
+
   tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
 
   model = signal({
+    dataOperacao: '',
+    tipoProvento: null as number | null,
+    observacoes: '',
     ativos: [
-      { tipo: 1, ticker: '', quantidade: 1, valorUnitario: '' }
+      { tipo: null, ticker: '', quantidade: null, valorUnitario: '', data: '' }
     ] as ProventoAsset[],
   });
 
   proventoForm = form(this.model, (s) => {
+    required(s.dataOperacao, { message: 'Obrigatório' });
+    required(s.tipoProvento, { message: 'Obrigatório' });
     applyEach(s.ativos, (item) => {
       required(item.tipo, { message: 'Obrigatório' });
       required(item.ticker, { message: 'Obrigatório' });
@@ -49,14 +62,35 @@ export class NovoProventoComponent {
     });
   });
 
+  constructor() {
+    effect(() => {
+      const op = this.operation();
+      if (op) {
+        this.model.set({
+          dataOperacao: op.data,
+          tipoProvento: 1,
+          observacoes: '',
+          ativos: [{
+            tipo: 1,
+            ticker: op.ativo,
+            quantidade: op.qtd ?? 1,
+            valorUnitario: formatCurrencyBRL(op.precoUn),
+            data: op.data,
+          }],
+        });
+      }
+    });
+  }
+
   showSubmodal = signal(false);
+  fromAutoSearch = signal(false);
   confirmationAtivos = signal<SummaryProventoAsset[]>([]);
   operationTotal = signal<number>(0);
 
   addAtivo(): void {
     this.model.update((m) => ({
       ...m,
-      ativos: [...m.ativos, { tipo: 1, ticker: '', quantidade: 1, valorUnitario: '' }],
+      ativos: [...m.ativos, { tipo: null, ticker: '', quantidade: null, valorUnitario: '', data: '' }],
     }));
   }
 
@@ -69,49 +103,62 @@ export class NovoProventoComponent {
     }
   }
 
-  // Action for DateRangePicker "Buscar Dividendos"
   onDateRangeSelected(range: { startDate: string; endDate: string }): void {
-    // Simulate fetching dividends from service
     const simulatedDividends: ProventoAsset[] = [
-      { tipo: 1, ticker: 'PETR4', quantidade: 100, valorUnitario: 'R$ 1,45' },
-      { tipo: 2, ticker: 'ITUB4', quantidade: 80, valorUnitario: 'R$ 1,02' }
+      { tipo: 1, ticker: 'PETR4', quantidade: 100, valorUnitario: 'R$ 1,45', data: range.startDate },
+      { tipo: 2, ticker: 'ITUB4', quantidade: 80, valorUnitario: 'R$ 1,02', data: range.startDate },
+      { tipo: 2, ticker: 'MXRF11', quantidade: 50, valorUnitario: 'R$ 0,90', data: range.endDate },
     ];
-    this.model.set({
-      ativos: simulatedDividends
-    });
+    this.calculateSummaryFrom(simulatedDividends);
+    this.fromAutoSearch.set(true);
+    this.showSubmodal.set(true);
   }
 
   onSubmit(): void {
     submit(this.proventoForm, async () => {
+      if (this.isEditing()) {
+        this.confirmed.emit();
+        this.close.emit();
+        return;
+      }
       this.calculateSummary();
+      this.fromAutoSearch.set(false);
       this.showSubmodal.set(true);
     });
   }
 
-  calculateSummary(): void {
-    const rawForm = this.model();
-    let totalVal = 0;
-    
-    const summaryList: SummaryProventoAsset[] = rawForm.ativos.map(a => {
+  private buildSummaryList(ativos: ProventoAsset[]): SummaryProventoAsset[] {
+    return ativos.map(a => {
       const preco = parseCurrencyBRL(a.valorUnitario);
-      const sub = a.quantidade * preco;
-      totalVal += sub;
-      
+      const qtd = a.quantidade ?? 0;
+      const sub = qtd * preco;
       let label = 'Dividendos';
       if (a.tipo === 2) label = 'JCP';
       if (a.tipo === 3) label = 'Rendimento';
-
+      if (!a.tipo) label = '-';
       return {
         ticker: a.ticker,
         tipoLabel: label,
-        quantidade: a.quantidade,
+        quantidade: qtd,
         valorUnitario: preco,
-        total: sub
+        total: sub,
+        data: a.data || '',
       };
     });
+  }
 
-    this.confirmationAtivos.set(summaryList);
-    this.operationTotal.set(totalVal);
+  calculateSummary(): void {
+    const list = this.buildSummaryList(this.model().ativos);
+    const total = list.reduce((acc, r) => acc + r.total, 0);
+    this.confirmationAtivos.set(list);
+    this.operationTotal.set(total);
+  }
+
+  calculateSummaryFrom(ativos: ProventoAsset[]): void {
+    const list = this.buildSummaryList(ativos);
+    const total = list.reduce((acc, r) => acc + r.total, 0);
+    this.confirmationAtivos.set(list);
+    this.operationTotal.set(total);
   }
 
   confirmFinal(): void {

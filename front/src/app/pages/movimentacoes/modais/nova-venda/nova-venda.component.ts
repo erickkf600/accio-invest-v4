@@ -1,27 +1,30 @@
-import { Component, signal, computed, output, inject } from '@angular/core';
+import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormField, form, submit, required, min } from '@angular/forms/signals';
-import { CurrencyMaskDirective, parseCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
+import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import type { Operation } from '../../movimentacoes';
 
 interface VendaAsset {
   ticker: string;
   quantidade: number;
-  precoUnitario: string; // formatted with mask
-  taxas: string; // formatted with mask, empty when not provided
-  data: string; // dd/MM/yyyy
+  precoUnitario: string;
+  taxas: string;
+  data: string;
+  observacoes: string;
 }
 
 /**
  * NovaVendaComponent – modal for creating a single sale operation.
  * Uses Angular Signal Forms, Tailwind CSS styling and custom mask directives.
- * Calculates total value (quantity * unit price + optional fees) and emits the result.
+ * Calculates total value (quantity * unit price - tax).
  */
 @Component({
   selector: 'app-nova-venda',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective],
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe],
   templateUrl: './nova-venda.component.html',
 })
 export class NovaVendaComponent {
@@ -32,6 +35,9 @@ export class NovaVendaComponent {
   /** Emits when the sale is successfully created */
   confirmed = output<void>();
 
+  operation = input<Operation | null>(null);
+  isEditing = computed(() => this.operation() !== null);
+
   // List of available assets – in a real app this would come from a service
   tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
 
@@ -41,7 +47,8 @@ export class NovaVendaComponent {
     quantidade: 1,
     precoUnitario: '',
     taxas: '',
-    data: ''
+    data: '',
+    observacoes: '',
   });
 
   /** Signal Form definition with required validation rules */
@@ -55,13 +62,29 @@ export class NovaVendaComponent {
     // No extra validation needed; mask directive will format it.
   });
 
+  constructor() {
+    effect(() => {
+      const op = this.operation();
+      if (op) {
+        this.model.set({
+          ticker: op.ativo,
+          quantidade: op.qtd ?? 1,
+          precoUnitario: formatCurrencyBRL(op.precoUn),
+          taxas: op.taxas !== null ? formatCurrencyBRL(op.taxas) : '',
+          data: op.data,
+          observacoes: '',
+        });
+      }
+    });
+  }
+
   /** Total value – computed from model values */
   totalValor = computed(() => {
     const m = this.model();
     const preco = parseCurrencyBRL(m.precoUnitario);
     const qtd = m.quantidade;
     const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
-    return preco * qtd + taxas;
+    return preco * qtd - taxas;
   });
 
   /** Submit handler – validates, calculates summary and emits */

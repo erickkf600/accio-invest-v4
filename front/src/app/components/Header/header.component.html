@@ -1,21 +1,21 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5">
-  <div class="max-w-[1440px] mx-auto px-10 h-16 flex justify-between items-center">
-    <!-- Brand Logo -->
+  <div class="max-w-[1600px] mx-auto px-10 h-16 flex justify-between items-center">
     <div class="flex items-center gap-3">
-      <img alt="Accio logo" class="h-8 w-full object-contain" src="accio-logo.svg">
+      <a routerLink="/dashboard">
+        <img alt="Accio logo" class="h-8 w-full object-contain" src="accio-logo.svg">
+      </a>
     </div>
-    <!-- Central Navigation -->
     <nav class="hidden md:flex items-center gap-2">
-      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/dashboard" routerLinkActive="!text-primary-success font-bold bg-white/9 rounded-full">Dashboard</a>
-      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/movimentacoes" routerLinkActive="!text-primary-success font-bold bg-white/9 rounded-full">Movimentações</a>
-      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/portfolio" routerLinkActive="!text-primary-success font-bold bg-white/9 rounded-full">Portfólio</a>
-      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/relatorios" routerLinkActive="!text-primary-success font-bold bg-white/9 rounded-full">Relatórios</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/dashboard" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Dashboard</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/movimentacoes" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Movimentações</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/portfolio" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Portfólio</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/relatorios" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Relatórios</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/ferramentas" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Ferramentas</a>
     </nav>
-    <!-- Profile -->
     <div class="flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-success/20 cursor-pointer hover:border-primary-success transition-all">
+      <a class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-success/20 cursor-pointer hover:border-primary-success transition-all block" routerLink="/meu-perfil">
         <img alt="Avatar" class="w-full h-full object-contain" src="https://api.dicebear.com/10.x/identicon/svg">
-      </div>
+      </a>
     </div>
   </div>
 </header>

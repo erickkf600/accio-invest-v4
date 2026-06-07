@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { PortfolioService } from '../../service/portfolio.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
@@ -9,7 +10,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 @Component({
   selector: 'app-rendimentos-tab',
   standalone: true,
-  imports: [DecimalPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule],
+  imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule],
   templateUrl: './rendimentos-tab.component.html',
 })
 export class RendimentosTabComponent {

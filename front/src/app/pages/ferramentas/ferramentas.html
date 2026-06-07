@@ -1,0 +1,245 @@
+<main class="pt-32 pb-24 px-6 md:px-10 max-w-[1440px] mx-auto">
+  <header class="mb-12">
+    <h1 class="text-4xl md:text-5xl text-on-surface font-black tracking-tight mb-3">Central de Ferramentas</h1>
+    <p class="text-on-surface-variant max-w-2xl text-lg">Simuladores e calculadoras de precisão para investidores profissionais.</p>
+  </header>
+
+  <div class="space-y-6 mb-16">
+    <div class="flex items-center gap-3 text-on-surface-variant uppercase tracking-widest text-[10px] font-bold">
+      <span class="w-8 h-px bg-white/5"></span>
+      Simuladores de Patrimônio
+    </div>
+
+    <section class="glass-card rounded-xl p-8">
+      <div class="flex flex-col lg:flex-row gap-12">
+        <div class="flex-1">
+          <div class="flex items-center gap-4 mb-8">
+            <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+              <span class="material-symbols-outlined text-primary text-3xl">rocket_launch</span>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-on-surface">Simulador de Liberdade Financeira</h2>
+              <p class="text-sm text-on-surface-variant">Projete o crescimento do seu patrimônio no longo prazo</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="lib-inicial" class="text-[10px] uppercase font-bold text-on-surface-variant">Valor Investido Inicial</label>
+              <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">R$</span>
+                <input #libInicial id="lib-inicial" class="w-full bg-[#32353C] border-none rounded-lg py-3 pl-12 pr-4 focus:ring-1 focus:ring-primary/50 text-on-surface text-sm" placeholder="0,00" type="number">
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label for="lib-aporte" class="text-[10px] uppercase font-bold text-on-surface-variant">Aporte Mensal</label>
+              <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">R$</span>
+                <input #libAporte id="lib-aporte" class="w-full bg-[#32353C] border-none rounded-lg py-3 pl-12 pr-4 focus:ring-1 focus:ring-primary/50 text-on-surface text-sm" placeholder="0,00" type="number">
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label for="lib-taxa" class="text-[10px] uppercase font-bold text-on-surface-variant">Taxa de Juros Mensal (%)</label>
+              <input #libTaxa id="lib-taxa" class="w-full bg-[#32353C] border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary/50 text-on-surface text-sm" placeholder="0.8%" step="0.01" type="number">
+            </div>
+            <div class="space-y-2">
+              <label for="lib-meses" class="text-[10px] uppercase font-bold text-on-surface-variant">Quantidade de Meses</label>
+              <input #libMeses id="lib-meses" class="w-full bg-[#32353C] border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary/50 text-on-surface text-sm" placeholder="120" type="number">
+            </div>
+          </div>
+          <button class="mt-8 w-full bg-primary hover:brightness-110 text-on-primary font-bold py-3.5 rounded-lg active:scale-[0.98] transition-all" (click)="calculateFinancialFreedom(libInicial.value, libAporte.value, libTaxa.value, libMeses.value)">Simular Evolução</button>
+        </div>
+
+        <div class="lg:w-80 bg-surface-container-low rounded-xl p-8 flex flex-col justify-center border border-white/5">
+          <div class="mb-8">
+            <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Total Acumulado</p>
+            <h3 class="text-3xl font-black text-primary">{{ resultTotal }}</h3>
+          </div>
+          <div>
+            <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Juros Ganhos</p>
+            <h3 class="text-xl font-bold text-on-surface">{{ resultJuros }}</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="w-full h-px bg-white/5 mb-16"></div>
+
+  <div class="space-y-6 mb-16">
+    <div class="flex items-center gap-3 text-on-surface-variant uppercase tracking-widest text-[10px] font-bold">
+      <span class="w-8 h-px bg-white/5"></span>
+      Análise e Preço Médio
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <section class="glass-card rounded-xl p-8 flex flex-col">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
+            <span class="material-symbols-outlined text-secondary text-2xl">calculate</span>
+          </div>
+          <h2 class="text-lg font-bold text-on-surface">Calculadora de Preço Médio</h2>
+        </div>
+
+        <div #pmEntries class="flex-grow space-y-4 overflow-y-auto max-h-[300px] pr-2">
+          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-white/5">
+            <div>
+              <label for="pm-qtd" class="text-[10px] uppercase text-on-surface-variant mb-2 block font-bold">Quantidade</label>
+              <input #pmQtd id="pm-qtd" class="w-full bg-[#32353C] border-none rounded-lg py-2.5 px-4 text-sm text-on-surface focus:ring-1 focus:ring-secondary" placeholder="0" type="number">
+            </div>
+            <div>
+              <label for="pm-price" class="text-[10px] uppercase text-on-surface-variant mb-2 block font-bold">Preço Unitário (R$)</label>
+              <input #pmPrice id="pm-price" class="w-full bg-[#32353C] border-none rounded-lg py-2.5 px-4 text-sm text-on-surface focus:ring-1 focus:ring-secondary" placeholder="0,00" type="number">
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <div class="flex justify-between items-end mb-6">
+            <button class="text-sm text-primary flex items-center gap-2 hover:brightness-110 font-bold" (click)="addPMRow(pmEntries)">
+              <span class="material-symbols-outlined text-sm">add_circle</span> Adicionar Lote
+            </button>
+            <div class="text-right">
+              <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Média Ponderada</p>
+              <span class="text-2xl font-black text-on-surface">{{ precoMedio }}</span>
+            </div>
+          </div>
+          <button class="w-full bg-[#32353C] hover:bg-surface-variant text-on-surface font-bold py-3 rounded-lg transition-all" (click)="calcPM(pmEntries)">Calcular Médias</button>
+        </div>
+      </section>
+
+      <section class="glass-card rounded-xl p-8">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-tertiary-container/20 rounded-lg flex items-center justify-center">
+            <span class="material-symbols-outlined text-tertiary-fixed-dim text-2xl">balance</span>
+          </div>
+          <h2 class="text-lg font-bold text-on-surface">Valor Justo de Graham</h2>
+        </div>
+
+        <div class="space-y-6">
+          <div class="space-y-2">
+            <label for="vj-lpa" class="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">LPA (Lucro por Ação)</label>
+            <input #vjLpa id="vj-lpa" class="w-full bg-[#32353C] border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary/50 text-on-surface text-sm" placeholder="R$ 0,00" type="number">
+          </div>
+          <div class="space-y-2">
+            <label for="vj-vpa" class="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">VPA (Valor Patrimonial por Ação)</label>
+            <input #vjVpa id="vj-vpa" class="w-full bg-[#32353C] border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary/50 text-on-surface text-sm" placeholder="R$ 0,00" type="number">
+          </div>
+          <div class="bg-surface-container-low rounded-xl p-6 border border-dashed border-white/10 text-center mt-4">
+            <span class="text-[10px] text-on-surface-variant uppercase font-bold mb-2 block">Preço Teto Sugerido</span>
+            <div class="text-3xl font-black text-primary">{{ valorJusto }}</div>
+            <p class="text-[9px] text-on-surface-variant mt-3 italic opacity-60">Fórmula de Graham: √ (22,5 × LPA × VPA)</p>
+          </div>
+          <button class="w-full bg-primary hover:brightness-110 text-on-primary font-bold py-3 rounded-lg active:scale-[0.98] transition-all" (click)="calculateGraham(vjLpa.value, vjVpa.value)">Analisar Ativo</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="w-full h-px bg-white/5 mb-16"></div>
+
+  <div class="space-y-6">
+    <div class="flex items-center gap-3 text-on-surface-variant uppercase tracking-widest text-[10px] font-bold">
+      <span class="w-8 h-px bg-white/5"></span>
+      Utilitários e Conversões
+    </div>
+
+    <div class="grid grid-cols-1 gap-8">
+      <section class="glass-card rounded-xl p-8">
+        <div class="flex items-center gap-3 mb-8">
+          <span class="material-symbols-outlined text-primary">percent</span>
+          <h2 class="text-lg font-bold text-on-surface">Calculadora de Porcentagem</h2>
+        </div>
+
+        <div class="space-y-8">
+          <div class="flex flex-col gap-2 pt-6 first:pt-0">
+            <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-4">
+              <div class="flex items-center gap-2">
+                <input #p1x class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="0" type="number">
+                <span class="text-xs text-on-surface-variant whitespace-nowrap">% de</span>
+              </div>
+              <div class="flex items-center">
+                <input #p1y class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="0" type="number">
+              </div>
+              <div class="text-on-surface-variant text-center">=</div>
+              <div class="font-bold text-primary text-lg min-w-[80px]">{{ p1Res }}</div>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula o valor absoluto baseado em uma porcentagem. Ex: 10% de 100 é 10.</p>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-6 border-t border-white/5">
+            <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-4">
+              <div class="flex items-center">
+                <input #p2x class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="X" type="number">
+              </div>
+              <span class="text-xs text-on-surface-variant text-center whitespace-nowrap">é quantos % de</span>
+              <div class="flex items-center">
+                <input #p2y class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="Y" type="number">
+              </div>
+              <div class="text-on-surface-variant text-center">=</div>
+              <div class="font-bold text-primary text-lg min-w-[80px]">{{ p2Res }}</div>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula a representação percentual de um valor em relação a outro. Ex: 80 de 8000 é 1%.</p>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-6 border-t border-white/5">
+            <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-on-surface-variant">De</span>
+                <input #p3x class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="0" type="number">
+              </div>
+              <span class="text-xs text-on-surface-variant text-center whitespace-nowrap">subiu para</span>
+              <div class="flex items-center">
+                <input #p3y class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="0" type="number">
+              </div>
+              <div class="text-on-surface-variant text-center">=</div>
+              <div class="font-bold text-primary text-lg min-w-[80px]">{{ p3Res }}</div>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula a variação percentual positiva entre dois valores. Ex: de 100 para 101 é 1% de aumento.</p>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-6 border-t border-white/5">
+            <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-on-surface-variant">De</span>
+                <input #p4x class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="0" type="number">
+              </div>
+              <span class="text-xs text-on-surface-variant text-center whitespace-nowrap">caiu para</span>
+              <div class="flex items-center">
+                <input #p4y class="w-full bg-[#32353C] border-none rounded-lg p-2 text-center text-sm" placeholder="0" type="number">
+              </div>
+              <div class="text-on-surface-variant text-center">=</div>
+              <div class="font-bold text-error text-lg min-w-[80px]">{{ p4Res }}</div>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula a variação percentual negativa entre dois valores. Ex: de 101 para 100 é 0.99% de queda.</p>
+          </div>
+        </div>
+
+        <button class="mt-8 w-full bg-[#32353C] hover:bg-surface-variant text-on-surface font-bold py-2.5 rounded-lg text-sm transition-all" (click)="updatePercentages(p1x.value, p1y.value, p2x.value, p2y.value, p3x.value, p3y.value, p4x.value, p4y.value)">Atualizar Resultados</button>
+      </section>
+    </div>
+  </div>
+</main>
+
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-[#0B0E14]/90 backdrop-blur-lg border-t border-white/5 md:hidden">
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" routerLink="/dashboard">
+    <span class="material-symbols-outlined">dashboard</span>
+    <span class="text-[10px]">Início</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" routerLink="/movimentacoes">
+    <span class="material-symbols-outlined">swap_horiz</span>
+    <span class="text-[10px]">Trocas</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" routerLink="/portfolio">
+    <span class="material-symbols-outlined">pie_chart</span>
+    <span class="text-[10px]">Carteira</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" routerLink="/relatorios">
+    <span class="material-symbols-outlined">analytics</span>
+    <span class="text-[10px]">Relatos</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-primary" routerLink="/ferramentas">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">construction</span>
+    <span class="text-[10px]">Ferramentas</span>
+  </a>
+</nav>

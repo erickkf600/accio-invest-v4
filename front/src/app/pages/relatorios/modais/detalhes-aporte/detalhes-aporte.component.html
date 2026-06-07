@@ -24,11 +24,11 @@
       <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
         <div>
           <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Valor do Aporte</label>
-          <p class="text-lg font-bold text-[#75d33b] mt-1">R$ {{ aporte().valor | number:'1.2-2' }}</p>
+          <p class="text-lg font-bold text-[#75d33b] mt-1">R$ {{ aporte().valor | abbreviateNumber }}</p>
         </div>
         <div>
           <label class="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Taxas Pagas</label>
-          <p class="text-lg font-semibold text-text-light mt-1">R$ {{ aporte().taxas | number:'1.2-2' }}</p>
+          <p class="text-lg font-semibold text-text-light mt-1">R$ {{ aporte().taxas | abbreviateNumber }}</p>
         </div>
       </div>
 

@@ -15,7 +15,10 @@ export enum MonthEnum {
 
 export enum AssetTypeEnum {
   ACOES = 1,
-  FII = 2
+  FII = 2,
+  BDR = 3,
+  ETF = 4,
+  CRIPTO = 5
 }
 
 export enum IndexerEnum {

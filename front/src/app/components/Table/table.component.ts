@@ -23,6 +23,7 @@ export class TableComponent {
   totalItems = input<number>(0);
   pageSize = input<number>(10);
   currentPage = input<number>(1);
+  hidePagination = input<boolean>(false);
 
   // Pagination output
   pageChange = output<number>();
@@ -39,6 +40,12 @@ export class TableComponent {
     const total = this.totalItems();
     const size = this.pageSize();
     return size > 0 ? Math.ceil(total / size) : 0;
+  });
+
+  paginatedData = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    const end = start + this.pageSize();
+    return this.data().slice(start, end);
   });
 
   pages = computed(() => {

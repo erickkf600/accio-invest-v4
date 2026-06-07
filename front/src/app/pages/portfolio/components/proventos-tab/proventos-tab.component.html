@@ -1,88 +1,133 @@
-<div class="space-y-6">
-  <!-- Chart Container -->
-  <div class="glass-card p-6 rounded-2xl relative">
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h4 class="text-sm font-bold text-text-light">Histórico de Recebimento de Proventos</h4>
-        <p class="text-xs text-text-muted mt-1">Evolução mensal dos rendimentos recebidos de Ações e FIIs</p>
-      </div>
-      <div>
-        <select
-          [value]="selectedYear()"
-          (change)="onYearChange(yearSelector.value)"
-          #yearSelector
-          class="bg-white/5 border border-white/10 rounded-lg text-xs text-text-light px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary-success/50 cursor-pointer transition-all"
+<main class="max-w-[1600px] space-y-8">
+  <div class="flex justify-end items-center">
+    <div class="inline-flex items-center gap-3 glass-card rounded-xl px-4 py-3 select-none">
+      <span class="text-gray-400 text-sm font-medium tracking-wide">
+        Filtrar por ano
+      </span>
+  
+      <div class="relative">
+        <select class="appearance-none bg-[#202124] hover:bg-[#28292c] text-gray-200 text-sm font-medium pl-4 pr-10 py-1.5 rounded-lg border border-gray-700/50 cursor-pointer focus:outline-none focus:border-gray-500 transition-colors"
+          (change)="onYearChange($any($event.target).value)"
         >
           @for (y of availableYears; track y) {
-            <option [value]="y">{{ y }}</option>
+            <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
           }
         </select>
+  
+        <div class="pointer-events-none absolute inset-y-0 right-[-5px] flex items-center pr-3 text-gray-400">
+           <span class="material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
+        </div>
       </div>
     </div>
-
-    <!-- Chart -->
-    <div class="relative h-[320px]">
-      @if (chartOptions()) {
-        <apx-chart
-          [series]="chartOptions().series"
-          [chart]="chartOptions().chart"
-          [colors]="chartOptions().colors"
-          [plotOptions]="chartOptions().plotOptions"
-          [dataLabels]="chartOptions().dataLabels"
-          [grid]="chartOptions().grid"
-          [xaxis]="chartOptions().xaxis"
-          [yaxis]="chartOptions().yaxis"
-          [states]="chartOptions().states"
-          [stroke]="chartOptions().stroke"
-          [tooltip]="chartOptions().tooltip"
-        ></apx-chart>
-      }
-    </div>
-
-    <!-- Month clicked borders indicator overlay simulator (or info caption) -->
-    @if (selectedMonthIndex() !== null) {
-      <div class="absolute top-20 right-6 px-3 py-1 bg-white/5 border border-[#BFCAB3] rounded-lg text-[10px] text-[#BFCAB3] font-semibold">
-        Mês Selecionado: {{ monthsFull[selectedMonthIndex()!] }}
-      </div>
-    }
   </div>
 
-  <!-- Interactive Table Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Donut Chart: Total pago por classe -->
+    <div class="glass-card rounded-2xl p-6 lg:col-span-4 flex flex-col">
+      <h2 class="text-sm font-semibold text-white tracking-wide">Total pago por classe</h2>
+
+      <div class="flex flex-col sm:flex-row items-center justify-around gap-6 pt-4 my-auto">
+        <div class="relative w-40 h-40 rounded-full flex items-center justify-center"
+             [style]="conicGradientStyle()">
+          <div class="absolute w-[116px] h-[116px] bg-[#111827] rounded-full flex flex-col items-center justify-center text-center">
+            <span class="text-[10px] uppercase font-semibold text-[#475569] tracking-wider">Total</span>
+            <span class="text-base font-bold text-white mt-0.5">R$ {{ totalYearDividends() | abbreviateNumber }}</span>
+          </div>
+        </div>
+
+        <div class="space-y-5 text-xs w-full sm:w-auto min-w-[160px]">
+          <div class="flex items-center justify-between text-[#475569] border-b border-[#1e293b] pb-1 mb-1">
+            <span>Classe</span>
+            <span>Valores pagos</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#a3e635]"></span>
+              <span class="text-white font-medium">FIIs</span>
+            </div>
+            <span class="text-white font-semibold">R$ {{ classBreakdown().fiis | abbreviateNumber }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
+              <span class="text-white font-medium">Ações</span>
+            </div>
+            <span class="text-white font-semibold">R$ {{ classBreakdown().acoes | abbreviateNumber }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#64748b]"></span>
+              <span class="text-white font-medium">RF</span>
+            </div>
+            <span class="text-white font-semibold">R$ {{ classBreakdown().rf | abbreviateNumber }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar Chart: Gráfico de Proventos -->
+    <div class="glass-card rounded-2xl p-6 lg:col-span-8 flex flex-col justify-between">
+      <h2 class="text-sm font-semibold text-white tracking-wide">Gráfico de Proventos</h2>
+
+      <div class="relative mt-6">
+        @if (chartOptions()) {
+          <apx-chart
+            [series]="chartOptions().series"
+            [chart]="chartOptions().chart"
+            [colors]="chartOptions().colors"
+            [plotOptions]="chartOptions().plotOptions"
+            [dataLabels]="chartOptions().dataLabels"
+            [grid]="chartOptions().grid"
+            [xaxis]="chartOptions().xaxis"
+            [yaxis]="chartOptions().yaxis"
+            [states]="chartOptions().states"
+            [stroke]="chartOptions().stroke"
+            [tooltip]="chartOptions().tooltip"
+          ></apx-chart>
+        }
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Table Section -->
   @if (selectedMonthIndex() === null) {
-    <div class="glass-card p-12 rounded-2xl flex flex-col items-center justify-center text-center opacity-60">
+     <div class="glass-card p-12 rounded-2xl flex flex-col items-center justify-center text-center opacity-60">
       <span class="material-symbols-outlined text-4xl text-text-muted mb-2">bar_chart</span>
       <p class="text-sm font-medium text-text-muted">Clique em uma coluna para ver as informações</p>
     </div>
   } @else {
-    <div class="glass-card p-6 rounded-2xl space-y-4">
-      <div class="flex justify-between items-center">
-        <div>
-          <h4 class="text-sm font-bold text-text-light">Proventos - {{ monthsFull[selectedMonthIndex()!] }} de {{ selectedYear() }}</h4>
-          <p class="text-xs text-text-muted mt-1">Total recebido no mês: <span class="text-[#75d33b] font-bold">R$ {{ totalMonthlySum() | number:'1.2-2' }}</span></p>
+    <div class="glass-card rounded-2xl overflow-hidden">
+
+      <div class="p-6 flex items-center justify-between border-b border-[#1e293b]">
+        <h2 class="text-sm font-semibold text-white tracking-wide">Histórico Detalhado</h2>
+        <div class="flex items-center gap-4">
+          <app-pdf-button
+            [title]="'Relatório de Proventos - ' + monthsFull[selectedMonthIndex()!] + ' de ' + selectedYear()"
+            [columns]="columns"
+            [data]="filteredDividends()"
+            [filename]="'proventos_' + monthsFull[selectedMonthIndex()!].toLowerCase() + '_' + selectedYear() + '.pdf'"
+          ></app-pdf-button>
+        <span class="text-sm font-bold text-white">R$ {{ totalMonthlySum() | abbreviateNumber }}</span>
         </div>
-        <app-pdf-button
-          [title]="'Relatório de Proventos - ' + monthsFull[selectedMonthIndex()!] + ' de ' + selectedYear()"
-          [columns]="columns"
-          [data]="filteredDividends()"
-          [filename]="'proventos_' + monthsFull[selectedMonthIndex()!].toLowerCase() + '_' + selectedYear() + '.pdf'"
-        ></app-pdf-button>
       </div>
 
       <app-table
         [data]="filteredDividends()"
         [columns]="columns"
         [totalItems]="filteredDividends().length"
-        [pageSize]="100"
-        [currentPage]="1"
+        [pageSize]="pageSize"
+        [currentPage]="currentPage()"
+        [hidePagination]="true"
+        (pageChange)="onPageChange($event)"
       >
         <ng-template appCellTemplate="ticker" let-row="row">
-          <span class="font-bold text-text-light">{{ row.ticker }}</span>
+          <span class="font-bold text-white">{{ row.ticker }}</span>
         </ng-template>
 
         <ng-template appCellTemplate="tipo" let-row="row">
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
-            {{ row.tipo }}
-          </span>
+          <span class="text-[#64748b]">{{ row.tipo }}</span>
         </ng-template>
 
         <ng-template appCellTemplate="qtd" let-row="row">
@@ -90,11 +135,11 @@
         </ng-template>
 
         <ng-template appCellTemplate="valorUn" let-row="row">
-          <span>R$ {{ row.valorUn | number:'1.2-4' }}</span>
+          <span>R$ {{ row.valorUn | abbreviateNumber }}</span>
         </ng-template>
 
         <ng-template appCellTemplate="total" let-row="row">
-          <span class="font-bold text-[#75d33b]">R$ {{ row.total | number:'1.2-2' }}</span>
+          <span class="font-bold text-[#22c55e]">R$ {{ row.total | abbreviateNumber }}</span>
         </ng-template>
 
         <ng-template appCellTemplate="status" let-row="row">
@@ -113,4 +158,5 @@
       </app-table>
     </div>
   }
-</div>
+
+</main>

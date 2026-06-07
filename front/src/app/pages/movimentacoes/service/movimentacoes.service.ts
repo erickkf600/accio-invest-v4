@@ -28,16 +28,23 @@ export class MovimentacoesService {
   private readonly mockDataComDados: MovimentacoesData = {
     temDados: true,
     operations: [
+      // Compra
       { id: '1', data: '12 Mai, 2024', ativo: 'AAPL', tipo: 'Compra', qtd: 10, precoUn: 183.05, taxas: 0.54, total: 1831.04 },
-      { id: '2', data: '10 Mai, 2024', ativo: 'TSLA', tipo: 'Venda', qtd: 5, precoUn: 171.89, taxas: 0.26, total: 859.19 },
-      { id: '3', data: '08 Mai, 2024', ativo: 'MSFT', tipo: 'Proventos', qtd: null, precoUn: 0.75, taxas: null, total: 45.20 },
       { id: '4', data: '05 Mai, 2024', ativo: 'PETR4', tipo: 'Compra', qtd: 100, precoUn: 41.20, taxas: 1.23, total: 4121.23 },
       { id: '5', data: '02 Mai, 2024', ativo: 'VALE3', tipo: 'Compra', qtd: 50, precoUn: 62.40, taxas: 0.75, total: 3120.75 },
-      { id: '6', data: '28 Abr, 2024', ativo: 'ITUB4', tipo: 'Proventos', qtd: null, precoUn: 0.25, taxas: null, total: 125.00 },
       { id: '7', data: '25 Abr, 2024', ativo: 'BBAS3', tipo: 'Compra', qtd: 80, precoUn: 27.50, taxas: 0.90, total: 2200.90 },
-      { id: '8', data: '20 Abr, 2024', ativo: 'MXRF11', tipo: 'Proventos', qtd: null, precoUn: 0.10, taxas: null, total: 100.00 },
-      { id: '9', data: '15 Abr, 2024', ativo: 'BBDC4', tipo: 'Venda', qtd: 120, precoUn: 14.20, taxas: 0.45, total: 1703.55 },
       { id: '10', data: '10 Abr, 2024', ativo: 'XPML11', tipo: 'Compra', qtd: 30, precoUn: 115.00, taxas: 1.10, total: 3451.10 },
+      // Venda
+      { id: '2', data: '10 Mai, 2024', ativo: 'TSLA', tipo: 'Venda', qtd: 5, precoUn: 171.89, taxas: 0.26, total: 859.19 },
+      { id: '9', data: '15 Abr, 2024', ativo: 'BBDC4', tipo: 'Venda', qtd: 120, precoUn: 14.20, taxas: 0.45, total: 1703.55 },
+      // Proventos
+      { id: '3', data: '08 Mai, 2024', ativo: 'MSFT', tipo: 'Proventos', qtd: null, precoUn: 0.75, taxas: null, total: 45.20 },
+      { id: '6', data: '28 Abr, 2024', ativo: 'ITUB4', tipo: 'Proventos', qtd: null, precoUn: 0.25, taxas: null, total: 125.00 },
+      { id: '8', data: '20 Abr, 2024', ativo: 'MXRF11', tipo: 'Proventos', qtd: null, precoUn: 0.10, taxas: null, total: 100.00 },
+      // Renda Fixa
+      { id: '11', data: '15 Jun, 2024', ativo: 'CDB Banco Master 115% CDI', tipo: 'Renda Fixa', qtd: null, precoUn: 5000.00, taxas: null, total: 5000.00 },
+      // Reposicionamento
+      { id: '12', data: '20 Jun, 2024', ativo: 'MGLU3', tipo: 'Reposicionamento', qtd: null, precoUn: 0, taxas: null, total: 0 },
     ],
   };
 

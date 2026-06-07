@@ -32,7 +32,7 @@ export interface RelatorioReposicionamento {
   id: string;
   ticker: string;
   data: string;
-  tipo: 'Ações' | 'FII';
+  tipo: string;
   fator: 'Desdobramento' | 'Agrupamento';
   proporcaoDe: number;
   proporcaoPara: number;
@@ -49,7 +49,7 @@ export interface RelatorioNotaCorretagem {
 export interface RelatorioPrecoMedio {
   id: string;
   ticker: string;
-  tipo: 'Ações' | 'FII';
+  tipo: string;
   qtd: number;
   precoMedio: number;
   custoTotal: number;

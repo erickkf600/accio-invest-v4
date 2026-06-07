@@ -1,12 +1,38 @@
-<main class="pt-24 pb-20 md:pb-12 max-w-[1440px] mx-auto px-4 md:px-10 space-y-6">
-  <!-- Page Header -->
-  <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-6">
+<main class="pt-24 pb-20 md:pb-12 max-w-[1600px] mx-auto px-4 md:px-10">
+  <!-- Page Header with Stats -->
+  <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-8">
     <div>
-      <h1 class="text-3xl font-bold text-text-light mb-2">Portfólio</h1>
-      <p class="text-text-muted text-sm">Visualize a composição, proventos e rendimentos da sua carteira de investimentos.</p>
+      <h1 class="text-3xl font-bold text-text-light mb-2">Seu Portfólio</h1>
+      <p class="text-text-muted text-sm">Visão consolidada de seus investimentos e performance.</p>
     </div>
-    
-    <!-- Tab Selector -->
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:w-auto w-full">
+      <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px]">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
+          <span class="text-text-muted">Patrimônio</span>
+          <span class="material-symbols-outlined text-sm text-primary-success">trending_up</span>
+        </div>
+        <div class="text-lg font-bold text-white mt-1">R$ 305,86</div>
+      </div>
+      <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px] relative overflow-hidden">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
+          <span class="text-text-muted">Saldo Médio</span>
+          <span class="material-symbols-outlined text-primary-success text-lg">account_balance_wallet</span>
+        </div>
+        <div class="text-lg font-bold text-white mt-1">R$ 730,66</div>
+      </div>
+      <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px]">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
+          <span class="text-text-muted">Total Rendimento</span>
+          <span class="material-symbols-outlined text-primary-success text-lg">payments</span>
+        </div>
+        <div class="text-lg font-bold text-[#22c55e] mt-1">R$ 18,47</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-8">
     <app-tabs
       [options]="tabOptions()"
       [activeTab]="activeTabId()"
@@ -15,7 +41,7 @@
   </div>
 
   <!-- Tab Contents -->
-  <div class="pt-2">
+  <div>
     @if (activeTabId() === 'produtos') {
       <app-meus-produtos></app-meus-produtos>
     } @else if (activeTabId() === 'proventos') {

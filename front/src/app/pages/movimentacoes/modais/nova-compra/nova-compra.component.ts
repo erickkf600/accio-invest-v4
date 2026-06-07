@@ -1,20 +1,32 @@
-import { Component, signal, computed, output, inject } from '@angular/core';
+import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { DateMaskDirective } from '../../../../directives/date-mask.directive';
+import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { AssetTypeEnum } from '../../../../models/enums';
+import type { Operation } from '../../movimentacoes';
+
+const TIPO_LABEL_MAP: Record<number, string> = {
+  [AssetTypeEnum.ACOES]: 'Ações',
+  [AssetTypeEnum.FII]: 'FII',
+  [AssetTypeEnum.BDR]: 'BDR',
+  [AssetTypeEnum.ETF]: 'ETF',
+  [AssetTypeEnum.CRIPTO]: 'Cripto',
+};
 
 interface CompraAsset {
-  tipo: number; // 1 = Ações, 2 = FII
+  tipo: number | null;
   ticker: string;
-  quantidade: number;
-  valorUnitario: string; // Formatted with mask in input
+  quantidade: number | null;
+  valorUnitario: string;
 }
 
 interface ConfirmacionAsset {
   ticker: string;
   tipoLabel: string;
-  quantidade: number;
+  quantidade: number | null;
   valorUnitario: number;
   taxa: number;
   total: number;
@@ -23,7 +35,7 @@ interface ConfirmacionAsset {
 @Component({
   selector: 'app-nova-compra',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective],
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe],
   templateUrl: './nova-compra.component.html',
 })
 export class NovaCompraComponent {
@@ -32,19 +44,25 @@ export class NovaCompraComponent {
   close = output<void>();
   confirmed = output<void>();
 
+  operation = input<Operation | null>(null);
+  isEditing = computed(() => this.operation() !== null);
+
   // Mock datalist for tickers
   tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
 
   // Signal model matching Signal Forms
   model = signal({
     taxasTotal: '',
+    dataOperacao: '',
+    observacoes: '',
     ativos: [
-      { tipo: 1, ticker: '', quantidade: 1, valorUnitario: '' }
+      { tipo: null, ticker: '', quantidade: null, valorUnitario: '' }
     ] as CompraAsset[],
   });
 
   compraForm = form(this.model, (s) => {
     required(s.taxasTotal, { message: 'Campo obrigatório' });
+    required(s.dataOperacao, { message: 'Campo obrigatório' });
     applyEach(s.ativos, (item) => {
       required(item.tipo, { message: 'Obrigatório' });
       required(item.ticker, { message: 'Obrigatório' });
@@ -52,6 +70,26 @@ export class NovaCompraComponent {
       required(item.valorUnitario, { message: 'Obrigatório' });
     });
   });
+
+  // Populate form when editing
+  constructor() {
+    effect(() => {
+      const op = this.operation();
+      if (op) {
+        this.model.set({
+          taxasTotal: formatCurrencyBRL(op.taxas ?? 0),
+          dataOperacao: op.data,
+          observacoes: '',
+          ativos: [{
+            tipo: 1,
+            ticker: op.ativo,
+            quantidade: op.qtd ?? 1,
+            valorUnitario: formatCurrencyBRL(op.precoUn),
+          }],
+        });
+      }
+    });
+  }
 
   // Modal and submodal states
   showSubmodal = signal(false);
@@ -62,7 +100,7 @@ export class NovaCompraComponent {
   addAtivo(): void {
     this.model.update((m) => ({
       ...m,
-      ativos: [...m.ativos, { tipo: 1, ticker: '', quantidade: 1, valorUnitario: '' }],
+      ativos: [...m.ativos, { tipo: null, ticker: '', quantidade: null, valorUnitario: '' }],
     }));
   }
 
@@ -77,6 +115,11 @@ export class NovaCompraComponent {
 
   onSubmit(): void {
     submit(this.compraForm, async () => {
+      if (this.isEditing()) {
+        this.confirmed.emit();
+        this.close.emit();
+        return;
+      }
       this.calculateRatesAndSummary();
       this.showSubmodal.set(true);
     });
@@ -90,11 +133,11 @@ export class NovaCompraComponent {
     let totalCustoNota = 0;
     const parsedAssets = rawForm.ativos.map(a => {
       const preco = parseCurrencyBRL(a.valorUnitario);
-      const sub = a.quantidade * preco;
+      const sub = (a.quantidade ?? 0) * preco;
       totalCustoNota += sub;
       return {
         ticker: a.ticker,
-        tipoLabel: a.tipo === 1 ? 'Ações' : 'FII',
+        tipoLabel: a.tipo ? TIPO_LABEL_MAP[a.tipo] || '-' : '-',
         quantidade: a.quantidade,
         valorUnitario: preco,
         subtotal: sub

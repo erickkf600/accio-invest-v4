@@ -1,13 +1,15 @@
-import { Component, signal, output, inject } from '@angular/core';
+import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
 import { FormField, form, submit, required, pattern } from '@angular/forms/signals';
-import { CurrencyMaskDirective } from '../../../../directives/currency-mask.directive';
+import { CurrencyMaskDirective, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
+import { TabsComponent } from '../../../../components/tabs/tabs.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import type { Operation } from '../../movimentacoes';
 
 @Component({
   selector: 'app-nova-renda-fixa',
   standalone: true,
-  imports: [FormField, CurrencyMaskDirective, DateMaskDirective],
+  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, TabsComponent],
   templateUrl: './nova-renda-fixa.component.html',
 })
 export class NovaRendaFixaComponent {
@@ -16,14 +18,17 @@ export class NovaRendaFixaComponent {
   close = output<void>();
   confirmed = output<void>();
 
+  operation = input<Operation | null>(null);
+  isEditing = computed(() => this.operation() !== null);
+
   // Modal active tab: 'compra' or 'rendimento'
   activeTab = signal<'compra' | 'rendimento'>('compra');
 
   // Signal Forms model
   model = signal({
     emissor: '',
-    tipo: 'Pós-fixado',
-    indexador: 'CDI',
+    tipo: '',
+    indexador: '',
     taxaJuros: '', // Format 10.50%
     liquidezDiaria: false,
     vencimento: '',
@@ -35,8 +40,7 @@ export class NovaRendaFixaComponent {
     valorRendimento: '',
   });
 
-  rendaFixaForm = form(this.model, (s) => {
-    // Shared / Compra validations
+  compraForm = form(this.model, (s) => {
     required(s.emissor, { message: 'Emissor é obrigatório' });
     required(s.tipo, { message: 'Tipo é obrigatório' });
     required(s.indexador, { message: 'Indexador é obrigatório' });
@@ -46,40 +50,52 @@ export class NovaRendaFixaComponent {
     required(s.valorAplicado, { message: 'Valor aplicado é obrigatório' });
     required(s.dataCompra, { message: 'Data de compra é obrigatória' });
 
-    // Conditional validation for Vencimento: only required if liquidezDiaria is FALSE
     required(s.vencimento, {
       message: 'Vencimento é obrigatório quando não há liquidez diária',
       when({ valueOf }) {
         return !valueOf(s.liquidezDiaria);
       },
     });
-
-    // Rendimento tab validations (only active if tab is rendimento)
-    required(s.dataRendimento, {
-      message: 'Data de rendimento é obrigatória',
-      when({ valueOf }) {
-        return false;
-      },
-    });
-    required(s.valorRendimento, {
-      message: 'Valor do rendimento é obrigatório',
-      when({ valueOf }) {
-        return false;
-      },
-    });
   });
 
-  setTab(tab: 'compra' | 'rendimento'): void {
-    this.activeTab.set(tab);
+  rendimentoForm = form(this.model, (s) => {
+    required(s.dataRendimento, { message: 'Data de rendimento é obrigatória' });
+    required(s.valorRendimento, { message: 'Valor do rendimento é obrigatório' });
+  });
+
+  constructor() {
+    effect(() => {
+      const op = this.operation();
+      if (op) {
+        this.model.set({
+          emissor: op.ativo,
+          tipo: 'Pós-fixado',
+          indexador: 'CDI',
+          taxaJuros: '10,00',
+          liquidezDiaria: false,
+          vencimento: '',
+          possuiImposto: true,
+          valorAplicado: formatCurrencyBRL(op.precoUn),
+          dataCompra: op.data,
+          dataRendimento: '',
+          valorRendimento: '',
+        });
+      }
+    });
+  }
+
+  setTab(tab: string): void {
+    if (tab === 'compra' || tab === 'rendimento') {
+      this.activeTab.set(tab);
+    }
   }
 
   onSubmit(): void {
-    submit(this.rendaFixaForm, async () => {
-      // Process payload
+    const form = this.activeTab() === 'compra' ? this.compraForm : this.rendimentoForm;
+    submit(form, async () => {
       const data = this.model();
       console.log('Renda Fixa Saved:', {
         ...data,
-        // Remove BRL formatting
         liquidezDiaria: data.liquidezDiaria,
         possuiImposto: data.possuiImposto,
       });

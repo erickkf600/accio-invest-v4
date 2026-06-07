@@ -1,0 +1,132 @@
+<main class="min-h-screen grid grid-cols-1 place-items-center p-4 chart-grid relative overflow-hidden">
+  <div class="col-start-1 row-start-1 w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] place-self-start justify-self-start -translate-x-1/4 -translate-y-1/4 pointer-events-none"></div>
+  <div class="col-start-1 row-start-1 w-[40%] h-[40%] bg-secondary/10 rounded-full blur-[120px] place-self-end justify-self-end translate-x-1/4 translate-y-1/4 pointer-events-none"></div>
+
+  <div class="col-start-1 row-start-1 w-full max-w-[480px] z-10 flex flex-col items-center">
+    <div class="flex flex-col items-center mb-10">
+      <img alt="Accio Logo" class="h-16 w-auto mb-4 object-contain" src="accio-logo.svg">
+      <p class="text-on-surface-variant text-body-md mt-2">Inicie sua jornada na Accio</p>
+    </div>
+
+    <div class="w-full glass-card rounded-xl p-8 shadow-2xl">
+      <form class="space-y-5" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="space-y-2 flex flex-col">
+          <label class="lock text-sm font-medium text-on-surface-variant" for="name">Nome completo</label>
+          <div class="flex items-center bg-surface-variant rounded-lg group focus-within:ring-2 focus-within:ring-primary/50 transition-all" [class.ring-2]="f.name.touched && f.name.invalid" [class.ring-error/50]="f.name.touched && f.name.invalid">
+            <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary-fixed transition-colors pl-4">person</span>
+            <input
+              class="flex-1 bg-transparent border-none rounded-lg py-3.5 px-3 text-on-surface outline-none placeholder:text-on-surface-variant/40"
+              id="name"
+              type="text"
+              placeholder="Seu nome completo"
+              formControlName="name"
+            >
+          </div>
+          @if (f.name.touched && f.name.invalid) {
+            <p class="text-xs text-error mt-1">Mínimo de 3 caracteres.</p>
+          }
+        </div>
+
+        <div class="space-y-2 flex flex-col">
+          <label class="lock text-sm font-medium text-on-surface-variant" for="email">E-mail</label>
+          <div class="flex items-center bg-surface-variant rounded-lg group focus-within:ring-2 focus-within:ring-primary/50 transition-all" [class.ring-2]="f.email.touched && f.email.invalid" [class.ring-error/50]="f.email.touched && f.email.invalid">
+            <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary-fixed transition-colors pl-4">mail</span>
+            <input
+              class="flex-1 bg-transparent border-none rounded-lg py-3.5 px-3 text-on-surface outline-none placeholder:text-on-surface-variant/40"
+              id="email"
+              type="email"
+              placeholder="exemplo@email.com"
+              formControlName="email"
+            >
+          </div>
+          @if (f.email.touched && f.email.invalid) {
+            <p class="text-xs text-error mt-1">E-mail inválido.</p>
+          }
+        </div>
+
+        <div class="space-y-2 flex flex-col">
+          <label class="lock text-sm font-medium text-on-surface-variant" for="password">Senha</label>
+          <div class="flex items-center bg-surface-variant rounded-lg group focus-within:ring-2 focus-within:ring-primary/50 transition-all" [class.ring-2]="f.password.touched && f.password.invalid" [class.ring-error/50]="f.password.touched && f.password.invalid">
+            <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary-fixed transition-colors pl-4">lock</span>
+            <input
+              class="flex-1 bg-transparent border-none rounded-lg py-3.5 px-3 text-on-surface outline-none placeholder:text-on-surface-variant/40"
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              placeholder="Crie uma senha forte"
+              formControlName="password"
+            >
+            <button type="button" class="px-4 text-on-surface-variant hover:text-on-surface transition-colors" (click)="showPassword.set(!showPassword())">
+              <span class="material-symbols-outlined">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          @if (f.password.touched && f.password.invalid) {
+            <p class="text-xs text-error mt-1">Mínimo de 6 caracteres.</p>
+          }
+        </div>
+
+        <div class="space-y-2 flex flex-col">
+          <label class="lock text-sm font-medium text-on-surface-variant" for="confirm_password">Confirmar Senha</label>
+          <div class="flex items-center bg-surface-variant rounded-lg group focus-within:ring-2 focus-within:ring-primary/50 transition-all" [class.ring-2]="f.confirmPassword.touched && (f.confirmPassword.invalid || form.errors?.['passwordsMismatch'])" [class.ring-error/50]="f.confirmPassword.touched && (f.confirmPassword.invalid || form.errors?.['passwordsMismatch'])">
+            <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary-fixed transition-colors pl-4">verified_user</span>
+            <input
+              class="flex-1 bg-transparent border-none rounded-lg py-3.5 px-3 text-on-surface outline-none placeholder:text-on-surface-variant/40"
+              id="confirm_password"
+              [type]="showConfirmPassword() ? 'text' : 'password'"
+              placeholder="Repita sua senha"
+              formControlName="confirmPassword"
+            >
+            <button type="button" class="px-4 text-on-surface-variant hover:text-on-surface transition-colors" (click)="showConfirmPassword.set(!showConfirmPassword())">
+              <span class="material-symbols-outlined">{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          @if (f.confirmPassword.touched && f.confirmPassword.invalid) {
+            <p class="text-xs text-error mt-1">Campo obrigatório.</p>
+          }
+          @if (f.confirmPassword.touched && form.errors?.['passwordsMismatch']) {
+            <p class="text-xs text-error mt-1">As senhas não conferem.</p>
+          }
+        </div>
+
+        @if (!success()) {
+          <button
+            type="submit"
+            [disabled]="loading() || form.invalid"
+            class="w-full bg-primary-fixed text-on-primary-fixed font-bold py-3 rounded-lg hover:bg-primary-fixed-dim active:scale-[0.98] transition-all duration-200 mt-8 flex items-center justify-center gap-2 neon-glow disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (loading()) {
+              <span class="material-symbols-outlined animate-spin">progress_activity</span>
+              Carregando...
+            } @else {
+              Criar conta
+              <span class="material-symbols-outlined relative top-[1px]">arrow_forward</span>
+            }
+          </button>
+        } @else {
+          <div class="w-full bg-primary-fixed text-on-primary-fixed font-bold py-4 rounded-lg mt-4 flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">check_circle</span>
+            Conta Criada!
+          </div>
+        }
+      </form>
+
+      <div class="flex items-center my-8">
+        <div class="flex-1 border-t border-outline-variant"></div>
+        <span class="px-4 text-label-md text-on-surface-variant">OU</span>
+        <div class="flex-1 border-t border-outline-variant"></div>
+      </div>
+
+      <button class="w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-outline-variant rounded-lg hover:bg-white/10 transition-colors">
+        <span class="text-sm font-semibold">Google</span>
+      </button>
+    </div>
+
+    <p class="text-center mt-8 text-on-surface-variant text-body-md">
+      Já tenho uma conta,
+      <a class="text-primary-fixed font-semibold hover:underline transition-all" routerLink="/login">fazer login</a>
+    </p>
+
+    <p class="text-center mt-12 text-on-surface-variant/40 text-[10px] tracking-tighter max-w-[320px] mx-auto">
+      Ao criar uma conta, você concorda com nossos termos de serviço e política de privacidade de dados financeiros.
+    </p>
+  </div>
+</main>

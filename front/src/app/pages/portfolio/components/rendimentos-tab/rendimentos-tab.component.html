@@ -69,15 +69,15 @@
       </ng-template>
 
       <ng-template appCellTemplate="valorUn" let-row="row">
-        <span>R$ {{ row.valorUn | number:'1.2-2' }}</span>
+        <span>R$ {{ row.valorUn | abbreviateNumber }}</span>
       </ng-template>
 
       <ng-template appCellTemplate="total" let-row="row">
-        <span>R$ {{ row.total | number:'1.2-2' }}</span>
+        <span>R$ {{ row.total | abbreviateNumber }}</span>
       </ng-template>
 
       <ng-template appCellTemplate="lucro" let-row="row">
-        <span class="font-bold text-[#75d33b]">+ R$ {{ row.lucro | number:'1.2-2' }}</span>
+        <span class="font-bold text-[#75d33b]">+ R$ {{ row.lucro | abbreviateNumber }}</span>
       </ng-template>
     </app-table>
   </div>

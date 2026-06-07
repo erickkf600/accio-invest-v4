@@ -15,7 +15,7 @@
       </tr>
     </thead>
     <tbody class="divide-y divide-white/5">
-      @for (row of data(); track $index) {
+      @for (row of paginatedData(); track $index) {
         <tr class="table-row-hover transition-colors group">
           @for (col of columns(); track col.key) {
             <td
@@ -44,43 +44,45 @@
 </div>
 
 <!-- Pagination Footer (only visible if totalItems > 0) -->
-@if (totalItems() > 0) {
+@if (totalItems() > 0 && !hidePagination()) {
   <div class="p-6 bg-white/[0.01] border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
     <p class="font-body-md text-sm text-on-surface-variant">
       Mostrando <span class="text-on-surface font-semibold">{{ (currentPage() - 1) * pageSize() + 1 }} - {{ (currentPage() * pageSize()) > totalItems() ? totalItems() : (currentPage() * pageSize()) }}</span> de <span class="text-on-surface font-semibold">{{ totalItems() }}</span> operações
     </p>
-    <div class="flex items-center gap-2">
-      <button
-        class="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
-        [disabled]="currentPage() === 1"
-        (click)="onPageClick(currentPage() - 1)"
-      >
-        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
-      </button>
-      
-      @for (p of pages(); track p) {
+    @if (pageSize() <= totalItems()) {
+      <div class="flex items-center gap-2">
         <button
-          class="w-10 h-10 rounded-lg text-sm transition-colors cursor-pointer"
-          [class.bg-primary-success]="currentPage() === p"
-          [class.text-bg-main]="currentPage() === p"
-          [class.font-bold]="currentPage() === p"
-          [class.border]="currentPage() !== p"
-          [class.border-white/10]="currentPage() !== p"
-          [class.text-on-surface-variant]="currentPage() !== p"
-          [class.hover:bg-white/5]="currentPage() !== p"
-          (click)="onPageClick(p)"
+          class="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+          [disabled]="currentPage() === 1"
+          (click)="onPageClick(currentPage() - 1)"
         >
-          {{ p }}
+          <span class="material-symbols-outlined text-[20px]">chevron_left</span>
         </button>
-      }
-      
-      <button
-        class="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
-        [disabled]="currentPage() === totalPages()"
-        (click)="onPageClick(currentPage() + 1)"
-      >
-        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
-      </button>
-    </div>
+        
+        @for (p of pages(); track p) {
+          <button
+            class="w-10 h-10 rounded-lg text-sm transition-colors cursor-pointer"
+            [class.bg-primary-success]="currentPage() === p"
+            [class.text-bg-main]="currentPage() === p"
+            [class.font-bold]="currentPage() === p"
+            [class.border]="currentPage() !== p"
+            [class.border-white/10]="currentPage() !== p"
+            [class.text-on-surface-variant]="currentPage() !== p"
+            [class.hover:bg-white/5]="currentPage() !== p"
+            (click)="onPageClick(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        
+        <button
+          class="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+          [disabled]="currentPage() === totalPages()"
+          (click)="onPageClick(currentPage() + 1)"
+        >
+          <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+        </button>
+      </div>
+    }
   </div>
 }

@@ -36,7 +36,9 @@ export const MOCK_VENDAS: RelatorioVenda[] = [
 export const MOCK_REPOSICIONAMENTOS: RelatorioReposicionamento[] = [
   { id: 're1', ticker: 'VALE3', data: '25/04/2024', tipo: 'Ações', fator: 'Agrupamento', proporcaoDe: 10, proporcaoPara: 1 },
   { id: 're2', ticker: 'PETR4', data: '12/03/2024', tipo: 'Ações', fator: 'Desdobramento', proporcaoDe: 1, proporcaoPara: 2 },
-  { id: 're3', ticker: 'MXRF11', data: '18/10/2023', tipo: 'FII', fator: 'Desdobramento', proporcaoDe: 1, proporcaoPara: 10 }
+  { id: 're3', ticker: 'MXRF11', data: '18/10/2023', tipo: 'FII', fator: 'Desdobramento', proporcaoDe: 1, proporcaoPara: 10 },
+  { id: 're4', ticker: 'BABA34', data: '22/05/2024', tipo: 'BDR', fator: 'Desdobramento', proporcaoDe: 1, proporcaoPara: 5 },
+  { id: 're5', ticker: 'IVVB11', data: '10/02/2024', tipo: 'ETF', fator: 'Agrupamento', proporcaoDe: 10, proporcaoPara: 1 }
 ];
 
 export const MOCK_NOTAS: RelatorioNotaCorretagem[] = [
@@ -50,7 +52,10 @@ export const MOCK_PRECO_MEDIO: RelatorioPrecoMedio[] = [
   { id: 'pm2', ticker: 'TSLA', tipo: 'Ações', qtd: 5, precoMedio: 170.00, custoTotal: 850.00 },
   { id: 'pm3', ticker: 'MSFT', tipo: 'Ações', qtd: 20, precoMedio: 410.00, custoTotal: 8200.00 },
   { id: 'pm4', ticker: 'PETR4', tipo: 'Ações', qtd: 100, precoMedio: 38.00, custoTotal: 3800.00 },
-  { id: 'pm5', ticker: 'MXRF11', tipo: 'FII', qtd: 150, precoMedio: 9.80, custoTotal: 1470.00 }
+  { id: 'pm5', ticker: 'MXRF11', tipo: 'FII', qtd: 150, precoMedio: 9.80, custoTotal: 1470.00 },
+  { id: 'pm6', ticker: 'BABA34', tipo: 'BDR', qtd: 40, precoMedio: 52.00, custoTotal: 2080.00 },
+  { id: 'pm7', ticker: 'IVVB11', tipo: 'ETF', qtd: 15, precoMedio: 220.00, custoTotal: 3300.00 },
+  { id: 'pm8', ticker: 'BTC', tipo: 'Cripto', qtd: 0.5, precoMedio: 180000.00, custoTotal: 90000.00 }
 ];
 
 export const MOCK_RENDA_FIXA: RelatorioRendaFixa[] = [

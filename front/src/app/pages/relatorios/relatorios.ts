@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
+import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { TabsComponent, TabOption } from '../../components/tabs/tabs.component';
 import { TableComponent, TableColumn } from '../../components/Table/table.component';
@@ -26,6 +27,7 @@ import {
   imports: [
     NgClass,
     DecimalPipe,
+    AbbreviateNumberPipe,
     NgApexchartsModule,
     TabsComponent,
     TableComponent,

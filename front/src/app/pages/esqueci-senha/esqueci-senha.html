@@ -1,0 +1,96 @@
+<main class="min-h-screen w-full flex flex-col md:flex-row">
+  <section class="hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden fintech-gradient items-center justify-center p-12">
+    <div class="absolute inset-0 pattern-overlay opacity-50"></div>
+    <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full animate-pulse"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary-container/10 blur-[120px] rounded-full"></div>
+    <div class="relative z-10 w-full max-w-2xl">
+      <div class="space-y-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/10 border border-primary/20 text-primary-fixed text-sm font-medium">
+          <span class="material-symbols-outlined text-sm">lock_reset</span>
+          Recuperação de acesso
+        </div>
+        <h1 class="text-5xl lg:text-7xl font-headline font-extrabold tracking-tighter text-on-surface leading-tight">
+          Recupere o <span class="text-primary-fixed">controle</span> da sua conta.
+        </h1>
+        <p class="text-on-surface-variant text-lg lg:text-xl max-w-lg leading-relaxed">
+          Enviaremos um link seguro para redefinir sua senha no e-mail cadastrado.
+        </p>
+      </div>
+    </div>
+    <div class="absolute -bottom-20 -right-20 w-80 h-80 opacity-20 rotate-12">
+      <img
+        alt="Security Abstract"
+        class="w-full h-full object-cover rounded-3xl"
+        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF8lE8LEkXaiemwtrIcRxO4kauR8uQHHmxzmkEhnZir2qlWnEaZjB9U85icDOzSJRwgtLcxbnPn0X_5zrCWb-DC1Rdlz3MtLM1d02sGezoPbO9flU9upIlTgqZ51A5ZEOFV0MflO6IZzG6wrQPPqf4ih-BJvqNbSY7t7yzGASCrr0AeKHmRtAcXHZsvy3CSEa42Dhhkr9jxXnL9qZbjt0Ho0tu_LyRgmRPS2rRoyjrtRomfC35gp66S-xZjj3HW9iX4rCd8NuFR7jG"
+      >
+    </div>
+  </section>
+
+  <section class="w-full md:w-1/2 lg:w-2/5 min-h-screen bg-surface flex flex-col items-center justify-center p-6 md:p-12 lg:p-24 relative">
+    <div class="w-full max-w-md space-y-10">
+      <div class="flex flex-col items-center md:items-start text-center md:text-left space-y-6">
+        <img alt="Accio Logo" class="h-12 w-auto mb-2" src="accio-logo.svg">
+        <div class="space-y-2">
+          <h2 class="text-3xl font-headline font-bold text-on-surface">Esqueceu sua senha?</h2>
+          <p class="text-on-surface-variant font-body">Digite seu e-mail e enviaremos as instruções.</p>
+        </div>
+      </div>
+
+      @if (!sent) {
+        <form class="space-y-6" (ngSubmit)="onSubmit()">
+          <div class="space-y-2">
+            <label for="reset-email" class="block text-sm font-medium text-on-surface-variant ml-1">E-mail cadastrado</label>
+            <div class="relative group">
+              <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary-fixed transition-colors">mail</span>
+              <input
+                id="reset-email"
+                class="w-full bg-surface-variant border-none rounded-lg py-4 pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-primary-container/50 transition-all outline-none placeholder:text-on-surface-variant/50"
+                type="email"
+                placeholder="seu@email.com"
+                [(ngModel)]="email"
+                name="email"
+                required
+              >
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full bg-primary-fixed hover:bg-primary-fixed-dim text-on-primary-fixed font-bold py-4 rounded-lg transition-all transform active:scale-[0.98] shadow-lg shadow-primary-fixed/20 flex items-center justify-center gap-2"
+          >
+            Enviar link de recuperação
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </form>
+      } @else {
+        <div class="glass-card rounded-xl p-8 text-center space-y-4">
+          <div class="w-16 h-16 bg-primary-container/20 rounded-full flex items-center justify-center mx-auto">
+            <span class="material-symbols-outlined text-4xl text-primary-fixed">mark_email_read</span>
+          </div>
+          <h3 class="text-xl font-bold text-on-surface">E-mail enviado!</h3>
+          <p class="text-on-surface-variant text-sm">
+            Enviamos um link de recuperação para <strong class="text-on-surface">{{ email }}</strong>.
+            Verifique sua caixa de entrada e spam.
+          </p>
+          <div class="pt-4">
+            <p class="text-xs text-on-surface-variant">
+              Não recebeu? <button class="text-primary-fixed font-bold hover:underline" (click)="sent = false; email = ''">Reenviar</button>
+            </p>
+          </div>
+        </div>
+      }
+
+      <div class="text-center">
+        <a class="text-on-surface-variant hover:text-on-surface text-sm flex items-center justify-center gap-2 transition-colors" routerLink="/login">
+          <span class="material-symbols-outlined text-sm">arrow_back</span>
+          Voltar para o login
+        </a>
+      </div>
+    </div>
+
+    <div class="absolute bottom-0 right-0 w-32 h-32 bg-primary-container/5 blur-3xl md:hidden"></div>
+    <footer class="absolute bottom-8 left-12 right-12 flex justify-between text-[10px] text-on-surface-variant/40 font-medium uppercase tracking-widest hidden md:flex">
+      <span>© 2026 ACCIO Inc.</span>
+    </footer>
+  </section>
+</main>
