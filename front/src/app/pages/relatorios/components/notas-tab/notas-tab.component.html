@@ -1,0 +1,43 @@
+<div class="space-y-6">
+  <div class="glass-card rounded-2xl space-y-4">
+    <div class="flex justify-between items-center pt-6 px-6">
+      <div>
+        <h4 class="text-sm font-bold text-text-light">Notas de Corretagem Arquivadas</h4>
+        <p class="text-xs text-text-muted mt-1">Envie e armazene seus comprovantes e notas de corretagem</p>
+      </div>
+      <button
+        type="button"
+        (click)="adicionarNota.emit()"
+        class="flex items-center gap-2 bg-[#75d33b] text-[#0b0e14] px-5 py-2.5 rounded-lg text-xs font-bold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+      >
+        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+        Adicionar Nota
+      </button>
+    </div>
+
+    <app-table
+      [data]="notas()"
+      [columns]="notasColumns"
+      [totalItems]="notas().length"
+      [pageSize]="10"
+      [currentPage]="1"
+    >
+      <ng-template appCellTemplate="documento" let-row="row">
+        <div class="flex items-center gap-2 text-text-light hover:text-[#75d33b] cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">description</span>
+          <span class="font-medium text-xs">{{ row.documento }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template appCellTemplate="tipo" let-row="row">
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
+          {{ row.tipo }}
+        </span>
+      </ng-template>
+
+      <ng-template appCellTemplate="tamanho" let-row="row">
+        <span class="text-xs text-text-muted">{{ row.tamanho }}</span>
+      </ng-template>
+    </app-table>
+  </div>
+</div>

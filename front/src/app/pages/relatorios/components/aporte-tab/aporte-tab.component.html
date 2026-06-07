@@ -1,0 +1,83 @@
+<div class="space-y-6">
+  <div class="glass-card p-6 rounded-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h4 class="text-sm font-bold text-text-light">Histórico de Aportes Consolidados</h4>
+        <p class="text-xs text-text-muted mt-1">Evolução dos valores aportados mensalmente na carteira</p>
+      </div>
+      <select
+        [value]="selectedYear()"
+        (change)="onYearChange($any($event.target).value)"
+        class="bg-white/5 border border-white/10 rounded-lg text-xs text-text-light px-3 py-1.5 outline-none cursor-pointer"
+      >
+        @for (y of availableYears(); track y) {
+          <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="h-[250px]">
+      @if (aportesChartOptions()) {
+        <apx-chart
+          [series]="aportesChartOptions().series"
+          [chart]="aportesChartOptions().chart"
+          [colors]="aportesChartOptions().colors"
+          [plotOptions]="aportesChartOptions().plotOptions"
+          [dataLabels]="aportesChartOptions().dataLabels"
+          [grid]="aportesChartOptions().grid"
+          [xaxis]="aportesChartOptions().xaxis"
+          [yaxis]="aportesChartOptions().yaxis"
+          [tooltip]="aportesChartOptions().tooltip"
+        ></apx-chart>
+      }
+    </div>
+  </div>
+
+  <div class="mb-6">
+  <app-filtro-relatorio
+    (filterApplied)="onFilterApplied($event)"
+    (filtersCleared)="onFiltersCleared()"
+  ></app-filtro-relatorio>
+
+  </div>
+
+
+  <div class="glass-card rounded-2xl space-y-4">
+    <div class="flex justify-between items-center pt-6 px-6">
+      <h4 class="text-sm font-bold text-text-light">{{ tableTitle() }}</h4>
+      <app-pdf-button
+        title="Relatório - Histórico de Aportes"
+        [columns]="aportesColumns"
+        [data]="filteredAportes()"
+        filename="historico_aportes.pdf"
+      ></app-pdf-button>
+    </div>
+
+    <app-table
+      [data]="filteredAportes()"
+      [columns]="aportesColumns"
+      [totalItems]="filteredAportes().length"
+      [pageSize]="pageSize"
+      [currentPage]="currentPage()"
+      (pageChange)="onPageChange($event)"
+    >
+      <ng-template appCellTemplate="valor" let-row="row">
+        <span class="font-semibold text-text-light">R$ {{ row.valor | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="taxas" let-row="row">
+        <span class="text-text-muted">R$ {{ row.taxas | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="actions" let-row="row">
+        <button
+          type="button"
+          (click)="viewDetails.emit(row)"
+          class="px-3 py-1 text-[#75d33b] text-xs transition-all cursor-pointer"
+        >
+          <span class="material-symbols-outlined text-text-muted hover:text-primary-success cursor-pointer">visibility</span>
+        </button>
+      </ng-template>
+    </app-table>
+  </div>
+</div>

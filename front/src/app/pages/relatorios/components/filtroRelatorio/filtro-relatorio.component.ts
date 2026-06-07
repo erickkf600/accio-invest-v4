@@ -1,38 +1,31 @@
 import { Component, signal, computed, output } from '@angular/core';
-import { FormField, form, submit } from '@angular/forms/signals';
-
-interface FilterModel {
-  searchTerm: string;
-}
 
 @Component({
   selector: 'app-filtro-relatorio',
   standalone: true,
-  imports: [FormField],
   templateUrl: './filtro-relatorio.component.html',
 })
 export class FiltroRelatorioComponent {
-  protected filterModel = signal<FilterModel>({
-    searchTerm: '',
-  });
+  protected searchTerm = signal<string>('');
 
-  protected filterForm = form(this.filterModel);
-
-  readonly filterApplied = output<FilterModel>();
+  readonly filterApplied = output<string>();
   readonly filtersCleared = output<void>();
 
-  protected canClear = computed(() => {
-    return this.filterModel().searchTerm.trim() !== '';
-  });
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  protected onSubmit(): void {
-    submit(this.filterForm, async () => {
-      this.filterApplied.emit({ ...this.filterModel() });
-    });
+  protected canClear = computed(() => this.searchTerm().trim() !== '');
+
+  protected onInput(value: string): void {
+    this.searchTerm.set(value);
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      this.filterApplied.emit(value);
+    }, 500);
   }
 
   protected onClear(): void {
-    this.filterModel.set({ searchTerm: '' });
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    this.searchTerm.set('');
     this.filtersCleared.emit();
   }
 }

@@ -1,0 +1,53 @@
+<div class="space-y-6 flex flex-col">
+  <app-filtro-relatorio
+    (filterApplied)="onFilterApplied($event)"
+    (filtersCleared)="onFiltersCleared()"
+  ></app-filtro-relatorio>
+
+  <div class="glass-card rounded-2xl space-y-4">
+    <div class="flex justify-between items-center pt-6 px-6">
+      <h4 class="text-sm font-bold text-text-light">Histórico de Reposicionamentos</h4>
+      <app-pdf-button
+        title="Relatório - Reposicionamentos"
+        [columns]="reposicionamentosColumns"
+        [data]="filteredReposicionamentos()"
+        filename="reposicionamentos.pdf"
+      ></app-pdf-button>
+    </div>
+
+    <app-table
+      [data]="filteredReposicionamentos()"
+      [columns]="reposicionamentosColumns"
+      [totalItems]="filteredReposicionamentos().length"
+      [pageSize]="10"
+      [currentPage]="1"
+    >
+      <ng-template appCellTemplate="ticker" let-row="row">
+        <span class="font-bold text-text-light">{{ row.ticker }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="tipo" let-row="row">
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase border border-primary/20">
+          {{ row.tipo }}
+        </span>
+      </ng-template>
+
+      <ng-template appCellTemplate="fator" let-row="row">
+        <span class="px-2.5 py-0.5 rounded rounded-full text-[11px] font-bold border whitespace-nowrap uppercase"
+          [class.text-blue-400]="row.fator === 'Agrupamento'"
+          [class.border-blue-400/30]="row.fator === 'Agrupamento'"
+          [class.bg-blue-400/10]="row.fator === 'Agrupamento'"
+          [class.text-amber-400]="row.fator === 'Desdobramento'"
+          [class.border-amber-400/30]="row.fator === 'Desdobramento'"
+          [class.bg-amber-400/10]="row.fator === 'Desdobramento'"
+        >
+          {{ row.fator }}
+        </span>
+      </ng-template>
+
+      <ng-template appCellTemplate="proporcao" let-row="row">
+        <span class="font-bold text-text-light">{{ row.proporcaoDe }} : {{ row.proporcaoPara }}</span>
+      </ng-template>
+    </app-table>
+  </div>
+</div>

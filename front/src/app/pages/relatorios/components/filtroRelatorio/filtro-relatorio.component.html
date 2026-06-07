@@ -1,5 +1,5 @@
-<form (submit)="onSubmit(); $event.preventDefault()" class="glass-card p-6 rounded-2xl flex flex-col sm:flex-row items-end gap-4 w-full">
-  <div class="flex-grow">
+<div class="glass-card p-6 rounded-2xl flex flex-row items-center gap-4 w-full md:justify-between">
+  <div class="w-full md:w-[25%]">
     <label class="block text-xs font-semibold text-text-muted mb-2">Buscar por Ticker / Ativo</label>
     <div class="relative">
       <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted text-[20px]">search</span>
@@ -7,17 +7,13 @@
         class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
         placeholder="Ex: PETR4, AAPL..."
         type="text"
-        [formField]="filterForm.searchTerm"
+        [value]="searchTerm()"
+        (input)="onInput(($any($event.target).value))"
       />
     </div>
   </div>
-  <div class="flex gap-2 w-full sm:w-auto shrink-0">
-    <button type="submit" class="flex-grow sm:flex-grow-0 px-6 h-[46px] rounded-lg border border-primary-success/30 text-primary-success font-bold hover:bg-primary-success/10 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm">
-      <span class="material-symbols-outlined text-[20px]">filter_list</span>
-      Filtrar
-    </button>
-    <button type="button" (click)="onClear()" [disabled]="!canClear()" class="w-[46px] h-[46px] shrink-0 rounded-lg border border-white/10 text-text-muted hover:text-text-light hover:bg-white/5 transition-all flex items-center justify-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-50" title="Limpar Filtro">
-      <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
-    </button>
-  </div>
-</form>
+  <button type="button" (click)="onClear()" [disabled]="!canClear()" class="relative top-[10px] w-[46px] h-[46px] rounded-lg border border-white/10 text-text-muted hover:text-text-light hover:bg-white/5 transition-all flex items-center justify-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-50" title="Limpar Filtro">
+    <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
+  </button>
+
+</div>

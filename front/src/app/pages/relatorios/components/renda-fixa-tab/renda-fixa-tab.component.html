@@ -1,0 +1,92 @@
+<div class="space-y-6 flex flex-col">
+  <app-filtro-relatorio
+    (filterApplied)="onFilterApplied($event)"
+    (filtersCleared)="onFiltersCleared()"
+  ></app-filtro-relatorio>
+
+<div class="glass-card rounded-2xl space-y-4">
+  <div class="flex justify-between items-center pt-6 px-6">
+    <h4 class="text-sm font-bold text-text-light">Carteira de Renda Fixa</h4>
+    <app-pdf-button
+      title="Relatório - Investimentos em Renda Fixa"
+      [columns]="rfColumns"
+      [data]="filteredRendaFixa()"
+      filename="renda_fixa.pdf"
+    ></app-pdf-button>
+  </div>
+
+    <app-table
+      [data]="filteredRendaFixa()"
+      [columns]="rfColumns"
+      [totalItems]="filteredRendaFixa().length"
+      [pageSize]="pageSize"
+      [currentPage]="currentPage()"
+      (pageChange)="onPageChange($event)"
+    >
+      <ng-template appCellTemplate="emissor" let-row="row">
+        <span class="truncate block max-w-[100px] text-sm font-bold text-white tracking-wide" [appTooltip]="row.emissor">{{ row.emissor }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="tipoInvestimento" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.tipoInvestimento }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="tipoTitulo" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.tipoTitulo }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="dataCompra" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.dataCompra }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="vencimento" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.vencimento || '-' }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="formaRend" let-row="row">
+        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+          [class.bg-[#143224]]="row.tipo === 'Pós-fixado'"
+          [class.text-[#2fe47e]]="row.tipo === 'Pós-fixado'"
+          [class.bg-[#261535]]="row.tipo === 'Pré-fixado'"
+          [class.text-[#b55fe6]]="row.tipo === 'Pré-fixado'"
+        >
+          {{ row.tipo === 'Pós-fixado' ? 'PÓS FIX' : row.tipo === 'Pré-fixado' ? 'PRÉ FIX' : row.tipo }}
+        </span>
+      </ng-template>
+
+      <ng-template appCellTemplate="indexador" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.indexador }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="grossUp" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.grossUp }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="taxaJuros" let-row="row">
+        <span class="text-sm font-medium text-[#525b73]">{{ row.taxaJuros | number:'1.0-0' }}%</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="valorAplicado" let-row="row">
+        <span class="text-sm font-bold text-white">R$ {{ row.valorAplicado | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="rentabilidade" let-row="row">
+        <span class="text-sm font-bold"
+          [class.text-[#75d33b]]="row.rentabilidade >= 0"
+          [class.text-[#ef4444]]="row.rentabilidade < 0"
+        >
+          {{ row.rentabilidade >= 0 ? '+' : '' }}{{ row.rentabilidade | number:'1.2-2' }}%
+        </span>
+      </ng-template>
+
+      <ng-template appCellTemplate="expirado" let-row="row">
+        @if (row.expirado) {
+          <span class="inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold bg-[#38161a] text-[#ef4444] uppercase tracking-wide">Sim</span>
+        } @else {
+          <span class="inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold bg-[#222a22] text-[#78a878] uppercase tracking-wide">Não</span>
+        }
+      </ng-template>
+    </app-table>
+
+</div>
+</div>

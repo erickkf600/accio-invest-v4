@@ -25,40 +25,50 @@ export const MOCK_DIVIDENDS: PortfolioDividend[] = [
   { id: 'd7', data: '15 Set, 2023', ticker: 'PETR4', tipo: 'Dividendos', qtd: 100, valorUn: 1.20, total: 120.00, status: 'Pago' },
   { id: 'd8', data: '22 Out, 2023', ticker: 'ITUB4', tipo: 'JCP', qtd: 80, valorUn: 0.95, total: 76.00, status: 'Pago' },
   { id: 'd9', data: '05 Nov, 2023', ticker: 'XPML11', tipo: 'Rendimento', qtd: 30, valorUn: 0.45, total: 13.50, status: 'Pago' },
-
   { id: 'd10', data: '15 Jan, 2025', ticker: 'PETR4', tipo: 'Dividendos', qtd: 100, valorUn: 1.50, total: 150.00, status: 'Pago' },
   { id: 'd11', data: '20 Mai, 2025', ticker: 'ITUB4', tipo: 'JCP', qtd: 80, valorUn: 1.10, total: 88.00, status: 'Pago' },
   { id: 'd12', data: '10 Jun, 2025', ticker: 'XPML11', tipo: 'Rendimento', qtd: 30, valorUn: 0.50, total: 15.00, status: 'Pago' },
-
   { id: 'd13', data: '15 Jan, 2026', ticker: 'PETR4', tipo: 'Dividendos', qtd: 100, valorUn: 1.60, total: 160.00, status: 'Pago' },
   { id: 'd14', data: '20 Mai, 2026', ticker: 'ITUB4', tipo: 'JCP', qtd: 80, valorUn: 1.15, total: 92.00, status: 'Pago' },
-  { id: 'd15', data: '10 Jun, 2026', ticker: 'XPML11', tipo: 'Rendimento', qtd: 30, valorUn: 0.55, total: 16.50, status: 'Pago' }
+  { id: 'd15', data: '10 Jun, 2026', ticker: 'XPML11', tipo: 'Rendimento', qtd: 30, valorUn: 0.55, total: 16.50, status: 'Pago' },
 ];
 
 export const MOCK_YIELDS: PortfolioYield[] = [
-  { id: 'y1', data: '15 Mai, 2024', emissor: 'BANCO ITAU', tipo: 'Pós-fixado', valorUn: 1000.00, total: 1250.00 },
-  { id: 'y2', data: '10 Abr, 2024', emissor: 'TESOURO NACIONAL', tipo: 'Pré-fixado', valorUn: 2000.00, total: 2320.00 },
-  { id: 'y3', data: '20 Fev, 2024', emissor: 'BANCO BRADESCO', tipo: 'Pós-fixado', valorUn: 5000.00, total: 5800.00 },
-  { id: 'y4', data: '15 Out, 2023', emissor: 'BANCO ITAU', tipo: 'Pós-fixado', valorUn: 1000.00, total: 1120.00 },
-  { id: 'y5', data: '10 Set, 2023', emissor: 'TESOURO NACIONAL', tipo: 'Pré-fixado', valorUn: 2000.00, total: 2180.00 }
+  { id: 'y1', data: '15 Jan, 2024', emissor: 'BANCO ITAÚ', tipo: 'Pós-fixado', valorUn: 1000.00, total: 1250.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'LCA', dataCompra: '15/01/2024', dataVencimento: '16/06/2025', indexador: 'CDI', grossUp: '95% CDI', txJuros: '9.8%' },
+  { id: 'y2', data: '10 Fev, 2024', emissor: 'BANCO SANTANDER', tipo: 'Pós-fixado', valorUn: 2000.00, total: 2320.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'LCI', dataCompra: '10/02/2024', dataVencimento: '10/02/2027', indexador: 'CDI', grossUp: '92% CDI', txJuros: '9.2%' },
+  { id: 'y3', data: '20 Mar, 2024', emissor: 'TESOURO NACIONAL', tipo: 'Pré-fixado', valorUn: 5000.00, total: 5800.00, tipoInvestimento: 'Tesouro Direto', tipoTitulo: 'Tesouro Prefixado', dataCompra: '20/03/2024', dataVencimento: '01/01/2029', indexador: 'Prefixado', grossUp: '13.20%', txJuros: '13.2%' },
+  { id: 'y4', data: '15 Abr, 2024', emissor: 'BANCO BRADESCO', tipo: 'Pós-fixado', valorUn: 3000.00, total: 3450.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'CDB', dataCompra: '15/04/2024', dataVencimento: '15/04/2026', indexador: 'CDI', grossUp: '100% CDI', txJuros: '10.5%' },
+  { id: 'y5', data: '01 Mai, 2024', emissor: 'SELIC 2030', tipo: 'Pós-fixado', valorUn: 1500.00, total: 1725.00, tipoInvestimento: 'Tesouro Direto', tipoTitulo: 'Tesouro Selic', dataCompra: '01/05/2024', dataVencimento: '01/03/2030', indexador: 'Selic', grossUp: '100% Selic', txJuros: '10.2%' },
+  { id: 'y6', data: '10 Jun, 2024', emissor: 'CAIXA ECONÔMICA', tipo: 'Pré-fixado', valorUn: 2500.00, total: 2875.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'LCA', dataCompra: '10/06/2024', dataVencimento: '10/06/2028', indexador: 'CDI', grossUp: '90% CDI', txJuros: '9.0%' },
+  { id: 'y7', data: '05 Jul, 2024', emissor: 'BANCO DO BRASIL', tipo: 'Pós-fixado', valorUn: 4000.00, total: 4600.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'CDB', dataCompra: '05/07/2024', dataVencimento: '05/07/2027', indexador: 'CDI', grossUp: '98% CDI', txJuros: '10.1%' },
+  { id: 'y8', data: '15 Ago, 2024', emissor: 'TESOURO NACIONAL', tipo: 'Pós-fixado', valorUn: 3500.00, total: 4025.00, tipoInvestimento: 'Tesouro Direto', tipoTitulo: 'Tesouro IPCA+', dataCompra: '15/08/2024', dataVencimento: '15/08/2034', indexador: 'IPCA', grossUp: 'IPCA+5.5%', txJuros: '5.5%' },
+  { id: 'y9', data: '20 Set, 2024', emissor: 'BANCO SAFRA', tipo: 'Pré-fixado', valorUn: 1800.00, total: 2070.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'LCI', dataCompra: '20/09/2024', dataVencimento: '20/09/2026', indexador: 'CDI', grossUp: '93% CDI', txJuros: '9.5%' },
+  { id: 'y10', data: '01 Out, 2024', emissor: 'BANCO INTER', tipo: 'Pós-fixado', valorUn: 2200.00, total: 2530.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'CDB', dataCompra: '01/10/2024', dataVencimento: '01/10/2028', indexador: 'CDI', grossUp: '102% CDI', txJuros: '10.8%' },
+  { id: 'y11', data: '15 Nov, 2024', emissor: 'BANCO ORIGINAL', tipo: 'Pré-fixado', valorUn: 1600.00, total: 1840.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'LCA', dataCompra: '15/11/2024', dataVencimento: '15/11/2026', indexador: 'CDI', grossUp: '91% CDI', txJuros: '9.3%' },
+  { id: 'y12', data: '10 Dez, 2024', emissor: 'BANCO BTG', tipo: 'Pós-fixado', valorUn: 2800.00, total: 3220.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'CDB', dataCompra: '10/12/2024', dataVencimento: '10/12/2029', indexador: 'CDI', grossUp: '105% CDI', txJuros: '11.2%' },
+  { id: 'y13', data: '15 Out, 2023', emissor: 'BANCO ITAÚ', tipo: 'Pós-fixado', valorUn: 1000.00, total: 1120.00, tipoInvestimento: 'Renda Fixa', tipoTitulo: 'LCA', dataCompra: '15/10/2023', dataVencimento: '16/06/2025', indexador: 'CDI', grossUp: '95% CDI', txJuros: '9.8%' },
+  { id: 'y14', data: '10 Set, 2023', emissor: 'TESOURO NACIONAL', tipo: 'Pré-fixado', valorUn: 2000.00, total: 2180.00, tipoInvestimento: 'Tesouro Direto', tipoTitulo: 'Tesouro Prefixado', dataCompra: '10/09/2023', dataVencimento: '01/01/2028', indexador: 'Prefixado', grossUp: '12.80%', txJuros: '12.8%' },
 ];
 
-// Helper monthly aggregation values for charts per year
 export const CHART_DATA_PORTFOLIO: Record<string, { dividends: number[]; yields: number[] }> = {
-  '2024': {
-    dividends: [45.2, 58.0, 75.5, 92.0, 227.35, 14.8, 85.0, 95.0, 110.0, 130.0, 125.0, 150.0],
-    yields: [120, 5800, 150, 2320, 1250, 180, 220, 240, 290, 310, 350, 400]
+  '2022': {
+    dividends: [15.0, 22.0, 30.0, 38.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0],
+    yields: [320, 340, 360, 380, 410, 430, 450, 470, 490, 510, 540, 570],
   },
   '2023': {
     dividends: [30.0, 42.0, 50.0, 65.0, 80.0, 90.0, 95.0, 110.0, 120.0, 76.0, 13.5, 135.0],
-    yields: [90, 110, 130, 140, 170, 190, 200, 210, 2180, 1120, 280, 320]
+    yields: [580, 600, 630, 650, 680, 710, 740, 770, 800, 830, 860, 900],
+  },
+  '2024': {
+    dividends: [45.2, 58.0, 75.5, 92.0, 227.35, 14.8, 85.0, 95.0, 110.0, 130.0, 125.0, 150.0],
+    yields: [920, 950, 980, 1020, 1060, 1100, 1140, 1180, 1220, 1260, 1300, 1350],
   },
   '2025': {
     dividends: [60, 70, 85, 100, 120, 135, 140, 160, 175, 190, 200, 220],
-    yields: [150, 180, 200, 230, 260, 290, 320, 350, 380, 410, 440, 480]
+    yields: [1380, 1420, 1460, 1500, 1550, 1600, 1650, 1700, 1750, 1800, 1850, 1900],
   },
   '2026': {
     dividends: [80, 95, 110, 130, 150, 170, 185, 200, 220, 240, 260, 290],
-    yields: [200, 230, 260, 300, 340, 380, 420, 460, 500, 550, 600, 650]
-  }
+    yields: [1920, 1950, 1980, 2020, 2060, 2100, 2150, 2200, 2250, 2300, 2350, 2400],
+  },
 };

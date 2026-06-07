@@ -1,3 +1,12 @@
+export interface AporteAtivo {
+  ticker: string;
+  tipo: string;
+  quantidade: number;
+  valorUnitario: number;
+  total: number;
+  taxa: number;
+}
+
 export interface RelatorioAporte {
   id: string;
   mes: string;
@@ -6,6 +15,7 @@ export interface RelatorioAporte {
   valor: number;
   taxas: number;
   detalhes: string;
+  ativos: AporteAtivo[];
 }
 
 export interface RelatorioAluguel {
@@ -40,9 +50,10 @@ export interface RelatorioReposicionamento {
 
 export interface RelatorioNotaCorretagem {
   id: string;
+  nomeArquivo: string;
   documento: string;
   data: string;
-  tipo: 'Compra - Renda variável' | 'Venda - Renda variável' | 'Renda Fixa';
+  tipo: string;
   tamanho?: string;
 }
 
@@ -59,10 +70,16 @@ export interface RelatorioRendaFixa {
   id: string;
   emissor: string;
   tipo: 'Pós-fixado' | 'Pré-fixado';
-  indexador: 'CDI' | 'IPCA' | 'SELIC';
+  indexador: string;
   taxaJuros: number;
   liquidezDiaria: boolean;
   vencimento?: string;
   possuiImposto: boolean;
   valorAplicado: number;
+  tipoInvestimento: string;
+  tipoTitulo: string;
+  dataCompra: string;
+  grossUp: string;
+  rentabilidade: number;
+  expirado: boolean;
 }

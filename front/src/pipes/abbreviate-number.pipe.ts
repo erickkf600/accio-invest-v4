@@ -12,7 +12,7 @@ export class AbbreviateNumberPipe implements PipeTransform {
     const sign = value < 0 ? '-' : '';
 
     if (abs < 1_000) {
-      return `${sign}${value.toFixed(2)}`;
+      return `${sign}${abs.toFixed(2).replace('.', ',')}`;
     }
 
     const thresholds: { divisor: number; suffix: string }[] = [
@@ -30,6 +30,6 @@ export class AbbreviateNumberPipe implements PipeTransform {
       }
     }
 
-    return `${sign}${value.toFixed(2)}`;
+    return `${sign}${abs.toFixed(2)}`;
   }
 }

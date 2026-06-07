@@ -16,12 +16,14 @@ export class AdicionarNotaComponent {
   close = output<void>();
 
   model = signal({
+    nomeArquivo: '',
     documento: '',
     data: '',
-    tipo: 'Compra - Renda variável',
+    tipo: '',
   });
 
   notaForm = form(this.model, (s) => {
+    required(s.nomeArquivo, { message: 'Nome do arquivo é obrigatório' });
     required(s.documento, { message: 'Documento é obrigatório' });
     required(s.data, { message: 'Data é obrigatória' });
     required(s.tipo, { message: 'Tipo é obrigatório' });
@@ -50,10 +52,11 @@ export class AdicionarNotaComponent {
     submit(this.notaForm, async () => {
       const data = this.model();
       this.relatoriosService.adicionarNota({
+        nomeArquivo: data.nomeArquivo,
         documento: data.documento,
         data: data.data,
         tipo: data.tipo as any,
-        tamanho: '150 KB', // Simulated size
+        tamanho: '150 KB',
       });
       this.close.emit();
     });

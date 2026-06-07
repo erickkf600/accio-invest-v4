@@ -1,0 +1,48 @@
+<div class="space-y-6 flex flex-col">
+  <app-filtro-relatorio
+    (filterApplied)="onFilterApplied($event)"
+    (filtersCleared)="onFiltersCleared()"
+  ></app-filtro-relatorio>
+
+  <div class="glass-card rounded-2xl space-y-4">
+    <div class="flex justify-between items-center px-6 pt-6">
+      <h4 class="text-sm font-bold text-text-light">Operações de Vendas</h4>
+      <app-pdf-button
+        title="Relatório - Histórico de Vendas"
+        [columns]="vendasColumns"
+        [data]="filteredVendas()"
+        filename="relatorio_vendas.pdf"
+      ></app-pdf-button>
+    </div>
+
+    <app-table
+      [data]="filteredVendas()"
+      [columns]="vendasColumns"
+      [totalItems]="filteredVendas().length"
+      [pageSize]="10"
+      [currentPage]="1"
+    >
+      <ng-template appCellTemplate="ticker" let-row="row">
+        <span class="font-bold text-text-light">{{ row.ticker }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="precoUn" let-row="row">
+        <span>R$ {{ row.precoUn | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="total" let-row="row">
+        <span>R$ {{ row.total | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="taxas" let-row="row">
+        <span class="text-text-muted">R$ {{ row.taxas | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="resultado" let-row="row">
+        <span class="font-bold" [class.text-[#75d33b]]="row.resultado >= 0" [class.text-error]="row.resultado < 0">
+          {{ formatResultado(row.resultado) }}
+        </span>
+      </ng-template>
+    </app-table>
+  </div>
+</div>

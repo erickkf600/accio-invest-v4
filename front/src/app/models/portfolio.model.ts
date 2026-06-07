@@ -28,7 +28,14 @@ export interface PortfolioYield {
   id: string;
   data: string;
   emissor: string;
-  tipo: string; // Pós-fixado / Pré-fixado
+  tipo: string;
   valorUn: number;
   total: number;
+  tipoInvestimento: string;
+  tipoTitulo: string;
+  dataCompra: string;
+  dataVencimento: string;
+  indexador: string;
+  grossUp: string;
+  txJuros: string;
 }

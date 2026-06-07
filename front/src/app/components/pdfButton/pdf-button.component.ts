@@ -39,13 +39,11 @@ export class PdfButtonComponent {
       const doc = new jsPDF('p', 'pt', 'a4');
       
       const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
       tempDiv.style.width = '550px';
-      
+
       const cols = this.columns();
       const rows = this.data();
-      
+
       tempDiv.innerHTML = `
         <div style="font-family: Arial, sans-serif; color: #111; padding: 20px; width: 550px; background-color: #ffffff;">
           <h2 style="color: #111827; font-size: 18px; font-weight: bold; margin-bottom: 5px;">${this.title()}</h2>
@@ -66,31 +64,14 @@ export class PdfButtonComponent {
           </table>
         </div>
       `;
-      
-      document.body.appendChild(tempDiv);
-      
-      const docAny = doc as any;
-      if (typeof docAny.fromHTML === 'function') {
-        docAny.fromHTML(tempDiv, 30, 30, {
-          width: 530
-        });
-        doc.save(this.filename());
-      } else {
-        await new Promise<void>((resolveHtml) => {
-          doc.html(tempDiv, {
-            callback: (d) => {
-              d.save(this.filename());
-              resolveHtml();
-            },
-            x: 20,
-            y: 20,
-            width: 550,
-            windowWidth: 550
-          });
-        });
-      }
-      
-      document.body.removeChild(tempDiv);
+
+      await doc.html(tempDiv, {
+        x: 20,
+        y: 20,
+        width: 550,
+        windowWidth: 550,
+      });
+      doc.save(this.filename());
       this.toast.remove(loadingId);
       
       this.toast.success({

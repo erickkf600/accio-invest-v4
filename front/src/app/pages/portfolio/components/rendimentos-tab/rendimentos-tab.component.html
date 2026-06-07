@@ -1,84 +1,139 @@
-<div class="space-y-6">
-  <!-- Chart Card -->
-  <div class="glass-card p-6 rounded-2xl">
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h4 class="text-sm font-bold text-text-light">Histórico de Rendimentos de Renda Fixa</h4>
-        <p class="text-xs text-text-muted mt-1">Evolução dos rendimentos gerados por investimentos de renda fixa no ano</p>
-      </div>
-      <div>
-        <select
-          [value]="selectedYear()"
-          (change)="onYearChange(yearSelector.value)"
-          #yearSelector
-          class="bg-white/5 border border-white/10 rounded-lg text-xs text-text-light px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary-success/50 cursor-pointer transition-all"
-        >
-          @for (y of availableYears; track y) {
-            <option [value]="y">{{ y }}</option>
-          }
-        </select>
-      </div>
-    </div>
+<div class="max-w-[1600px] space-y-6">
 
-    <!-- Chart -->
-    <div class="h-[280px]">
-      @if (chartOptions()) {
+  <!-- Card 1: Evolução do patrimônio -->
+  <section class="glass-card rounded-xl p-5">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xs font-semibold text-white tracking-wide">Evolução do patrimônio</h3>
+    </div>
+    <div class="h-[280px] w-full">
+      @if (evolutionChartOptions()) {
         <apx-chart
-          [series]="chartOptions().series"
-          [chart]="chartOptions().chart"
-          [colors]="chartOptions().colors"
-          [stroke]="chartOptions().stroke"
-          [fill]="chartOptions().fill"
-          [grid]="chartOptions().grid"
-          [dataLabels]="chartOptions().dataLabels"
-          [xaxis]="chartOptions().xaxis"
-          [yaxis]="chartOptions().yaxis"
-          [tooltip]="chartOptions().tooltip"
+          [series]="evolutionChartOptions().series"
+          [chart]="evolutionChartOptions().chart"
+          [colors]="evolutionChartOptions().colors"
+          [stroke]="evolutionChartOptions().stroke"
+          [fill]="evolutionChartOptions().fill"
+          [grid]="evolutionChartOptions().grid"
+          [dataLabels]="evolutionChartOptions().dataLabels"
+          [xaxis]="evolutionChartOptions().xaxis"
+          [yaxis]="evolutionChartOptions().yaxis"
+          [tooltip]="evolutionChartOptions().tooltip"
         ></apx-chart>
       }
     </div>
-  </div>
+  </section>
 
-  <!-- Table Card -->
-  <div class="glass-card p-6 rounded-2xl space-y-4">
-    <div class="flex justify-between items-center">
-      <h4 class="text-sm font-bold text-text-light">Títulos de Renda Fixa e Rendimentos</h4>
+  <!-- Card 2: Renda Fixa -->
+  <section class="glass-card rounded-xl">
+    <div class="flex justify-between items-center mb-4 pt-6 px-6">
+      <h3 class="text-xs font-semibold text-white tracking-wide">Renda Fixa</h3>
       <app-pdf-button
-        title="Relatório de Rendimentos de Renda Fixa"
-        [columns]="columns"
-        [data]="tableData()"
-        filename="rendimentos_renda_fixa.pdf"
+        title="Relatório de Renda Fixa"
+        [columns]="rendaFixaColumns"
+        [data]="rendaFixaData()"
+        filename="renda_fixa.pdf"
       ></app-pdf-button>
     </div>
-
     <app-table
-      [data]="tableData()"
-      [columns]="columns"
-      [totalItems]="tableData().length"
+      [data]="rendaFixaData()"
+      [columns]="rendaFixaColumns"
+      [totalItems]="rendaFixaData().length"
       [pageSize]="10"
-      [currentPage]="1"
+      [currentPage]="rendaFixaCurrentPage()"
+      (pageChange)="onRendaFixaPageChange($event)"
     >
       <ng-template appCellTemplate="emissor" let-row="row">
-        <span class="font-bold text-text-light">{{ row.emissor }}</span>
+        <span class="truncate block max-w-[100px] font-bold text-text-light" [appTooltip]="row.emissor">{{ row.emissor }}</span>
       </ng-template>
 
-      <ng-template appCellTemplate="tipo" let-row="row">
-        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
-          {{ row.tipo }}
-        </span>
+      <ng-template appCellTemplate="formaRendimento" let-row="row">
+        @if (row.formaRendimento === 'PÓS FIX') {
+          <span class="px-2 py-1 text-[10px] font-bold rounded-full bg-emerald-950 text-emerald-400">{{ row.formaRendimento }}</span>
+        } @else {
+          <span class="px-2 py-1 text-[10px] font-bold rounded-full bg-purple-950 text-purple-400">{{ row.formaRendimento }}</span>
+        }
       </ng-template>
 
-      <ng-template appCellTemplate="valorUn" let-row="row">
-        <span>R$ {{ row.valorUn | abbreviateNumber }}</span>
+      <ng-template appCellTemplate="valorInvestido" let-row="row">
+        <span class="font-semibold text-text-light font-mono">{{ row.valorInvestido }}</span>
       </ng-template>
 
-      <ng-template appCellTemplate="total" let-row="row">
-        <span>R$ {{ row.total | abbreviateNumber }}</span>
-      </ng-template>
-
-      <ng-template appCellTemplate="lucro" let-row="row">
-        <span class="font-bold text-[#75d33b]">+ R$ {{ row.lucro | abbreviateNumber }}</span>
+      <ng-template appCellTemplate="rentabilidade" let-row="row">
+        <span class="font-semibold text-text-light font-mono">{{ row.rentabilidade }}</span>
       </ng-template>
     </app-table>
-  </div>
+  </section>
+
+  <!-- Card 3: Rentabilidade do Patrimônio -->
+  <section class="glass-card rounded-xl">
+    <h3 class="text-xs font-semibold text-white tracking-wide mb-4 pt-6 px-6">Rentabilidade do Patrimônio</h3>
+    <app-table
+      [data]="monthlyProfitability()"
+      [columns]="rentabilidadeColumns"
+      [totalItems]="monthlyProfitability().length"
+      [pageSize]="10"
+      [currentPage]="rentabilidadeCurrentPage()"
+      (pageChange)="onRentabilidadePageChange($event)"
+    >
+      <ng-template appCellTemplate="rentabilidade" let-row="row">
+        <span
+          class="font-semibold"
+          [class.text-emerald-500]="row.rentabilidadeValue >= 0"
+          [class.text-red-400]="row.rentabilidadeValue < 0"
+        >{{ row.rentabilidade }}</span>
+      </ng-template>
+    </app-table>
+  </section>
+
+  <!-- Card 4: Comparação dividendos ano -->
+  <section class="glass-card rounded-xl p-5">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xs font-semibold text-white tracking-wide">Comparação dividendos ano</h3>
+
+      <div class="flex items-center gap-4 text-[10px]">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-sm bg-[#75d33b]"></span>
+          <span class="text-gray-400">{{ currentYearLabel() }}</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-sm bg-gray-600"></span>
+          <span class="text-gray-400">{{ previousYearLabel() }}</span>
+        </div>
+        <div class="relative bg-[#18191b] border border-gray-800 rounded-lg px-3 py-1 flex items-center gap-2">
+          <select
+            [value]="selectedYear()"
+            (change)="onYearChange($event)"
+            class="appearance-none bg-transparent text-[11px] font-medium text-gray-400 pr-4 focus:outline-none cursor-pointer"
+          >
+            @for (y of availableYears(); track y) {
+              <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
+            }
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-[-10px] flex items-center pr-3 text-gray-400">
+            <span class="material-symbols-outlined !text-[20px] text-slate-400 pointer-events-none">keyboard_arrow_down</span>
+          </div>        
+        </div>
+      </div>
+    </div>
+
+    <div class="h-[220px] mt-2">
+      @if (dividendChartOptions()) {
+        <apx-chart
+          [series]="dividendChartOptions().series"
+          [chart]="dividendChartOptions().chart"
+          [colors]="dividendChartOptions().colors"
+          [legend]="dividendChartOptions().legend"
+          [plotOptions]="dividendChartOptions().plotOptions"
+          [dataLabels]="dividendChartOptions().dataLabels"
+          [grid]="dividendChartOptions().grid"
+          [xaxis]="dividendChartOptions().xaxis"
+          [yaxis]="dividendChartOptions().yaxis"
+          [states]="dividendChartOptions().states"
+          [stroke]="dividendChartOptions().stroke"
+          [tooltip]="dividendChartOptions().tooltip"
+        ></apx-chart>
+      }
+    </div>
+  </section>
+
 </div>

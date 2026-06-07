@@ -1,0 +1,38 @@
+<div class="space-y-6 flex flex-col">
+  <app-filter-card
+    (filterApplied)="onFilterApplied($event)"
+    (filtersCleared)="onFiltersCleared()"
+  ></app-filter-card>
+
+  <div class="glass-card rounded-2xl space-y-4">
+    <div class="flex justify-between items-center px-6 pt-6">
+      <h4 class="text-sm font-bold text-text-light">Preço Médio Histórico de Investimentos</h4>
+      <app-pdf-button
+        title="Relatório - Preço Médio Histórico"
+        [columns]="precoMedioColumns"
+        [data]="filteredPrecoMedio()"
+        filename="preco_medio_historico.pdf"
+      ></app-pdf-button>
+    </div>
+
+    <app-table
+      [data]="filteredPrecoMedio()"
+      [columns]="precoMedioColumns"
+      [totalItems]="filteredPrecoMedio().length"
+      [pageSize]="10"
+      [currentPage]="1"
+    >
+      <ng-template appCellTemplate="ticker" let-row="row">
+        <span class="font-bold text-text-light">{{ row.ticker }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="precoMedio" let-row="row">
+        <span>R$ {{ row.precoMedio | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="custoTotal" let-row="row">
+        <span class="font-bold text-text-light">R$ {{ row.custoTotal | abbreviateNumber }}</span>
+      </ng-template>
+    </app-table>
+  </div>
+</div>

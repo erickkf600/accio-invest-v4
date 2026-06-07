@@ -14,6 +14,13 @@ export default class MeuPerfil implements OnInit {
 
   protected user: { name: string; email: string; avatar: string } | null = null;
   protected saving = false;
+  protected showPasswordModal = false;
+  protected novaSenha = '';
+  protected confirmacaoSenha = '';
+
+  protected get isPasswordFormValid(): boolean {
+    return !!this.novaSenha && !!this.confirmacaoSenha && this.novaSenha === this.confirmacaoSenha;
+  }
 
   ngOnInit(): void {
     const stored = sessionStorage.getItem('auth_user');
@@ -36,5 +43,13 @@ export default class MeuPerfil implements OnInit {
     sessionStorage.removeItem('auth_user');
     sessionStorage.removeItem('auth_token');
     this.router.navigate(['/login']);
+  }
+
+  changePassword(): void {
+    if (!this.novaSenha || !this.confirmacaoSenha) return;
+    if (this.novaSenha !== this.confirmacaoSenha) return;
+    this.showPasswordModal = false;
+    this.novaSenha = '';
+    this.confirmacaoSenha = '';
   }
 }
