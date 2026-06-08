@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class AporteInfoDto {
   @ApiProperty()
@@ -9,30 +9,63 @@ export class AporteInfoDto {
 
   @ApiProperty()
   valor: number;
+
+  @ApiProperty()
+  taxa: number;
+}
+
+export class DistribuicaoItemDto {
+  @ApiProperty()
+  tipo: string;
+
+  @ApiProperty()
+  percentual: number;
+
+  @ApiProperty()
+  valor: number;
+
+  @ApiProperty()
+  cor: string;
+}
+
+export class RendimentoMensalDto {
+  @ApiProperty()
+  mes: number;
+
+  @ApiProperty({ nullable: true })
+  carteira: number | null;
+
+  @ApiProperty({ nullable: true })
+  cdi: number | null;
+
+  @ApiProperty({ nullable: true })
+  precoMedio: number | null;
+}
+
+export class AvailableYearsDto {
+  @ApiProperty({ type: [Number] })
+  years: number[];
 }
 
 export class DashboardDataDto {
   @ApiProperty()
-  temDados: boolean;
-
-  @ApiProperty()
   patrimonioTotal: number;
-
-  @ApiProperty()
-  rentabilidadeMes: number;
-
-  @ApiProperty()
-  saldoDisponivel: number;
-
-  @ApiProperty({ type: [AporteInfoDto] })
-  aportes: AporteInfoDto[];
 
   @ApiProperty()
   totalInvestido: number;
 
   @ApiProperty()
-  totalOperacoes: number;
-
-  @ApiProperty()
   totalProventos: number;
+
+  @ApiProperty({ type: [AporteInfoDto] })
+  aportes: AporteInfoDto[];
+
+  @ApiProperty({ type: [DistribuicaoItemDto] })
+  distribuicao: DistribuicaoItemDto[];
+
+  @ApiProperty({ type: [RendimentoMensalDto] })
+  rendimentos: RendimentoMensalDto[];
+
+  @ApiProperty({ type: [Number] })
+  availableYears: number[];
 }

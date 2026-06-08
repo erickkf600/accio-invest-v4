@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UserResponseDto {
   @ApiProperty()
@@ -9,6 +9,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   name: string;
+
+  @ApiPropertyOptional()
+  avatar?: string;
 
   @ApiProperty()
   createdAt: Date;

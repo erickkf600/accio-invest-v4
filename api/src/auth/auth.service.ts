@@ -81,11 +81,6 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token revoked or not found');
     }
 
-    await this.prisma.refreshToken.update({
-      where: { id: storedToken.id },
-      data: { revokedAt: new Date() },
-    });
-
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -130,13 +125,28 @@ export class AuthService {
     const refreshExpiresAt = new Date();
     refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
 
-    await this.prisma.refreshToken.create({
-      data: {
-        userId,
-        token: refreshToken,
-        expiresAt: refreshExpiresAt,
-      },
+    const existingToken = await this.prisma.refreshToken.findFirst({
+      where: { userId },
     });
+
+    if (existingToken) {
+      await this.prisma.refreshToken.update({
+        where: { id: existingToken.id },
+        data: {
+          token: refreshToken,
+          expiresAt: refreshExpiresAt,
+          revokedAt: null,
+        },
+      });
+    } else {
+      await this.prisma.refreshToken.create({
+        data: {
+          userId,
+          token: refreshToken,
+          expiresAt: refreshExpiresAt,
+        },
+      });
+    }
 
     const decoded = this.jwtService.decode(accessToken) as { exp: number };
     const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);

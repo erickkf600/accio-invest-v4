@@ -1,5 +1,5 @@
-import { Component, inject, signal, computed, linkedSignal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { Component, inject, signal, computed, linkedSignal, effect, OnInit } from '@angular/core';
+import { DecimalPipe, UpperCasePipe } from '@angular/common';
 import { TableComponent, TableColumn } from '../../components/Table/table.component';
 import { CellTemplateDirective } from '../../components/Table/cell-template.directive';
 import { FilterCardComponent } from '../../components/FilterCard/filter-card.component';
@@ -17,12 +17,15 @@ import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
 export interface Operation {
   id: string;
   data: string;
+  dataIso: string;
   ativo: string;
   tipo: 'Compra' | 'Venda' | 'Proventos' | 'Renda Fixa' | 'Reposicionamento';
   qtd: number | null;
   precoUn: number;
   taxas: number | null;
   total: number;
+  observacoes?: string;
+  notaNome?: string;
 }
 
 export interface OperationTypeOption {
@@ -33,11 +36,11 @@ export interface OperationTypeOption {
 @Component({
   selector: 'app-movimentacoes',
   standalone: true,
-  imports: [DecimalPipe, TableComponent, CellTemplateDirective, FilterCardComponent, MenuComponent, MovimentacoesEmptyState, NovaCompraComponent, NovoProventoComponent, NovaRendaFixaComponent, NovaVendaComponent, NovaPosicaoComponent, AbbreviateNumberPipe],
+  imports: [UpperCasePipe, TableComponent, CellTemplateDirective, FilterCardComponent, MenuComponent, MovimentacoesEmptyState, NovaCompraComponent, NovoProventoComponent, NovaRendaFixaComponent, NovaVendaComponent, NovaPosicaoComponent, AbbreviateNumberPipe],
   templateUrl: './movimentacoes.html',
   styleUrl: './movimentacoes.scss',
 })
-export default class Movimentacoes {
+export default class Movimentacoes implements OnInit {
   protected readonly title = 'Movimentações';
 
   protected movimentacoesService = inject(MovimentacoesService);
@@ -86,10 +89,15 @@ export default class Movimentacoes {
   ];
 
   constructor() {
+    effect(() => {
+      const state = this.movimentacoesService.state$();
+      this.hasData.set(state.data.temDados);
+      this.operations.set(state.data.operations);
+    });
+  }
+
+  ngOnInit(): void {
     this.movimentacoesService.loadOperations();
-    const data = this.movimentacoesService.state$().data;
-    this.hasData.set(data.temDados);
-    this.operations.set(data.operations);
   }
 
   // Filtered operations based on applied search and type
@@ -141,9 +149,6 @@ export default class Movimentacoes {
 
   protected refreshOperations(): void {
     this.movimentacoesService.loadOperations();
-    const data = this.movimentacoesService.state$().data;
-    this.hasData.set(data.temDados);
-    this.operations.set(data.operations);
   }
 
   protected onModalConfirmed(): void {

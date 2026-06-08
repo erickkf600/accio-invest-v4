@@ -106,8 +106,20 @@
       </div>
 
       <div class="pt-4">
-        <button type="submit" [disabled]="novaPosicaoForm().invalid()" class="w-full bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-emerald-950/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ isEditing() ? 'Atualizar Posição' : 'Adicionar Alteração' }}
+        @if (submitError()) {
+          <p class="text-xs text-red-400 mb-3">{{ submitError() }}</p>
+        }
+
+        <button
+          type="submit"
+          [disabled]="novaPosicaoForm().invalid() || isSubmitting()"
+          class="w-full bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-emerald-950/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          @if (isSubmitting()) {
+            Salvando...
+          } @else {
+            {{ isEditing() ? 'Atualizar Posição' : 'Adicionar Alteração' }}
+          }
         </button>
       </div>
 

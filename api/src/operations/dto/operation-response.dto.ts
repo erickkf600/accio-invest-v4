@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { OperationType } from '../../generated/prisma/client';
 
 export class OperationResponseDto {
@@ -37,6 +37,9 @@ export class OperationResponseDto {
 
   @ApiProperty({ required: false })
   notaNome?: string;
+
+  @ApiProperty({ required: false })
+  observacoes?: string;
 
   @ApiProperty()
   createdAt: Date;

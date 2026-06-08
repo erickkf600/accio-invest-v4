@@ -26,6 +26,9 @@ interface OperationResponseDto {
   taxas?: number;
   total: number;
   lucroRealizado?: number;
+  observacoes?: string;
+  notaNome?: string;
+  notaPath?: string;
 }
 
 interface PaginationMeta {
@@ -76,12 +79,15 @@ export class MovimentacoesService {
         const operations: Operation[] = items.map((op) => ({
           id: String(op.id),
           data: formatDate(op.data),
+          dataIso: op.data,
           ativo: op.ticker,
           tipo: op.tipo as Operation['tipo'],
           qtd: op.qtd ?? null,
           precoUn: op.precoUn,
           taxas: op.taxas ?? null,
           total: op.total,
+          observacoes: op.observacoes ?? '',
+          notaNome: op.notaNome ?? '',
         }));
         this.state.set({
           data: { temDados: operations.length > 0, operations },
@@ -95,30 +101,29 @@ export class MovimentacoesService {
   }
 
   deleteOperation(id: string): Observable<void> {
-    return this.http.delete(`${this.apiUrl}/${id}`).pipe(map(() => undefined));
+    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`).pipe(map(() => undefined));
   }
 
-  createWithFile(data: Record<string, any>, file?: File): Observable<any> {
-    const formData = this.buildFormData(data, file);
-    return this.http.post(this.apiUrl, formData);
+  createBatchWithFile(operations: Record<string, any>[], file?: File): Observable<ApiResponse<any>> {
+    const formData = new FormData();
+    formData.append('operations', JSON.stringify(operations));
+    if (file) {
+      formData.append('arquivo', file, file.name);
+    }
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/movimentacoes`, formData);
   }
 
-  updateWithFile(id: string, data: Record<string, any>, file?: File): Observable<any> {
-    const formData = this.buildFormData(data, file);
-    return this.http.patch(`${this.apiUrl}/${id}`, formData);
+  private repositioningUrl = `${environment.apiUrl}/repositioning`;
+
+  createRepositioning(data: Record<string, any>): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(this.repositioningUrl, data);
   }
 
-  createFixedIncomeWithFile(data: Record<string, any>, file?: File): Observable<any> {
-    const formData = this.buildFormData(data, file);
-    return this.http.post(`${environment.apiUrl}/portfolio/fixed-income`, formData);
+  updateRepositioning(id: string, data: Record<string, any>): Observable<ApiResponse<any>> {
+    return this.http.patch<ApiResponse<any>>(`${this.repositioningUrl}/${id}`, data);
   }
 
-  updateFixedIncomeWithFile(id: string, data: Record<string, any>, file?: File): Observable<any> {
-    const formData = this.buildFormData(data, file);
-    return this.http.patch(`${environment.apiUrl}/portfolio/fixed-income/${id}`, formData);
-  }
-
-  private buildFormData(data: Record<string, any>, file?: File): FormData {
+  updateOperation(id: string, data: Record<string, any>, file?: File): Observable<ApiResponse<any>> {
     const formData = new FormData();
     for (const [key, value] of Object.entries(data)) {
       if (value !== undefined && value !== null) {
@@ -128,6 +133,6 @@ export class MovimentacoesService {
     if (file) {
       formData.append('arquivo', file, file.name);
     }
-    return formData;
+    return this.http.patch<ApiResponse<any>>(`${this.apiUrl}/${id}`, formData);
   }
 }

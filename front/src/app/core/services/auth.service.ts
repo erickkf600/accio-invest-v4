@@ -84,6 +84,11 @@ export class AuthService {
       );
   }
 
+  updateUser(user: User): void {
+    this.userSignal.set(user);
+    this.saveObj(KEYS.USER, user);
+  }
+
   logout(): void {
     localStorage.removeItem(KEYS.ACCESS_TOKEN);
     localStorage.removeItem(KEYS.REFRESH_TOKEN);

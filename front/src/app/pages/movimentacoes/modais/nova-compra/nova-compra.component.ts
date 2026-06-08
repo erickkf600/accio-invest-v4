@@ -1,6 +1,6 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import { DecimalPipe } from '@angular/common';
+
+import { DatePipe } from '@angular/common';
 import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
@@ -38,12 +38,14 @@ interface ConfirmacionAsset {
 @Component({
   selector: 'app-nova-compra',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent],
+  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent],
+  providers: [DatePipe],
   templateUrl: './nova-compra.component.html',
 })
 export class NovaCompraComponent {
   private movimentacoesService = inject(MovimentacoesService);
   private toast = inject(ToastService);
+  private datePipe = inject(DatePipe);
 
   close = output<void>();
   confirmed = output<void>();
@@ -83,8 +85,8 @@ export class NovaCompraComponent {
       if (op) {
         this.model.set({
           taxasTotal: formatCurrencyBRL(op.taxas ?? 0),
-          dataOperacao: op.data,
-          observacoes: '',
+          dataOperacao: this.toIsoDate(op.dataIso, 'dd/MM/yyyy'),
+          observacoes: op.observacoes ?? '',
           anexo: { file: null, nome: '' },
           ativos: [{
             tipo: 1,
@@ -138,8 +140,33 @@ export class NovaCompraComponent {
   onSubmit(): void {
     submit(this.compraForm, async () => {
       if (this.isEditing()) {
-        this.confirmed.emit();
-        this.close.emit();
+        const op = this.operation()!;
+        const raw = this.model();
+        const ativo = raw.ativos[0];
+        const [dia, mes, ano] = raw.dataOperacao.split('/');
+        const dataIso = `${ano}-${mes}-${dia}`;
+        const precoUn = parseCurrencyBRL(ativo.valorUnitario);
+        const qtd = ativo.quantidade ?? 0;
+        const taxas = parseCurrencyBRL(raw.taxasTotal);
+        const total = precoUn * qtd + taxas;
+        this.movimentacoesService.updateOperation(op.id, {
+          ticker: ativo.ticker.toUpperCase(),
+          tipo: 'Compra',
+          data: dataIso,
+          qtd,
+          precoUn,
+          taxas,
+          total,
+          observacoes: raw.observacoes || '',
+        }, raw.anexo.file ?? undefined).subscribe({
+          next: () => {
+            this.confirmed.emit();
+            this.close.emit();
+          },
+          error: () => {
+            this.toast.error({ title: 'Erro', message: 'Erro ao atualizar a operação.' });
+          },
+        });
         return;
       }
       this.calculateRatesAndSummary();
@@ -158,7 +185,7 @@ export class NovaCompraComponent {
       const sub = (a.quantidade ?? 0) * preco;
       totalCustoNota += sub;
       return {
-        ticker: a.ticker,
+        ticker: a.ticker.toUpperCase(),
         tipoLabel: a.tipo ? TIPO_LABEL_MAP[a.tipo] || '-' : '-',
         quantidade: a.quantidade,
         valorUnitario: preco,
@@ -199,34 +226,28 @@ export class NovaCompraComponent {
     this.operationTotalCost.set(confirmationList.reduce((acc, c) => acc + c.total, 0));
   }
 
-  private toIsoDate(ddmmyyyy: string): string {
-    const [dia, mes, ano] = ddmmyyyy.split('/');
-    return `${ano}-${mes}-${dia}`;
-  }
 
   confirmFinal(): void {
     this.submitError.set('');
     this.isSubmitting.set(true);
-
     const raw = this.model();
-    const dataIso = this.toIsoDate(raw.dataOperacao);
+    const [dia, mes, ano] = raw.dataOperacao.split('/');
+    const dataIso = `${ano}-${mes}-${dia}`;
     const ativos = this.confirmationAtivos();
     const file = raw.anexo.file ?? undefined;
 
-    const observables = ativos.map(a =>
-      this.movimentacoesService.createWithFile({
-        ticker: a.ticker,
-        tipo: 'Compra',
-        data: dataIso,
-        qtd: a.quantidade,
-        precoUn: a.valorUnitario,
-        taxas: a.taxa,
-        total: a.total,
-        nota: raw.observacoes || '',
-      }, file)
-    );
+    const operations = ativos.map(a => ({
+      ticker: a.ticker,
+      tipo: 'Compra' as const,
+      data: dataIso,
+      qtd: a.quantidade,
+      precoUn: a.valorUnitario,
+      taxas: a.taxa,
+      total: a.total,
+      observacoes: raw.observacoes || '',
+    }));
 
-    forkJoin(observables).subscribe({
+    this.movimentacoesService.createBatchWithFile(operations, file).subscribe({
       next: () => {
         this.confirmed.emit();
         this.close.emit();
@@ -239,6 +260,10 @@ export class NovaCompraComponent {
         this.isSubmitting.set(false);
       },
     });
+  }
+
+  private toIsoDate(ddmmyyyy: string, type = 'yyyy-MM-dd'): string {
+    return this.datePipe.transform(ddmmyyyy, type) as string;
   }
 
   onClose(): void {

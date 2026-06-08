@@ -10,6 +10,7 @@ import { OperationsModule } from '../operations/operations.module';
 import { PortfolioModule } from '../portfolio/portfolio.module';
 import { ReportsModule } from '../reports/reports.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { RepositioningModule } from '../repositioning/repositioning.module';
 import { PythonApiModule } from '../integrations/python-api/python-api.module';
 import { AllExceptionsFilter } from '../common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../common/interceptors/response.interceptor';
@@ -27,6 +28,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
     PortfolioModule,
     ReportsModule,
     DashboardModule,
+    RepositioningModule,
     PythonApiModule,
   ],
   controllers: [AppController],

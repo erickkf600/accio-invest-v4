@@ -26,6 +26,7 @@ model User {
   email     String   @unique @db.VarChar(255)
   password  String   @db.VarChar(255)
   name      String   @db.VarChar(255)
+  avatar    String?  @db.VarChar(500)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -86,6 +87,7 @@ model Operation {
   lucroRealizado Float?        @map("lucro_realizado")
   notaPath       String?       @db.VarChar(500) @map("nota_path")
   notaNome       String?       @db.VarChar(255) @map("nota_nome")
+  observacoes    String?       @db.VarChar(150)
   createdBy      Int?          @map("created_by")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
@@ -108,7 +110,7 @@ model Repositioning {
   fator        String   @db.VarChar(20)
   ratioDe      String   @db.VarChar(10) @map("ratio_de")
   ratioPara    String   @db.VarChar(10) @map("ratio_para")
-  observacoes  String?  @db.Text
+  observacoes  String?  @db.VarChar(150)
   createdBy    Int?     @map("created_by")
   createdAt    DateTime @default(now()) @map("created_at")
 
@@ -131,6 +133,7 @@ model FixedIncomePosition {
   vencimento     DateTime?
   notaPath       String?  @db.VarChar(500) @map("nota_path")
   notaNome       String?  @db.VarChar(255) @map("nota_nome")
+  observacoes    String?  @db.VarChar(150)
   assetId        Int?     @map("asset_id")
   createdBy      Int?     @map("created_by")
   createdAt      DateTime @default(now()) @map("created_at")

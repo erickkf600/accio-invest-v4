@@ -1,4 +1,4 @@
-import { Component, signal, output, input } from '@angular/core';
+import { Component, signal, output, input, computed } from '@angular/core';
 import { DragDropDirective } from '../../directives/drag-drop.directive';
 
 @Component({
@@ -10,12 +10,15 @@ import { DragDropDirective } from '../../directives/drag-drop.directive';
 export class FileUploadComponent {
   label = input('Anexar arquivo (PDF)');
   maxFileSize = input(10 * 1024 * 1024);
+  existingFileName = input<string>('');
 
   fileSelected = output<File>();
   fileRemoved = output<void>();
 
   selectedFile = signal<File | null>(null);
   errorMessage = signal('');
+
+  existingFile = computed(() => this.existingFileName() && !this.selectedFile() ? this.existingFileName() : '');
 
   handleFile(file: File): void {
     this.errorMessage.set('');

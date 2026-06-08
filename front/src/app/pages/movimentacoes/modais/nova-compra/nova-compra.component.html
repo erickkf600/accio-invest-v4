@@ -135,6 +135,7 @@
 
       <app-file-upload
         label="Nota de Corretagem (PDF - opcional)"
+        [existingFileName]="operation()?.notaNome ?? ''"
         (fileSelected)="onFileSelected($event)"
         (fileRemoved)="onFileRemoved()"
       />

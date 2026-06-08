@@ -1,5 +1,6 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import type { ApiResponse } from '../../../core/models/auth.models';
 
@@ -18,35 +19,60 @@ export interface Pagamento {
   pago: boolean;
 }
 
-export interface DashboardData {
-  temDados: boolean;
-  patrimonioTotal: string;
-  rentabilidadeMes: string;
-  saldoDisponivel: string;
-  totalProventos: string;
-  aportes: Aporte[];
-  pagamentos: Pagamento[];
+export interface DistribuicaoItem {
+  tipo: string;
+  percentual: number;
+  valor: string;
+  cor: string;
 }
 
-export interface DashboardState {
-  data: DashboardData;
-  loading: boolean;
+export interface RendimentoMensal {
+  mes: number;
+  carteira: number | null;
+  cdi: number | null;
+  precoMedio: number | null;
+}
+
+export interface DashboardData {
+  patrimonioTotal: string;
+  totalInvestido: number;
+  totalProventos: string;
+  aportes: Aporte[];
+  distribuicao: DistribuicaoItem[];
+  rendimentos: RendimentoMensal[];
+  availableYears: number[];
+  pagamentos: Pagamento[];
 }
 
 interface AporteInfoDto {
   mes: number;
   ano: number;
   valor: number;
+  taxa: number;
+}
+
+interface DistribuicaoItemDto {
+  tipo: string;
+  percentual: number;
+  valor: number;
+  cor: string;
+}
+
+interface RendimentoMensalDto {
+  mes: number;
+  carteira: number | null;
+  cdi: number | null;
+  precoMedio: number | null;
 }
 
 interface DashboardDataDto {
-  temDados: boolean;
   patrimonioTotal: number;
-  rentabilidadeMes: number;
-  saldoDisponivel: number;
-  aportes: AporteInfoDto[];
   totalInvestido: number;
   totalProventos: number;
+  aportes: AporteInfoDto[];
+  distribuicao: DistribuicaoItemDto[];
+  rendimentos: RendimentoMensalDto[];
+  availableYears: number[];
 }
 
 @Injectable({
@@ -56,51 +82,39 @@ export class DashboardService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/dashboard`;
 
-  private state = signal<DashboardState>({
-    data: {
-      temDados: false,
-      patrimonioTotal: 'R$ 0,00',
-      rentabilidadeMes: '--%',
-      saldoDisponivel: 'R$ 0,00',
-      totalProventos: 'R$ 0,00',
-      aportes: [],
-      pagamentos: [],
-    },
-    loading: false,
-  });
-
-  readonly state$ = this.state.asReadonly();
-
   private readonly MESES = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
 
-  loadDashboard(): void {
-    this.state.update((s) => ({ ...s, loading: true }));
+  getDashboardData(ano?: number): Observable<DashboardData> {
+    let params = new HttpParams();
+    if (ano) {
+      params = params.set('ano', ano.toString());
+    }
 
-    this.http.get<ApiResponse<DashboardDataDto>>(this.apiUrl).subscribe({
-      next: (res) => {
+    return this.http.get<ApiResponse<DashboardDataDto>>(this.apiUrl, { params }).pipe(
+      map((res) => {
         const dto = res.data;
-        const data: DashboardData = {
-          temDados: dto.temDados,
+        return {
           patrimonioTotal: this.formatCurrency(dto.patrimonioTotal),
-          rentabilidadeMes: this.formatPercent(dto.rentabilidadeMes),
-          saldoDisponivel: this.formatCurrency(dto.saldoDisponivel),
+          totalInvestido: dto.totalInvestido,
           totalProventos: this.formatCurrency(dto.totalProventos),
           aportes: dto.aportes.map((a) => ({
             mes: this.MESES[a.mes - 1] || String(a.mes),
-            taxas: '--',
+            taxas: this.formatCurrency(a.taxa),
             total: this.formatCurrency(a.valor),
           })),
+          distribuicao: dto.distribuicao.map((d) => ({
+            ...d,
+            valor: this.formatCurrency(d.valor),
+          })),
+          rendimentos: dto.rendimentos,
+          availableYears: dto.availableYears,
           pagamentos: [],
         };
-        this.state.set({ data, loading: false });
-      },
-      error: () => {
-        this.state.set({ data: this.state().data, loading: false });
-      },
-    });
+      }),
+    );
   }
 
   private formatCurrency(value: number): string {
@@ -108,10 +122,5 @@ export class DashboardService {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
-  }
-
-  private formatPercent(value: number): string {
-    const signal = value >= 0 ? '+' : '';
-    return `${signal}${value.toFixed(1)}%`;
   }
 }

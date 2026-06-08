@@ -25,6 +25,14 @@
 - Para múltiplas chamadas paralelas, use `forkJoin`; para sequenciais, use `switchMap`
 - Para efeitos colaterais (ex: salvar token no localStorage), use `tap()` no pipe
 
+## Signals para State em Componentes
+
+- **Toda variável reativa** no componente (dados, flags de UI, formulários) DEVE usar `signal()` ou `computed()` — nunca propriedades planas
+- Para escrita: `signal.set()` ou `signal.update()`; para leitura no template use `signal()` (com `!` se o tipo permitir null e estiver dentro de um `@if` guard)
+- Flags booleanas como `saving`, `loading`, `showModal` devem ser `signal<boolean>` (ex: `protected saving = signal(false)`)
+- Dados carregados do backend devem ser `WritableSignal<T | null>` com `signal.set()` no `next` do subscribe
+- Evite `get` accessors para estado — prefira `computed()` quando precisar de estado derivado
+
 ## Styling & UI Guidelines
 
 - **Tailwind CSS Architecture**: Always use Tailwind CSS for styling components, utility classes, and layout configurations as defined in the custom skills. Ensure consistency with the utility-first approach and design tokens present in the workspace configuration.

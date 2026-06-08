@@ -1,5 +1,5 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
-import { forkJoin } from 'rxjs';
+
 import { DecimalPipe } from '@angular/common';
 import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
@@ -7,6 +7,7 @@ import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { DateRangePickerComponent } from '../../../../components/dateRangePicker/date-range-picker.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { ToastService } from '../../../../components/Toast/toast.service';
 import type { Operation } from '../../movimentacoes';
 
 interface ProventoAsset {
@@ -34,6 +35,7 @@ interface SummaryProventoAsset {
 })
 export class NovoProventoComponent {
   private movimentacoesService = inject(MovimentacoesService);
+  private toast = inject(ToastService);
 
   close = output<void>();
   confirmed = output<void>();
@@ -68,7 +70,7 @@ export class NovoProventoComponent {
       const op = this.operation();
       if (op) {
         this.model.set({
-          dataOperacao: op.data,
+          dataOperacao: op.dataIso,
           tipoProvento: 1,
           observacoes: '',
           ativos: [{
@@ -76,7 +78,7 @@ export class NovoProventoComponent {
             ticker: op.ativo,
             quantidade: op.qtd ?? 1,
             valorUnitario: formatCurrencyBRL(op.precoUn),
-            data: op.data,
+            data: op.dataIso,
           }],
         });
       }
@@ -165,22 +167,25 @@ export class NovoProventoComponent {
   confirmFinal(): void {
     const ativos = this.confirmationAtivos();
 
-    const observables = ativos.map((a) => {
-      const dataObj = {
-        ticker: a.ticker,
-        tipo: 'Proventos',
-        data: a.data || this.model().dataOperacao,
-        qtd: a.quantidade,
-        precoUn: a.valorUnitario,
-        taxas: 0,
-        total: a.total,
-      };
-      return this.movimentacoesService.createWithFile(dataObj);
-    });
+    const operations = ativos.map((a) => ({
+      ticker: a.ticker,
+      tipo: 'Proventos' as const,
+      data: a.data || this.model().dataOperacao,
+      qtd: a.quantidade,
+      precoUn: a.valorUnitario,
+      taxas: 0,
+      total: a.total,
+      observacoes: this.model().observacoes || '',
+    }));
 
-    forkJoin(observables).subscribe(() => {
-      this.confirmed.emit();
-      this.close.emit();
+    this.movimentacoesService.createBatchWithFile(operations).subscribe({
+      next: () => {
+        this.confirmed.emit();
+        this.close.emit();
+      },
+      error: () => {
+        this.toast.error({ title: 'Erro', message: 'Erro ao salvar a operação.' });
+      },
     });
   }
 

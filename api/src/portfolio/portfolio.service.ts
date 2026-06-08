@@ -177,9 +177,6 @@ export class PortfolioService {
     if (arquivo) {
       notaPath = generateRandomString();
       notaNome = arquivo.originalname;
-    } else if (dto.nota) {
-      notaPath = generateRandomString();
-      notaNome = dto.nota;
     }
 
     return this.prisma.fixedIncomePosition.create({
@@ -195,6 +192,7 @@ export class PortfolioService {
         vencimento: dto.vencimento ? new Date(dto.vencimento) : null,
         notaPath,
         notaNome,
+        observacoes: dto.observacoes ?? null,
         createdBy: userId,
       },
     });
@@ -228,9 +226,10 @@ export class PortfolioService {
     if (arquivo) {
       updateData['notaPath'] = generateRandomString();
       updateData['notaNome'] = arquivo.originalname;
-    } else if (dto.nota) {
-      updateData['notaPath'] = generateRandomString();
-      updateData['notaNome'] = dto.nota;
+    }
+
+    if (dto.observacoes !== undefined) {
+      updateData['observacoes'] = dto.observacoes;
     }
 
     return this.prisma.fixedIncomePosition.update({

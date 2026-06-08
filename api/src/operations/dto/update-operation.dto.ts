@@ -67,4 +67,10 @@ export class UpdateOperationDto {
   @IsOptional()
   @IsString()
   nota?: string;
+
+  @ApiPropertyOptional({ description: 'Observações (até 150 caracteres)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  observacoes?: string;
 }

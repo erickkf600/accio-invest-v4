@@ -1,10 +1,11 @@
 import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
+import { lastValueFrom } from 'rxjs';
 import { FormField, form, submit, required, pattern } from '@angular/forms/signals';
 import { CurrencyMaskDirective, formatCurrencyBRL, parseCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { TabsComponent } from '../../../../components/tabs/tabs.component';
 import { FileUploadComponent } from '../../../../components/file-upload/file-upload.component';
-import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { PortfolioService } from '../../../portfolio/service/portfolio.service';
 import type { Operation } from '../../movimentacoes';
 
 @Component({
@@ -14,7 +15,7 @@ import type { Operation } from '../../movimentacoes';
   templateUrl: './nova-renda-fixa.component.html',
 })
 export class NovaRendaFixaComponent {
-  private movimentacoesService = inject(MovimentacoesService);
+  private portfolioService = inject(PortfolioService);
 
   close = output<void>();
   confirmed = output<void>();
@@ -36,6 +37,7 @@ export class NovaRendaFixaComponent {
     possuiImposto: true,
     valorAplicado: '',
     dataCompra: '',
+    observacoes: '',
     anexo: { file: null as File | null, nome: '' },
     // Yield tab model fields
     dataRendimento: '',
@@ -78,7 +80,8 @@ export class NovaRendaFixaComponent {
           vencimento: '',
           possuiImposto: true,
           valorAplicado: formatCurrencyBRL(op.precoUn),
-          dataCompra: op.data,
+          dataCompra: op.dataIso,
+          observacoes: op.observacoes ?? '',
           anexo: { file: null, nome: '' },
           dataRendimento: '',
           valorRendimento: '',
@@ -120,42 +123,47 @@ export class NovaRendaFixaComponent {
     return parseFloat(normalized);
   }
 
-  onSubmit(): void {
-    const form = this.activeTab() === 'compra' ? this.compraForm : this.rendimentoForm;
-    submit(form, async () => {
-      this.submitError.set('');
-      this.isSubmitting.set(true);
+  async onSubmit(): Promise<void> {
+    const formRef = this.activeTab() === 'compra' ? this.compraForm : this.rendimentoForm;
+    const isValid = await submit(formRef);
+    if (!isValid) return;
 
+    this.submitError.set('');
+    this.isSubmitting.set(true);
+
+    const data = this.model();
+
+    if (this.activeTab() === 'compra') {
       try {
-        const data = this.model();
-
-        if (this.activeTab() === 'compra') {
-          await this.movimentacoesService.createFixedIncomeWithFile({
-            emissor: data.emissor,
-            tipo: data.tipo,
-            indexador: data.indexador,
-            taxaJuros: this.parseTaxaJuros(data.taxaJuros),
-            valorAplicado: parseCurrencyBRL(data.valorAplicado),
-            dataCompra: this.toIsoDate(data.dataCompra),
-            vencimento: data.vencimento ? this.toIsoDate(data.vencimento) : undefined,
-            liquidezDiaria: data.liquidezDiaria,
-            possuiImposto: data.possuiImposto,
-          }, data.anexo.file ?? undefined);
-        } else {
-          console.log('Renda Fixa (rendimento) saved:', {
-            dataRendimento: data.dataRendimento,
-            valorRendimento: data.valorRendimento,
-          });
-        }
+        await lastValueFrom(this.portfolioService.createFixedIncomeWithFile({
+          emissor: data.emissor,
+          tipo: data.tipo,
+          indexador: data.indexador,
+          taxaJuros: this.parseTaxaJuros(data.taxaJuros),
+          valorAplicado: parseCurrencyBRL(data.valorAplicado),
+          dataCompra: this.toIsoDate(data.dataCompra),
+          vencimento: data.vencimento ? this.toIsoDate(data.vencimento) : undefined,
+          liquidezDiaria: data.liquidezDiaria,
+          possuiImposto: data.possuiImposto,
+          observacoes: data.observacoes || '',
+        }, data.anexo.file ?? undefined));
 
         this.confirmed.emit();
         this.close.emit();
-      } catch (_err) {
+      } catch {
         this.submitError.set('Erro ao salvar. Tente novamente.');
       } finally {
         this.isSubmitting.set(false);
       }
-    });
+    } else {
+      console.log('Renda Fixa (rendimento) saved:', {
+        dataRendimento: data.dataRendimento,
+        valorRendimento: data.valorRendimento,
+      });
+      this.confirmed.emit();
+      this.close.emit();
+      this.isSubmitting.set(false);
+    }
   }
 
   onClose(): void {

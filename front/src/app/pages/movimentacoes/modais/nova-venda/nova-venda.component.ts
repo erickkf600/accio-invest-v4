@@ -1,5 +1,6 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { lastValueFrom } from 'rxjs';
 import { FormField, form, submit, required, min } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
@@ -74,7 +75,7 @@ export class NovaVendaComponent {
           quantidade: op.qtd ?? 1,
           precoUnitario: formatCurrencyBRL(op.precoUn),
           taxas: op.taxas !== null ? formatCurrencyBRL(op.taxas) : '',
-          data: op.data,
+          data: op.dataIso,
           observacoes: '',
           anexo: { file: null, nome: '' },
         });
@@ -114,37 +115,38 @@ export class NovaVendaComponent {
   }
 
   /** Submit handler – validates, calculates summary and emits */
-  onSubmit(): void {
-    submit(this.vendaForm, async () => {
-      this.submitError.set('');
-      this.isSubmitting.set(true);
+  async onSubmit(): Promise<void> {
+    const isValid = await submit(this.vendaForm);
+    if (!isValid) return;
 
-      try {
-        const m = this.model();
-        const precoUn = parseCurrencyBRL(m.precoUnitario);
-        const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
-        const qtd = m.quantidade;
-        const total = precoUn * qtd - taxas;
+    this.submitError.set('');
+    this.isSubmitting.set(true);
 
-        await this.movimentacoesService.createWithFile({
-          ticker: m.ticker,
-          tipo: 'Venda',
-          data: this.toIsoDate(m.data),
-          qtd,
-          precoUn,
-          taxas,
-          total,
-          nota: m.observacoes || '',
-        }, m.anexo.file ?? undefined);
+    const m = this.model();
+    const precoUn = parseCurrencyBRL(m.precoUnitario);
+    const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
+    const qtd = m.quantidade;
+    const total = precoUn * qtd - taxas;
 
-        this.confirmed.emit();
-        this.close.emit();
-      } catch (_err) {
-        this.submitError.set('Erro ao salvar a venda. Tente novamente.');
-      } finally {
-        this.isSubmitting.set(false);
-      }
-    });
+    try {
+      await lastValueFrom(this.movimentacoesService.createBatchWithFile([{
+        ticker: m.ticker,
+        tipo: 'Venda',
+        data: this.toIsoDate(m.data),
+        qtd,
+        precoUn,
+        taxas,
+        total,
+        observacoes: m.observacoes || '',
+      }], m.anexo.file ?? undefined));
+
+      this.confirmed.emit();
+      this.close.emit();
+    } catch {
+      this.submitError.set('Erro ao salvar a venda. Tente novamente.');
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 
   /** Close button handler */

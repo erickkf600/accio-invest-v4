@@ -1,31 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
-import { DashboardDataDto } from './dto/dashboard-data.dto';
+import {
+  DashboardDataDto,
+  AporteInfoDto,
+  DistribuicaoItemDto,
+  RendimentoMensalDto,
+} from './dto/dashboard-data.dto';
 
 @Injectable()
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getDashboard(userId: number): Promise<DashboardDataDto> {
+  async getDashboard(userId: number, ano?: string): Promise<DashboardDataDto> {
+    const targetYear = ano ? parseInt(ano) : new Date().getFullYear();
+
     const operations = await this.prisma.operation.findMany({
       where: { createdBy: userId },
       orderBy: { data: 'desc' },
     });
 
-    if (operations.length === 0) {
-      return {
-        temDados: false,
-        patrimonioTotal: 0,
-        rentabilidadeMes: 0,
-        saldoDisponivel: 0,
-        aportes: [],
-        totalInvestido: 0,
-        totalOperacoes: 0,
-        totalProventos: 0,
-      };
-    }
-
-    const totalInvestido = operations
+    const totalCompras = operations
       .filter((op) => op.tipo === 'Compra')
       .reduce((acc, op) => acc + op.total, 0);
 
@@ -37,37 +31,33 @@ export class DashboardService {
       .filter((op) => op.tipo === 'Proventos')
       .reduce((acc, op) => acc + op.total, 0);
 
-    const patrimonioTotal = totalInvestido - totalVendas + totalProventos;
+    const patrimonioTotal = totalCompras - totalVendas + totalProventos;
+    const totalInvestido = totalCompras;
 
-    const now = new Date();
-    const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const aportesMes = operations.filter(
-      (op) => op.tipo === 'Compra' && new Date(op.data) >= inicioMes,
-    );
-    const valorAportesMes = aportesMes.reduce((acc, op) => acc + op.total, 0);
-
-    const rentabilidadeMes =
-      totalInvestido > 0 ? (valorAportesMes / totalInvestido) * 100 : 0;
-
-    const aportesAgrupados = this.agruparAportesPorMes(operations);
+    const rendimentos = await this.calcularRendimentos(userId, targetYear, totalInvestido);
+    const distribuicao = await this.calcularDistribuicao(userId);
+    const availableYears = await this.calcularAvailableYears(userId);
+    const aportes = this.agruparAportes(operations);
 
     return {
-      temDados: true,
       patrimonioTotal,
-      rentabilidadeMes: parseFloat(rentabilidadeMes.toFixed(2)),
-      saldoDisponivel: 0,
-      aportes: aportesAgrupados,
       totalInvestido,
-      totalOperacoes: operations.length,
       totalProventos,
+      aportes,
+      distribuicao,
+      rendimentos,
+      availableYears,
     };
   }
 
-  private agruparAportesPorMes(
-    operations: { data: Date; tipo: string; total: number }[],
-  ): { mes: number; ano: number; valor: number }[] {
-    const grouped = new Map<string, { mes: number; ano: number; valor: number }>();
+  async getAvailableYears(userId: number): Promise<number[]> {
+    return this.calcularAvailableYears(userId);
+  }
+
+  private agruparAportes(
+    operations: { data: Date; tipo: string; total: number; taxas: number | null }[],
+  ): AporteInfoDto[] {
+    const grouped = new Map<string, AporteInfoDto>();
 
     for (const op of operations) {
       if (op.tipo !== 'Compra') continue;
@@ -77,14 +67,192 @@ export class DashboardService {
         mes: d.getMonth() + 1,
         ano: d.getFullYear(),
         valor: 0,
+        taxa: 0,
       };
       existing.valor += op.total;
+      existing.taxa += op.taxas ?? 0;
       grouped.set(key, existing);
     }
 
-    return Array.from(grouped.values()).sort((a, b) => {
-      if (a.ano !== b.ano) return a.ano - b.ano;
-      return a.mes - b.mes;
+    return Array.from(grouped.values())
+      .sort((a, b) => {
+        if (a.ano !== b.ano) return b.ano - a.ano;
+        return b.mes - a.mes;
+      })
+      .slice(0, 5);
+  }
+
+  private async calcularDistribuicao(userId: number): Promise<DistribuicaoItemDto[]> {
+    const positions = await this.prisma.portfolioPosition.findMany({
+      where: {
+        asset: { createdBy: userId },
+      },
+      include: {
+        asset: true,
+      },
     });
+
+    const fixedIncome = await this.prisma.fixedIncomePosition.findMany({
+      where: { createdBy: userId },
+    });
+
+    const tipoValor = new Map<string, number>();
+
+    for (const pos of positions) {
+      const tipo = pos.asset.tipo;
+      const current = tipoValor.get(tipo) || 0;
+      tipoValor.set(tipo, current + pos.custoTotal);
+    }
+
+    const totalFI = fixedIncome.reduce((acc, fi) => acc + fi.valorAplicado, 0);
+
+    const categorias: Record<string, { valor: number; cor: string; rotulo: string }> = {
+      ACOES: { valor: tipoValor.get('ACOES') || 0, cor: '#75d33b', rotulo: 'Ações' },
+      FII: { valor: tipoValor.get('FII') || 0, cor: '#3b82f6', rotulo: 'FIIs' },
+      RENDA_FIXA: { valor: totalFI, cor: '#fb923c', rotulo: 'Renda Fixa' },
+    };
+
+    const outrosTipos = ['BDR', 'ETF', 'CRIPTO'];
+    const outrosValor = outrosTipos.reduce((acc, t) => acc + (tipoValor.get(t) || 0), 0);
+    if (outrosValor > 0) {
+      categorias['OUTROS'] = { valor: outrosValor, cor: '#64748b', rotulo: 'Outros' };
+    }
+
+    const total = Object.values(categorias).reduce((acc, c) => acc + c.valor, 0);
+
+    if (total === 0) return [];
+
+    return Object.values(categorias)
+      .filter((c) => c.valor > 0)
+      .map((c) => ({
+        tipo: c.rotulo,
+        percentual: parseFloat(((c.valor / total) * 100).toFixed(1)),
+        valor: parseFloat(c.valor.toFixed(2)),
+        cor: c.cor,
+      }));
+  }
+
+  private async calcularRendimentos(
+    userId: number,
+    ano: number,
+    totalInvestido: number,
+  ): Promise<RendimentoMensalDto[]> {
+    const operations = await this.prisma.operation.findMany({
+      where: {
+        createdBy: userId,
+        data: {
+          gte: new Date(ano, 0, 1),
+          lte: new Date(ano, 11, 31),
+        },
+      },
+      orderBy: { data: 'asc' },
+    });
+
+    const proventos = operations.filter((op) => op.tipo === 'Proventos');
+    const compras = operations.filter((op) => op.tipo === 'Compra');
+
+    const fixedIncomeHistories = await this.prisma.fixedIncomeHistory.findMany({
+      where: {
+        createdBy: userId,
+        dataVencimento: {
+          gte: new Date(ano, 0, 1),
+          lte: new Date(ano, 11, 31),
+        },
+      },
+    });
+
+    const totalProventosAno = proventos.reduce((acc, p) => acc + p.total, 0);
+    const totalRendimentoRF = fixedIncomeHistories.reduce((acc, f) => acc + f.rendimentoBruto, 0);
+    const temProventos = totalProventosAno > 0 || totalRendimentoRF > 0;
+
+    const cdiData = await this.fetchCDI(ano);
+
+    const meses = Array.from({ length: 12 }, (_, i) => i + 1);
+    const rendimentos: RendimentoMensalDto[] = [];
+
+    const firstMonthCompras = compras.filter((c) => new Date(c.data).getMonth() + 1 === 1);
+    const firstCusto = firstMonthCompras.reduce((acc, c) => acc + c.precoUn * (c.qtd ?? 0), 0);
+    const firstQtd = firstMonthCompras.reduce((acc, c) => acc + (c.qtd ?? 0), 0);
+    const firstAvgPrice = firstQtd > 0 ? firstCusto / firstQtd : null;
+
+    for (const mes of meses) {
+      const proventosAteMes = proventos
+        .filter((p) => new Date(p.data).getMonth() + 1 <= mes)
+        .reduce((acc, p) => acc + p.total, 0);
+
+      const rendimentoRFAteMes = fixedIncomeHistories
+        .filter((f) => new Date(f.dataVencimento).getMonth() + 1 <= mes)
+        .reduce((acc, f) => acc + f.rendimentoBruto, 0);
+
+      const carteiraVal =
+        temProventos && totalInvestido > 0
+          ? parseFloat(
+              (
+                ((proventosAteMes + rendimentoRFAteMes) / totalInvestido) *
+                100
+              ).toFixed(2),
+            )
+          : null;
+
+      const cdiCumulativo = cdiData
+        .filter((c) => c.mes <= mes)
+        .reduce((acc, c) => acc + c.valor, 0);
+
+      const cdiVal = cdiData.length > 0 ? parseFloat(cdiCumulativo.toFixed(2)) : null;
+
+      const comprasAteMes = compras.filter((c) => new Date(c.data).getMonth() + 1 <= mes);
+      const totalCusto = comprasAteMes.reduce(
+        (acc, c) => acc + c.precoUn * (c.qtd ?? 0),
+        0,
+      );
+      const totalQtd = comprasAteMes.reduce((acc, c) => acc + (c.qtd ?? 0), 0);
+
+      let precoMedioVal: number | null = null;
+      if (totalQtd > 0 && firstAvgPrice !== null) {
+        const avgPrice = totalCusto / totalQtd;
+        precoMedioVal = parseFloat(
+          (((avgPrice - firstAvgPrice) / firstAvgPrice) * 100).toFixed(2),
+        );
+      }
+
+      rendimentos.push({
+        mes,
+        carteira: carteiraVal,
+        cdi: cdiVal,
+        precoMedio: precoMedioVal,
+      });
+    }
+
+    return rendimentos;
+  }
+
+  private async fetchCDI(
+    ano: number,
+  ): Promise<{ mes: number; valor: number }[]> {
+    try {
+      const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados?formato=json&dataInicial=01/01/${ano}&dataFinal=31/12/${ano}`;
+      const response = await fetch(url);
+      const data: { data: string; valor: string }[] = await response.json();
+      return data.map((item) => {
+        const [dia, mes] = item.data.split('/');
+        return { mes: parseInt(mes), valor: parseFloat(item.valor) };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  private async calcularAvailableYears(userId: number): Promise<number[]> {
+    const operations = await this.prisma.operation.findMany({
+      where: { createdBy: userId, tipo: 'Compra' },
+      select: { data: true },
+    });
+
+    const years = new Set<number>();
+    for (const op of operations) {
+      years.add(new Date(op.data).getFullYear());
+    }
+
+    return Array.from(years).sort((a, b) => b - a);
   }
 }

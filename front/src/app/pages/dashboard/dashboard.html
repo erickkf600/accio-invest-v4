@@ -4,7 +4,7 @@
     <h1 class="text-3xl font-bold text-text-light mb-2">Olá, Investidor</h1>
     <p class="text-text-muted">Bem-vindo ao seu novo centro de comando.</p>
   </div>
-  @if (!hasData()) {
+  @if (!hasData) {
     <app-dashboard-empty-state />
   } @else {
     <!-- Main Chart Section -->
@@ -19,7 +19,7 @@
                 (change)="onYearChange($event)"
                 class="appearance-none bg-transparent text-[11px] font-medium text-gray-400 pr-4 focus:outline-none cursor-pointer"
               >
-                @for (y of availableYears; track y) {
+                @for (y of availableYears(); track y) {
                   <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
                 }
               </select>
@@ -38,6 +38,10 @@
           <div class="flex items-center gap-2 px-3">
             <span class="w-3 h-3 rounded-full bg-blue-400"></span>
             <span class="text-xs text-text-light">CDI</span>
+          </div>
+          <div class="flex items-center gap-2 px-3">
+            <span class="w-3 h-3 rounded-full bg-violet-400"></span>
+            <span class="text-xs text-text-light">Preço Médio</span>
           </div>
         </div>
       </div>
@@ -68,23 +72,26 @@
           <div class="flex justify-between items-start mb-6">
             <div>
               <p class="text-xs text-text-muted uppercase tracking-wider">Patrimônio Total</p>
-              <h2 class="text-3xl font-bold text-text-light mt-1">{{ dashboardService.state$().data.patrimonioTotal }}</h2>
+              <h2 class="text-3xl font-bold text-text-light mt-1">{{ patrimonioTotal() }}</h2>
             </div>
           </div>
+          @if (distribuicao().length > 0) {
           <div class="space-y-4">
             <div class="flex h-3 w-full rounded-full overflow-hidden bg-white/5">
-              <div class="h-full bg-primary-success" style="width: 60%"></div>
-              <div class="h-full bg-blue-500" style="width: 20%"></div>
-              <div class="h-full bg-orange-400" style="width: 12%"></div>
-              <div class="h-full bg-slate-600" style="width: 8%"></div>
+              @for (item of distribuicao(); track item.tipo) {
+                <div class="h-full" [style.width.%]="item.percentual" [style.background-color]="item.cor"></div>
+              }
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary-success"></span><span class="text-xs text-text-muted">Ações (60%)</span></div>
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-xs text-text-muted">FIIs (20%)</span></div>
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-400"></span><span class="text-xs text-text-muted">Renda Fixa (12%)</span></div>
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-600"></span><span class="text-xs text-text-muted">Outros (8%)</span></div>
+              @for (item of distribuicao(); track item.tipo) {
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" [style.background-color]="item.cor"></span>
+                  <span class="text-xs text-text-muted">{{ item.tipo }} ({{ item.percentual }}%)</span>
+                </div>
+              }
             </div>
           </div>
+          }
           <div class="mt-auto w-full">
             <button class="w-full bg-primary-success text-bg-main py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all cursor-pointer">
               Gerenciar
@@ -93,7 +100,7 @@
         </div>
         <div class="glass-card rounded-xl p-4 transition-all duration-300 hover:border-primary-success/20">
           <p class="text-xs text-text-muted mb-2">Proventos Totais</p>
-          <p class="text-xl font-bold text-text-light">{{ dashboardService.state$().data.totalProventos }}</p>
+          <p class="text-xl font-bold text-text-light">{{ totalProventos() }}</p>
         </div>
       </div>
 
@@ -131,12 +138,12 @@
       </div>
 
       <!-- Próximos pagamentos (Right Column) -->
-      @if (pagamentos().length > 0) {
       <div class="lg:col-span-4">
         <div class="glass-card rounded-xl p-6 h-full flex flex-col transition-all duration-300 hover:border-primary-success/20">
           <div class="flex justify-between items-center mb-6 gap-2">
             <h3 class="text-xl font-bold text-text-light whitespace-nowrap">Próximos pagamentos</h3>
           </div>
+          @if (pagamentos().length > 0) {
           <div class="flex-grow flex flex-col min-h-0">
             <div class="grid grid-cols-3 px-4 py-2 text-text-muted text-xs border-b border-white/5 shrink-0">
               <span class="">Ticker</span>
@@ -172,32 +179,17 @@
               </div>
             </div>
           </div>
+          } @else {
+          <div class="flex-grow flex flex-col items-center justify-center text-center py-8">
+            <span class="material-symbols-outlined text-5xl text-text-muted/20 mb-4">payments</span>
+            <p class="text-sm text-text-muted max-w-xs">Não há dividendos provisionados para o período selecionado.</p>
+          </div>
+          }
           <div class="mt-6 pt-6 border-t border-white/10">
             <button class="w-full text-center text-text-muted text-xs hover:text-primary-success transition-colors cursor-pointer">Visualizar todos</button>
           </div>
         </div>
       </div>
-      }
     </div>
   }
 </main>
-
-<!-- Mobile Navigation Bar -->
-<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#121620]/95 backdrop-blur-xl border-t border-white/5 md:hidden px-4 py-2 flex justify-around items-center">
-  <a class="bg-primary-success/10 text-primary-success rounded-xl p-2 flex flex-col items-center gap-1" href="#">
-    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-    <span class="text-xs">Dashboard</span>
-  </a>
-  <a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
-    <span class="material-symbols-outlined">swap_horiz</span>
-    <span class="text-xs">Aportes</span>
-  </a>
-  <a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
-    <span class="material-symbols-outlined">payments</span>
-    <span class="text-xs">Pagamentos</span>
-  </a>
-  <a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
-    <span class="material-symbols-outlined">description</span>
-    <span class="text-xs">Relatórios</span>
-  </a>
-</nav>

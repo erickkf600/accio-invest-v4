@@ -83,7 +83,7 @@
       >
         <!-- Column Data Templates -->
         <ng-template appCellTemplate="ativo" let-row="row">
-          <span class="font-bold text-text-light">{{ row.ativo }}</span>
+          <span class="font-bold text-text-light">{{ row.ativo | uppercase }}</span>
         </ng-template>
 
         <ng-template appCellTemplate="tipo" let-row="row">
