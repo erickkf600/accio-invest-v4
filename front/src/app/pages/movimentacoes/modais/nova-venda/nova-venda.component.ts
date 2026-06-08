@@ -4,6 +4,7 @@ import { FormField, form, submit, required, min } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
+import { FileUploadComponent } from '../../../../components/file-upload/file-upload.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import type { Operation } from '../../movimentacoes';
 
@@ -14,6 +15,7 @@ interface VendaAsset {
   taxas: string;
   data: string;
   observacoes: string;
+  anexo: { file: File | null; nome: string };
 }
 
 /**
@@ -24,7 +26,7 @@ interface VendaAsset {
 @Component({
   selector: 'app-nova-venda',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe],
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent],
   templateUrl: './nova-venda.component.html',
 })
 export class NovaVendaComponent {
@@ -49,6 +51,7 @@ export class NovaVendaComponent {
     taxas: '',
     data: '',
     observacoes: '',
+    anexo: { file: null, nome: '' },
   });
 
   /** Signal Form definition with required validation rules */
@@ -73,6 +76,7 @@ export class NovaVendaComponent {
           taxas: op.taxas !== null ? formatCurrencyBRL(op.taxas) : '',
           data: op.data,
           observacoes: '',
+          anexo: { file: null, nome: '' },
         });
       }
     });
@@ -87,13 +91,59 @@ export class NovaVendaComponent {
     return preco * qtd - taxas;
   });
 
+  isSubmitting = signal(false);
+  submitError = signal('');
+
+  onFileSelected(file: File): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file, nome: file.name },
+    }));
+  }
+
+  onFileRemoved(): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file: null, nome: '' },
+    }));
+  }
+
+  private toIsoDate(ddmmyyyy: string): string {
+    const [dia, mes, ano] = ddmmyyyy.split('/');
+    return `${ano}-${mes}-${dia}`;
+  }
+
   /** Submit handler – validates, calculates summary and emits */
   onSubmit(): void {
     submit(this.vendaForm, async () => {
-      // Here we could call a service to persist the operation
-      // For now we just emit the confirmation and close the modal
-      this.confirmed.emit();
-      this.close.emit();
+      this.submitError.set('');
+      this.isSubmitting.set(true);
+
+      try {
+        const m = this.model();
+        const precoUn = parseCurrencyBRL(m.precoUnitario);
+        const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
+        const qtd = m.quantidade;
+        const total = precoUn * qtd - taxas;
+
+        await this.movimentacoesService.createWithFile({
+          ticker: m.ticker,
+          tipo: 'Venda',
+          data: this.toIsoDate(m.data),
+          qtd,
+          precoUn,
+          taxas,
+          total,
+          nota: m.observacoes || '',
+        }, m.anexo.file ?? undefined);
+
+        this.confirmed.emit();
+        this.close.emit();
+      } catch (_err) {
+        this.submitError.set('Erro ao salvar a venda. Tente novamente.');
+      } finally {
+        this.isSubmitting.set(false);
+      }
     });
   }
 

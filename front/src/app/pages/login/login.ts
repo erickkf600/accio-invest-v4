@@ -1,6 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../components/Toast/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -10,9 +12,12 @@ import { Router, RouterLink } from '@angular/router';
   styleUrl: './login.scss',
 })
 export default class Login {
+  private auth = inject(AuthService);
   private router = inject(Router);
+  private toast = inject(ToastService);
 
   protected showPassword = signal(false);
+  protected loading = signal(false);
 
   protected form = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -23,16 +28,26 @@ export default class Login {
 
   onSubmit(): void {
     if (this.form.invalid) return;
-    const user = {
-      name: 'Ricardo Oliveira',
-      email: this.form.value.email || 'ricardo.oliveira@qubix.com',
-      avatar: 'https://api.dicebear.com/10.x/identicon/svg',
-    };
-    const token = 'fake-jwt-token-' + Date.now();
+    this.loading.set(true);
 
-    sessionStorage.setItem('auth_user', JSON.stringify(user));
-    sessionStorage.setItem('auth_token', token);
+    const { email, password } = this.form.value;
 
-    this.router.navigate(['/dashboard']);
+    this.auth
+      .login({ email: email!, password: password! })
+      .subscribe({
+        next: () => {
+          this.toast.success({ message: 'Login realizado com sucesso!' });
+          this.router.navigate(['/dashboard']);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          const msg =
+            err.status === 401
+              ? 'E-mail ou senha inválidos'
+              : 'Erro ao conectar ao servidor. Tente novamente.';
+          this.toast.error({ message: msg });
+          this.loading.set(false);
+        },
+      });
   }
 }

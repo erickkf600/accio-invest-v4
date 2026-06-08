@@ -1,4 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+import type { ApiResponse } from '../../../core/models/auth.models';
 
 export interface Aporte {
   mes: string;
@@ -20,6 +23,7 @@ export interface DashboardData {
   patrimonioTotal: string;
   rentabilidadeMes: string;
   saldoDisponivel: string;
+  totalProventos: string;
   aportes: Aporte[];
   pagamentos: Pagamento[];
 }
@@ -29,16 +33,36 @@ export interface DashboardState {
   loading: boolean;
 }
 
+interface AporteInfoDto {
+  mes: number;
+  ano: number;
+  valor: number;
+}
+
+interface DashboardDataDto {
+  temDados: boolean;
+  patrimonioTotal: number;
+  rentabilidadeMes: number;
+  saldoDisponivel: number;
+  aportes: AporteInfoDto[];
+  totalInvestido: number;
+  totalProventos: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class DashboardService {
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/dashboard`;
+
   private state = signal<DashboardState>({
     data: {
       temDados: false,
       patrimonioTotal: 'R$ 0,00',
       rentabilidadeMes: '--%',
       saldoDisponivel: 'R$ 0,00',
+      totalProventos: 'R$ 0,00',
       aportes: [],
       pagamentos: [],
     },
@@ -47,48 +71,47 @@ export class DashboardService {
 
   readonly state$ = this.state.asReadonly();
 
-  private readonly mockDataComDados: DashboardData = {
-    temDados: true,
-    patrimonioTotal: 'R$ 142.845,20',
-    rentabilidadeMes: '+3.2%',
-    saldoDisponivel: 'R$ 12.450,00',
-    aportes: [
-      { mes: 'Maio', taxas: 'R$ 12,50', total: 'R$ 3.842' },
-      { mes: 'Abril', taxas: 'R$ 8,20', total: 'R$ 3.125' },
-      { mes: 'Março', taxas: 'R$ 15,40', total: 'R$ 5.400' },
-      { mes: 'Fevereiro', taxas: 'R$ 5,10', total: 'R$ 1.710' },
-    ],
-    pagamentos: [
-      { dataDia: '15', dataMes: 'MAI', ticker: 'PETR4', tipo: 'Dividendos', valor: 'R$ 145,20', pago: true },
-      { dataDia: '22', dataMes: 'MAI', ticker: 'ITUB4', tipo: 'JCP', valor: 'R$ 82,15', pago: false },
-      { dataDia: '05', dataMes: 'JUN', ticker: 'XPML11', tipo: 'Rendimento', valor: 'R$ 14,80', pago: false },
-      { dataDia: '12', dataMes: 'JUN', ticker: 'BBAS3', tipo: 'Dividendos', valor: 'R$ 210,00', pago: false },
-      { dataDia: '20', dataMes: 'JUN', ticker: 'VALE3', tipo: 'JCP', valor: 'R$ 95,50', pago: false },
-    ],
-  };
+  private readonly MESES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ];
 
-  private readonly mockDataSemDados: DashboardData = {
-    temDados: false,
-    patrimonioTotal: 'R$ 0,00',
-    rentabilidadeMes: '--%',
-    saldoDisponivel: 'R$ 0,00',
-    aportes: [],
-    pagamentos: [],
-  };
+  loadDashboard(): void {
+    this.state.update((s) => ({ ...s, loading: true }));
 
-  carregarComDados(): void {
-    this.state.set({ data: this.mockDataComDados, loading: false });
+    this.http.get<ApiResponse<DashboardDataDto>>(this.apiUrl).subscribe({
+      next: (res) => {
+        const dto = res.data;
+        const data: DashboardData = {
+          temDados: dto.temDados,
+          patrimonioTotal: this.formatCurrency(dto.patrimonioTotal),
+          rentabilidadeMes: this.formatPercent(dto.rentabilidadeMes),
+          saldoDisponivel: this.formatCurrency(dto.saldoDisponivel),
+          totalProventos: this.formatCurrency(dto.totalProventos),
+          aportes: dto.aportes.map((a) => ({
+            mes: this.MESES[a.mes - 1] || String(a.mes),
+            taxas: '--',
+            total: this.formatCurrency(a.valor),
+          })),
+          pagamentos: [],
+        };
+        this.state.set({ data, loading: false });
+      },
+      error: () => {
+        this.state.set({ data: this.state().data, loading: false });
+      },
+    });
   }
 
-  carregarSemDados(): void {
-    this.state.set({ data: this.mockDataSemDados, loading: false });
+  private formatCurrency(value: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
   }
 
-  async carregarAsync(comDados: boolean): Promise<DashboardData> {
-    this.state.set({ data: this.state().data, loading: true });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    const data = comDados ? this.mockDataComDados : this.mockDataSemDados;
-    this.state.set({ data, loading: false });
-    return data;
+  private formatPercent(value: number): string {
+    const signal = value >= 0 ? '+' : '';
+    return `${signal}${value.toFixed(1)}%`;
   }
 }

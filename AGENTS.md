@@ -17,6 +17,14 @@
 - DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
+## RxJS para Integrações com Backend
+
+- **Toda integração com backend DEVE usar RxJS** (`Observable`, `pipe`, `subscribe`, `tap`, `map`, `switchMap`, `forkJoin`, etc.)
+- **NUNCA use `.toPromise()` ou `Promise`** para chamadas HTTP
+- Services devem retornar `Observable<T>` — o consumidor (componente/interceptor) faz `.subscribe()`
+- Para múltiplas chamadas paralelas, use `forkJoin`; para sequenciais, use `switchMap`
+- Para efeitos colaterais (ex: salvar token no localStorage), use `tap()` no pipe
+
 ## Styling & UI Guidelines
 
 - **Tailwind CSS Architecture**: Always use Tailwind CSS for styling components, utility classes, and layout configurations as defined in the custom skills. Ensure consistency with the utility-first approach and design tokens present in the workspace configuration.

@@ -1,7 +1,6 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { ToastService } from '../../components/Toast/toast.service';
 import { DashboardService } from './service/dashboard.service';
 import DashboardEmptyState from './component/dashboard-empty-state/dashboard-empty-state';
 
@@ -44,29 +43,12 @@ export default class Dashboard {
   };
 
   constructor() {
-    this.dashboardService.carregarComDados();
+    this.dashboardService.loadDashboard();
     const data = this.dashboardService.state$().data;
     this.hasData.set(data.temDados);
     this.aportes.set(data.aportes);
     this.pagamentos.set(data.pagamentos);
     if (data.temDados) {
-      this.initChart();
-    }
-  }
-
-  alternarEstado(): void {
-    const atual = this.dashboardService.state$().data;
-    if (atual.temDados) {
-      this.dashboardService.carregarSemDados();
-      this.hasData.set(false);
-      this.aportes.set([]);
-      this.pagamentos.set([]);
-    } else {
-      this.dashboardService.carregarComDados();
-      this.hasData.set(true);
-      const data = this.dashboardService.state$().data;
-      this.aportes.set(data.aportes);
-      this.pagamentos.set(data.pagamentos);
       this.initChart();
     }
   }
@@ -109,7 +91,7 @@ export default class Dashboard {
         gradient: {
           type: 'vertical',
           shadeIntensity: 0,
-          opacityFrom: [0.0, 0.45], // 0 para o CDI (sem fill), 0.2 para a Carteira
+          opacityFrom: [0.0, 0.45],
           opacityTo: [0.0, 0.0],
           stops: [0, 100]
         }
@@ -147,7 +129,7 @@ export default class Dashboard {
           const months = [
             'Janeiro',
             'Fevereiro',
-            'Março',
+            'Mar\u00e7o',
             'Abril',
             'Maio',
             'Junho',

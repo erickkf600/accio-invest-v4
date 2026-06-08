@@ -1,6 +1,6 @@
 @for (pos of positions; track pos) {
   @if (toastsByPosition()[pos].length > 0) {
-    <div class="fixed z-50 flex flex-col gap-2 pointer-events-none" [class]="positionClass(pos)">
+    <div class="fixed z-[999] flex flex-col gap-2 pointer-events-none" [class]="positionClass(pos)">
       @for (toast of toastsByPosition()[pos]; track toast.id) {
         <div
           class="pointer-events-auto bg-[#0b0e14]/80 backdrop-blur-xl border p-4 rounded-xl flex items-center gap-4 max-w-sm shadow-2xl transition-all duration-300"

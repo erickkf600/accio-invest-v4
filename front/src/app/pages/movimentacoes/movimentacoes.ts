@@ -86,23 +86,10 @@ export default class Movimentacoes {
   ];
 
   constructor() {
-    this.movimentacoesService.carregarComDados();
+    this.movimentacoesService.loadOperations();
     const data = this.movimentacoesService.state$().data;
     this.hasData.set(data.temDados);
     this.operations.set(data.operations);
-  }
-
-  alternarEstado(): void {
-    const atual = this.movimentacoesService.state$().data;
-    if (atual.temDados) {
-      this.movimentacoesService.carregarSemDados();
-      this.hasData.set(false);
-      this.operations.set([]);
-    } else {
-      this.movimentacoesService.carregarComDados();
-      this.hasData.set(true);
-      this.operations.set(this.movimentacoesService.state$().data.operations);
-    }
   }
 
   // Filtered operations based on applied search and type
@@ -152,11 +139,15 @@ export default class Movimentacoes {
     this.editingOperation.set(null);
   }
 
-  protected onModalConfirmed(): void {
-    this.movimentacoesService.carregarComDados();
+  protected refreshOperations(): void {
+    this.movimentacoesService.loadOperations();
     const data = this.movimentacoesService.state$().data;
     this.hasData.set(data.temDados);
     this.operations.set(data.operations);
+  }
+
+  protected onModalConfirmed(): void {
+    this.refreshOperations();
     this.closeModal();
   }
 
@@ -183,11 +174,22 @@ export default class Movimentacoes {
   protected confirmDelete(): void {
     const op = this.deletingOperation();
     if (!op) return;
-    this.operations.update((list) => list.filter((item) => item.id !== op.id));
-    this.deletingOperation.set(null);
-    this.toastService.success({
-      title: 'Excluído',
-      message: `Operação ${op.ativo} excluída com sucesso.`,
+
+    this.movimentacoesService.deleteOperation(op.id).subscribe({
+      next: () => {
+        this.operations.update((list) => list.filter((item) => item.id !== op.id));
+        this.deletingOperation.set(null);
+        this.toastService.success({
+          title: 'Excluído',
+          message: `Operação ${op.ativo} excluída com sucesso.`,
+        });
+      },
+      error: () => {
+        this.toastService.error({
+          title: 'Erro',
+          message: 'Não foi possível excluir a operação.',
+        });
+      },
     });
   }
 

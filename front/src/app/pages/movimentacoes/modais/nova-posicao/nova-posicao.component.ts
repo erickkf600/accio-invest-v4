@@ -1,7 +1,7 @@
 import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
 import { FormField, form, submit, required } from '@angular/forms/signals';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
-import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { ToastService } from '../../../../components/Toast/toast.service';
 import type { Operation } from '../../movimentacoes';
 
 @Component({
@@ -11,7 +11,7 @@ import type { Operation } from '../../movimentacoes';
   templateUrl: './nova-posicao.component.html',
 })
 export class NovaPosicaoComponent {
-  private movimentacoesService = inject(MovimentacoesService);
+  private toast = inject(ToastService);
 
   close = output<void>();
   confirmed = output<void>();
@@ -59,8 +59,9 @@ export class NovaPosicaoComponent {
 
   onSubmit(): void {
     submit(this.novaPosicaoForm, async () => {
-      const data = this.model();
-      console.log('Nova Posição Saved:', data);
+      this.toast.success({
+        message: 'Reposicionamento registrado com sucesso!',
+      });
       this.confirmed.emit();
       this.close.emit();
     });

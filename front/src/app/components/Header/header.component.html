@@ -13,8 +13,14 @@
       <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/ferramentas" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Ferramentas</a>
     </nav>
     <div class="flex items-center gap-4">
-      <a class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-success/20 cursor-pointer hover:border-primary-success transition-all block" routerLink="/meu-perfil">
-        <img alt="Avatar" class="w-full h-full object-contain" src="https://api.dicebear.com/10.x/identicon/svg">
+      <a class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-success/20 cursor-pointer hover:border-primary-success transition-all block" routerLink="/meu-perfil" [title]="auth.user()?.name ?? 'Perfil'">
+        @if (auth.user()) {
+          <div class="w-full h-full bg-primary-success/20 flex items-center justify-center text-primary-success font-bold text-lg">
+            {{ auth.user()!.name.charAt(0).toUpperCase() }}
+          </div>
+        } @else {
+          <div class="w-full h-full bg-primary-success/20 flex items-center justify-center text-primary-success font-bold text-lg">U</div>
+        }
       </a>
     </div>
   </div>

@@ -1,15 +1,16 @@
 import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
 import { FormField, form, submit, required, pattern } from '@angular/forms/signals';
-import { CurrencyMaskDirective, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { CurrencyMaskDirective, formatCurrencyBRL, parseCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { TabsComponent } from '../../../../components/tabs/tabs.component';
+import { FileUploadComponent } from '../../../../components/file-upload/file-upload.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import type { Operation } from '../../movimentacoes';
 
 @Component({
   selector: 'app-nova-renda-fixa',
   standalone: true,
-  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, TabsComponent],
+  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, TabsComponent, FileUploadComponent],
   templateUrl: './nova-renda-fixa.component.html',
 })
 export class NovaRendaFixaComponent {
@@ -35,6 +36,7 @@ export class NovaRendaFixaComponent {
     possuiImposto: true,
     valorAplicado: '',
     dataCompra: '',
+    anexo: { file: null as File | null, nome: '' },
     // Yield tab model fields
     dataRendimento: '',
     valorRendimento: '',
@@ -77,11 +79,29 @@ export class NovaRendaFixaComponent {
           possuiImposto: true,
           valorAplicado: formatCurrencyBRL(op.precoUn),
           dataCompra: op.data,
+          anexo: { file: null, nome: '' },
           dataRendimento: '',
           valorRendimento: '',
         });
       }
     });
+  }
+
+  isSubmitting = signal(false);
+  submitError = signal('');
+
+  onFileSelected(file: File): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file, nome: file.name },
+    }));
+  }
+
+  onFileRemoved(): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file: null, nome: '' },
+    }));
   }
 
   setTab(tab: string): void {
@@ -90,17 +110,51 @@ export class NovaRendaFixaComponent {
     }
   }
 
+  private toIsoDate(ddmmyyyy: string): string {
+    const [dia, mes, ano] = ddmmyyyy.split('/');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  private parseTaxaJuros(valor: string): number {
+    const normalized = valor.replace(',', '.');
+    return parseFloat(normalized);
+  }
+
   onSubmit(): void {
     const form = this.activeTab() === 'compra' ? this.compraForm : this.rendimentoForm;
     submit(form, async () => {
-      const data = this.model();
-      console.log('Renda Fixa Saved:', {
-        ...data,
-        liquidezDiaria: data.liquidezDiaria,
-        possuiImposto: data.possuiImposto,
-      });
-      this.confirmed.emit();
-      this.close.emit();
+      this.submitError.set('');
+      this.isSubmitting.set(true);
+
+      try {
+        const data = this.model();
+
+        if (this.activeTab() === 'compra') {
+          await this.movimentacoesService.createFixedIncomeWithFile({
+            emissor: data.emissor,
+            tipo: data.tipo,
+            indexador: data.indexador,
+            taxaJuros: this.parseTaxaJuros(data.taxaJuros),
+            valorAplicado: parseCurrencyBRL(data.valorAplicado),
+            dataCompra: this.toIsoDate(data.dataCompra),
+            vencimento: data.vencimento ? this.toIsoDate(data.vencimento) : undefined,
+            liquidezDiaria: data.liquidezDiaria,
+            possuiImposto: data.possuiImposto,
+          }, data.anexo.file ?? undefined);
+        } else {
+          console.log('Renda Fixa (rendimento) saved:', {
+            dataRendimento: data.dataRendimento,
+            valorRendimento: data.valorRendimento,
+          });
+        }
+
+        this.confirmed.emit();
+        this.close.emit();
+      } catch (_err) {
+        this.submitError.set('Erro ao salvar. Tente novamente.');
+      } finally {
+        this.isSubmitting.set(false);
+      }
     });
   }
 

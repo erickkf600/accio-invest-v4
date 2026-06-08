@@ -1,10 +1,13 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { DecimalPipe } from '@angular/common';
 import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
+import { FileUploadComponent } from '../../../../components/file-upload/file-upload.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { ToastService } from '../../../../components/Toast/toast.service';
 import { AssetTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 
@@ -35,11 +38,12 @@ interface ConfirmacionAsset {
 @Component({
   selector: 'app-nova-compra',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe],
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent],
   templateUrl: './nova-compra.component.html',
 })
 export class NovaCompraComponent {
   private movimentacoesService = inject(MovimentacoesService);
+  private toast = inject(ToastService);
 
   close = output<void>();
   confirmed = output<void>();
@@ -55,6 +59,7 @@ export class NovaCompraComponent {
     taxasTotal: '',
     dataOperacao: '',
     observacoes: '',
+    anexo: { file: null as File | null, nome: '' },
     ativos: [
       { tipo: null, ticker: '', quantidade: null, valorUnitario: '' }
     ] as CompraAsset[],
@@ -80,6 +85,7 @@ export class NovaCompraComponent {
           taxasTotal: formatCurrencyBRL(op.taxas ?? 0),
           dataOperacao: op.data,
           observacoes: '',
+          anexo: { file: null, nome: '' },
           ativos: [{
             tipo: 1,
             ticker: op.ativo,
@@ -96,6 +102,22 @@ export class NovaCompraComponent {
   confirmationAtivos = signal<ConfirmacionAsset[]>([]);
   operationTotalCost = signal<number>(0);
   operationTotalTaxes = signal<number>(0);
+  isSubmitting = signal(false);
+  submitError = signal('');
+
+  onFileSelected(file: File): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file, nome: file.name },
+    }));
+  }
+
+  onFileRemoved(): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file: null, nome: '' },
+    }));
+  }
 
   addAtivo(): void {
     this.model.update((m) => ({
@@ -177,15 +199,46 @@ export class NovaCompraComponent {
     this.operationTotalCost.set(confirmationList.reduce((acc, c) => acc + c.total, 0));
   }
 
+  private toIsoDate(ddmmyyyy: string): string {
+    const [dia, mes, ano] = ddmmyyyy.split('/');
+    return `${ano}-${mes}-${dia}`;
+  }
+
   confirmFinal(): void {
-    // Save operation in Mock service
-    // Add operations from summary
-    this.confirmationAtivos().forEach(ca => {
-      // Add each operation to movimentacoes service
-      // We can simulate an addition
+    this.submitError.set('');
+    this.isSubmitting.set(true);
+
+    const raw = this.model();
+    const dataIso = this.toIsoDate(raw.dataOperacao);
+    const ativos = this.confirmationAtivos();
+    const file = raw.anexo.file ?? undefined;
+
+    const observables = ativos.map(a =>
+      this.movimentacoesService.createWithFile({
+        ticker: a.ticker,
+        tipo: 'Compra',
+        data: dataIso,
+        qtd: a.quantidade,
+        precoUn: a.valorUnitario,
+        taxas: a.taxa,
+        total: a.total,
+        nota: raw.observacoes || '',
+      }, file)
+    );
+
+    forkJoin(observables).subscribe({
+      next: () => {
+        this.confirmed.emit();
+        this.close.emit();
+      },
+      error: () => {
+        this.toast.error({ title: 'Erro', message: 'Erro ao salvar a operação. Tente novamente.' });
+        this.isSubmitting.set(false);
+      },
+      complete: () => {
+        this.isSubmitting.set(false);
+      },
     });
-    this.confirmed.emit();
-    this.close.emit();
   }
 
   onClose(): void {

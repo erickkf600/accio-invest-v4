@@ -1,4 +1,8 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import type { ApiResponse } from '../../../core/models/auth.models';
 import type { Operation } from '../movimentacoes';
 
 export interface MovimentacoesData {
@@ -11,10 +15,46 @@ export interface MovimentacoesState {
   loading: boolean;
 }
 
+interface OperationResponseDto {
+  id: number;
+  assetId: number;
+  ticker: string;
+  tipo: string;
+  data: string;
+  qtd?: number;
+  precoUn: number;
+  taxas?: number;
+  total: number;
+  lucroRealizado?: number;
+}
+
+interface PaginationMeta {
+  total: number;
+  currentPage: number;
+  totalPages: number;
+  limit: number;
+}
+
+const MESES_ABR: Record<number, string> = {
+  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
+};
+
+function formatDate(d: string): string {
+  const date = new Date(d);
+  const dia = date.getDate();
+  const mes = MESES_ABR[date.getMonth() + 1] || '';
+  const ano = date.getFullYear();
+  return `${dia} ${mes}, ${ano}`;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class MovimentacoesService {
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/operations`;
+
   private state = signal<MovimentacoesState>({
     data: {
       temDados: false,
@@ -25,47 +65,69 @@ export class MovimentacoesService {
 
   readonly state$ = this.state.asReadonly();
 
-  private readonly mockDataComDados: MovimentacoesData = {
-    temDados: true,
-    operations: [
-      // Compra
-      { id: '1', data: '12 Mai, 2024', ativo: 'AAPL', tipo: 'Compra', qtd: 10, precoUn: 183.05, taxas: 0.54, total: 1831.04 },
-      { id: '4', data: '05 Mai, 2024', ativo: 'PETR4', tipo: 'Compra', qtd: 100, precoUn: 41.20, taxas: 1.23, total: 4121.23 },
-      { id: '5', data: '02 Mai, 2024', ativo: 'VALE3', tipo: 'Compra', qtd: 50, precoUn: 62.40, taxas: 0.75, total: 3120.75 },
-      { id: '7', data: '25 Abr, 2024', ativo: 'BBAS3', tipo: 'Compra', qtd: 80, precoUn: 27.50, taxas: 0.90, total: 2200.90 },
-      { id: '10', data: '10 Abr, 2024', ativo: 'XPML11', tipo: 'Compra', qtd: 30, precoUn: 115.00, taxas: 1.10, total: 3451.10 },
-      // Venda
-      { id: '2', data: '10 Mai, 2024', ativo: 'TSLA', tipo: 'Venda', qtd: 5, precoUn: 171.89, taxas: 0.26, total: 859.19 },
-      { id: '9', data: '15 Abr, 2024', ativo: 'BBDC4', tipo: 'Venda', qtd: 120, precoUn: 14.20, taxas: 0.45, total: 1703.55 },
-      // Proventos
-      { id: '3', data: '08 Mai, 2024', ativo: 'MSFT', tipo: 'Proventos', qtd: null, precoUn: 0.75, taxas: null, total: 45.20 },
-      { id: '6', data: '28 Abr, 2024', ativo: 'ITUB4', tipo: 'Proventos', qtd: null, precoUn: 0.25, taxas: null, total: 125.00 },
-      { id: '8', data: '20 Abr, 2024', ativo: 'MXRF11', tipo: 'Proventos', qtd: null, precoUn: 0.10, taxas: null, total: 100.00 },
-      // Renda Fixa
-      { id: '11', data: '15 Jun, 2024', ativo: 'CDB Banco Master 115% CDI', tipo: 'Renda Fixa', qtd: null, precoUn: 5000.00, taxas: null, total: 5000.00 },
-      // Reposicionamento
-      { id: '12', data: '20 Jun, 2024', ativo: 'MGLU3', tipo: 'Reposicionamento', qtd: null, precoUn: 0, taxas: null, total: 0 },
-    ],
-  };
+  loadOperations(): void {
+    this.state.update((s) => ({ ...s, loading: true }));
 
-  private readonly mockDataSemDados: MovimentacoesData = {
-    temDados: false,
-    operations: [],
-  };
-
-  carregarComDados(): void {
-    this.state.set({ data: this.mockDataComDados, loading: false });
+    this.http.get<ApiResponse<{ data: OperationResponseDto[]; meta: PaginationMeta }>>(this.apiUrl, {
+      params: { limit: 100 },
+    }).subscribe({
+      next: (res) => {
+        const items = res.data.data;
+        const operations: Operation[] = items.map((op) => ({
+          id: String(op.id),
+          data: formatDate(op.data),
+          ativo: op.ticker,
+          tipo: op.tipo as Operation['tipo'],
+          qtd: op.qtd ?? null,
+          precoUn: op.precoUn,
+          taxas: op.taxas ?? null,
+          total: op.total,
+        }));
+        this.state.set({
+          data: { temDados: operations.length > 0, operations },
+          loading: false,
+        });
+      },
+      error: () => {
+        this.state.set({ data: this.state().data, loading: false });
+      },
+    });
   }
 
-  carregarSemDados(): void {
-    this.state.set({ data: this.mockDataSemDados, loading: false });
+  deleteOperation(id: string): Observable<void> {
+    return this.http.delete(`${this.apiUrl}/${id}`).pipe(map(() => undefined));
   }
 
-  async carregarAsync(comDados: boolean): Promise<MovimentacoesData> {
-    this.state.set({ data: this.state().data, loading: true });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    const data = comDados ? this.mockDataComDados : this.mockDataSemDados;
-    this.state.set({ data, loading: false });
-    return data;
+  createWithFile(data: Record<string, any>, file?: File): Observable<any> {
+    const formData = this.buildFormData(data, file);
+    return this.http.post(this.apiUrl, formData);
+  }
+
+  updateWithFile(id: string, data: Record<string, any>, file?: File): Observable<any> {
+    const formData = this.buildFormData(data, file);
+    return this.http.patch(`${this.apiUrl}/${id}`, formData);
+  }
+
+  createFixedIncomeWithFile(data: Record<string, any>, file?: File): Observable<any> {
+    const formData = this.buildFormData(data, file);
+    return this.http.post(`${environment.apiUrl}/portfolio/fixed-income`, formData);
+  }
+
+  updateFixedIncomeWithFile(id: string, data: Record<string, any>, file?: File): Observable<any> {
+    const formData = this.buildFormData(data, file);
+    return this.http.patch(`${environment.apiUrl}/portfolio/fixed-income/${id}`, formData);
+  }
+
+  private buildFormData(data: Record<string, any>, file?: File): FormData {
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    }
+    if (file) {
+      formData.append('arquivo', file, file.name);
+    }
+    return formData;
   }
 }

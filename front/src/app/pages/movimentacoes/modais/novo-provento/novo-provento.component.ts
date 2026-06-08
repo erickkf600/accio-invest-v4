@@ -1,4 +1,5 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { DecimalPipe } from '@angular/common';
 import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
@@ -162,8 +163,25 @@ export class NovoProventoComponent {
   }
 
   confirmFinal(): void {
-    this.confirmed.emit();
-    this.close.emit();
+    const ativos = this.confirmationAtivos();
+
+    const observables = ativos.map((a) => {
+      const dataObj = {
+        ticker: a.ticker,
+        tipo: 'Proventos',
+        data: a.data || this.model().dataOperacao,
+        qtd: a.quantidade,
+        precoUn: a.valorUnitario,
+        taxas: 0,
+        total: a.total,
+      };
+      return this.movimentacoesService.createWithFile(dataObj);
+    });
+
+    forkJoin(observables).subscribe(() => {
+      this.confirmed.emit();
+      this.close.emit();
+    });
   }
 
   onClose(): void {

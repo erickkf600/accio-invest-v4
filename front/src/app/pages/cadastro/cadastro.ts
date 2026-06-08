@@ -1,6 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../components/Toast/toast.service';
 
 const passwordsMatch: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('password');
@@ -16,7 +18,9 @@ const passwordsMatch: ValidatorFn = (control: AbstractControl): ValidationErrors
   styleUrl: './cadastro.scss',
 })
 export default class Cadastro {
+  private auth = inject(AuthService);
   private router = inject(Router);
+  private toast = inject(ToastService);
 
   protected showPassword = signal(false);
   protected showConfirmPassword = signal(false);
@@ -35,10 +39,26 @@ export default class Cadastro {
   onSubmit(): void {
     if (this.form.invalid) return;
     this.loading.set(true);
-    setTimeout(() => {
-      this.loading.set(false);
-      this.success.set(true);
-      setTimeout(() => this.router.navigate(['/login']), 1500);
-    }, 1500);
+
+    const { name, email, password } = this.form.value;
+
+    this.auth
+      .register({ name: name!, email: email!, password: password! })
+      .subscribe({
+        next: () => {
+          this.success.set(true);
+          this.toast.success({ message: 'Conta criada com sucesso!' });
+          this.loading.set(false);
+          setTimeout(() => this.router.navigate(['/dashboard']), 1500);
+        },
+        error: (err) => {
+          const msg =
+            err.status === 409
+              ? 'Este e-mail já está cadastrado'
+              : 'Erro ao criar conta. Tente novamente.';
+          this.toast.error({ message: msg });
+          this.loading.set(false);
+        },
+      });
   }
 }

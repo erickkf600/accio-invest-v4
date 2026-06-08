@@ -190,6 +190,12 @@
               class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none resize-none transition-colors"
             ></textarea>
           </div>
+
+          <app-file-upload
+            label="Comprovante ou Prospecto (PDF - opcional)"
+            (fileSelected)="onFileSelected($event)"
+            (fileRemoved)="onFileRemoved()"
+          />
         </div>
       }
 
@@ -244,12 +250,20 @@
       }
 
       <div class="pt-4">
+        @if (submitError()) {
+          <p class="text-xs text-red-400 mb-3">{{ submitError() }}</p>
+        }
+
         <button
           type="submit"
-          [disabled]="activeTab() === 'compra' ? compraForm().invalid() : rendimentoForm().invalid()"
+          [disabled]="(activeTab() === 'compra' ? compraForm().invalid() : rendimentoForm().invalid()) || isSubmitting()"
           class="w-full bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-emerald-950/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {{ isEditing() ? 'Atualizar Renda Fixa' : 'Adicionar Renda Fixa' }}
+          @if (isSubmitting()) {
+            Salvando...
+          } @else {
+            {{ isEditing() ? 'Atualizar Renda Fixa' : 'Adicionar Renda Fixa' }}
+          }
         </button>
       </div>
     </form>

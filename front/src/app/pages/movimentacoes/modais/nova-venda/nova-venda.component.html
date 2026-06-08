@@ -95,18 +95,32 @@
         ></textarea>
       </div>
 
+      <app-file-upload
+        label="Nota de Corretagem (PDF - opcional)"
+        (fileSelected)="onFileSelected($event)"
+        (fileRemoved)="onFileRemoved()"
+      />
+
       <div class="pt-4 space-y-4">
         <div class="bg-[#242933] p-4 rounded-xl border border-primary/30">
           <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Total Estimado</span>
           <p class="text-lg font-bold text-primary mt-1">R$ {{ totalValor() | abbreviateNumber }}</p>
         </div>
 
+        @if (submitError()) {
+          <p class="text-xs text-red-400">{{ submitError() }}</p>
+        }
+
         <button
           type="submit"
-          [disabled]="vendaForm().invalid()"
+          [disabled]="vendaForm().invalid() || isSubmitting()"
           class="w-full bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-emerald-950/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          {{ isEditing() ? 'Atualizar Venda' : 'Registrar Venda' }}
+          @if (isSubmitting()) {
+            Salvando...
+          } @else {
+            {{ isEditing() ? 'Atualizar Venda' : 'Registrar Venda' }}
+          }
         </button>
       </div>
     </form>
