@@ -36,6 +36,7 @@ model User {
   repositionings      Repositioning[]
   refreshTokens       RefreshToken[]
   fixedIncomeHistories FixedIncomeHistory[]
+  fixedIncomeYields    FixedIncomeYield[]
 
   @@map("users")
 }
@@ -44,8 +45,8 @@ model Asset {
   id        Int      @id @default(autoincrement())
   ticker    String   @unique @db.VarChar(20)
   tipo      AssetType
-  nome      String?  @db.VarChar(200)
-  createdBy Int?     @map("created_by")
+  quantidade Int?
+  createdBy   Int?     @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -139,8 +140,9 @@ model FixedIncomePosition {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  asset Asset?  @relation(fields: [assetId], references: [id])
-  user  User?   @relation(fields: [createdBy], references: [id])
+  fixedIncomeYields FixedIncomeYield[]
+  asset             Asset?                   @relation(fields: [assetId], references: [id])
+  user              User?                    @relation(fields: [createdBy], references: [id])
 
   @@index([assetId])
   @@index([createdBy])
@@ -166,6 +168,25 @@ model FixedIncomeHistory {
 
   @@index([createdBy])
   @@map("fixed_income_history")
+}
+
+model FixedIncomeYield {
+  id              Int      @id @default(autoincrement())
+  fixedIncomeId   Int      @map("fixed_income_id")
+  emissor         String   @db.VarChar(200)
+  dataOperacao    DateTime @map("data_operacao")
+  valor           Float
+  observacoes     String?  @db.VarChar(150)
+  createdBy       Int?     @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  fixedIncomePosition FixedIncomePosition @relation(fields: [fixedIncomeId], references: [id])
+  user                User?               @relation(fields: [createdBy], references: [id])
+
+  @@index([fixedIncomeId])
+  @@index([createdBy])
+  @@map("fixed_income_yields")
 }
 
 model RefreshToken {

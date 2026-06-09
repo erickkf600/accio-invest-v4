@@ -1,5 +1,6 @@
 import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
 import { lastValueFrom } from 'rxjs';
+import { DatePipe } from '@angular/common';
 import { FormField, form, submit, required } from '@angular/forms/signals';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { ToastService } from '../../../../components/Toast/toast.service';
@@ -10,11 +11,13 @@ import type { Operation } from '../../movimentacoes';
   selector: 'app-nova-posicao',
   standalone: true,
   imports: [FormField, DateMaskDirective],
+  providers: [DatePipe],
   templateUrl: './nova-posicao.component.html',
 })
 export class NovaPosicaoComponent {
   private movimentacoesService = inject(MovimentacoesService);
   private toast = inject(ToastService);
+  private datePipe = inject(DatePipe);
 
   close = output<void>();
   confirmed = output<void>();
@@ -52,7 +55,7 @@ export class NovaPosicaoComponent {
       if (op) {
         this.model.set({
           ticker: op.ativo,
-          dataOperacao: op.dataIso,
+          dataOperacao: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
           tipo: 'Desdobramento',
           fator: 'Desdobramento',
           ratioDe: '1',
@@ -77,7 +80,7 @@ export class NovaPosicaoComponent {
         const op = this.operation()!;
         await lastValueFrom(this.movimentacoesService.updateRepositioning(op.id, {
           ticker: m.ticker,
-          dataOperacao: m.dataOperacao,
+          dataOperacao: this.toDateIso(m.dataOperacao),
           tipo: m.tipo,
           fator: m.fator,
           ratioDe: m.ratioDe,
@@ -87,7 +90,7 @@ export class NovaPosicaoComponent {
       } else {
         await lastValueFrom(this.movimentacoesService.createRepositioning({
           ticker: m.ticker,
-          dataOperacao: m.dataOperacao,
+          dataOperacao: this.toDateIso(m.dataOperacao),
           tipo: m.tipo,
           fator: m.fator,
           ratioDe: m.ratioDe,
@@ -102,10 +105,15 @@ export class NovaPosicaoComponent {
       this.confirmed.emit();
       this.close.emit();
     } catch {
-      this.submitError.set('Erro ao salvar reposicionamento. Tente novamente.');
+      this.toast.error({ title: 'Erro', message: 'Erro ao salvar reposicionamento.' });
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  private toDateIso(ddmmyyyy: string): string {
+    const [dia, mes, ano] = ddmmyyyy.split('/');
+    return `${ano}-${mes}-${dia}`;
   }
 
   onClose(): void {

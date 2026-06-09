@@ -1,14 +1,17 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 
-import { DecimalPipe } from '@angular/common';
-import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { FormField, form, submit, required, applyEach, disabled } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { DateRangePickerComponent } from '../../../../components/dateRangePicker/date-range-picker.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
+import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
 import type { Operation } from '../../movimentacoes';
+import type { AssetDto } from '../../service/assets.service';
 
 interface ProventoAsset {
   tipo: number | null;
@@ -27,15 +30,27 @@ interface SummaryProventoAsset {
   data: string;
 }
 
+const TIPO_MAP: Record<number, string> = {
+  1: 'ACOES',
+  2: 'FII',
+  3: 'BDR',
+  4: 'ETF',
+  5: 'CRIPTO',
+};
+
 @Component({
   selector: 'app-novo-provento',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, DateRangePickerComponent, AbbreviateNumberPipe],
+  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, DateRangePickerComponent, AbbreviateNumberPipe, AutocompleteComponent],
+  providers: [DatePipe],
   templateUrl: './novo-provento.component.html',
 })
+
 export class NovoProventoComponent {
   private movimentacoesService = inject(MovimentacoesService);
+  private assetsService = inject(AssetsService);
   private toast = inject(ToastService);
+  private datePipe = inject(DatePipe);
 
   close = output<void>();
   confirmed = output<void>();
@@ -43,7 +58,15 @@ export class NovoProventoComponent {
   operation = input<Operation | null>(null);
   isEditing = computed(() => this.operation() !== null);
 
-  tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
+  assetsByIndex = signal<Record<number, AssetDto[]>>({});
+
+  tickersByIndex = computed(() => {
+    const result: Record<number, string[]> = {};
+    for (const [key, assets] of Object.entries(this.assetsByIndex())) {
+      result[Number(key)] = assets.map(a => a.ticker);
+    }
+    return result;
+  });
 
   model = signal({
     dataOperacao: '',
@@ -62,6 +85,17 @@ export class NovoProventoComponent {
       required(item.ticker, { message: 'Obrigatório' });
       required(item.quantidade, { message: 'Obrigatório' });
       required(item.valorUnitario, { message: 'Obrigatório' });
+      disabled(item.ticker, (ctx) =>{
+        const tipoValido = ctx.valueOf(item.tipo);
+        
+        // Se NÃO houver um tipo válido, retorna uma string (motivo) ou true para desabilitar
+        if (!tipoValido) {
+          return 'Selecione um tipo antes de definir o ticker';
+        }
+        
+        // Se o tipo for válido, retorna obrigatoriamente FALSE para habilitar o campo
+        return false;
+      });
     });
   });
 
@@ -70,7 +104,7 @@ export class NovoProventoComponent {
       const op = this.operation();
       if (op) {
         this.model.set({
-          dataOperacao: op.dataIso,
+          dataOperacao: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
           tipoProvento: 1,
           observacoes: '',
           ativos: [{
@@ -78,10 +112,26 @@ export class NovoProventoComponent {
             ticker: op.ativo,
             quantidade: op.qtd ?? 1,
             valorUnitario: formatCurrencyBRL(op.precoUn),
-            data: op.dataIso,
+            data: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
           }],
         });
+        this.onTipoChange(0, '1');
       }
+    });
+  }
+
+  onTipoChange(index: number, tipoValue: string): void {
+    const tipoKey = Number(tipoValue);
+    const assetType = TIPO_MAP[tipoKey];
+    if (!assetType) {
+      this.assetsByIndex.update(m => ({ ...m, [index]: [] }));
+      return;
+    }
+    this.assetsService.list({ tipo: assetType }).subscribe({
+      next: (res) => {
+        const assets = res.data.data.map(a => ({ ...a, ticker: a.ticker.toUpperCase() }));
+        this.assetsByIndex.update(m => ({ ...m, [index]: assets }));
+      },
     });
   }
 
@@ -120,8 +170,33 @@ export class NovoProventoComponent {
   onSubmit(): void {
     submit(this.proventoForm, async () => {
       if (this.isEditing()) {
-        this.confirmed.emit();
-        this.close.emit();
+        const op = this.operation()!;
+        const raw = this.model();
+        const ativo = raw.ativos[0];
+        const [dia, mes, ano] = raw.dataOperacao.split('/');
+        const dataIso = `${ano}-${mes}-${dia}`;
+        const precoUn = parseCurrencyBRL(ativo.valorUnitario);
+        const qtd = ativo.quantidade ?? 0;
+        const total = precoUn * qtd;
+
+        this.movimentacoesService.updateOperation(op.id, {
+          ticker: ativo.ticker.toUpperCase(),
+          tipo: 'Proventos',
+          data: dataIso,
+          qtd,
+          precoUn,
+          taxas: 0,
+          total,
+          observacoes: raw.observacoes || '',
+        }).subscribe({
+          next: () => {
+            this.confirmed.emit();
+            this.close.emit();
+          },
+          error: () => {
+            this.toast.error({ title: 'Erro', message: 'Erro ao atualizar a operação.' });
+          },
+        });
         return;
       }
       this.calculateSummary();
@@ -170,7 +245,7 @@ export class NovoProventoComponent {
     const operations = ativos.map((a) => ({
       ticker: a.ticker,
       tipo: 'Proventos' as const,
-      data: a.data || this.model().dataOperacao,
+      data: this.toDateIso(a.data || this.model().dataOperacao),
       qtd: a.quantidade,
       precoUn: a.valorUnitario,
       taxas: 0,
@@ -187,6 +262,23 @@ export class NovoProventoComponent {
         this.toast.error({ title: 'Erro', message: 'Erro ao salvar a operação.' });
       },
     });
+  }
+
+  private toDateIso(ddmmyyyy: string): string {
+    const [dia, mes, ano] = ddmmyyyy.split('/');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  onTickerSelected(index: number, ticker: string): void {
+    const assets = this.assetsByIndex()[index] ?? [];
+    const asset = assets.find(a => a.ticker === ticker);
+    if (asset?.quantidade) {
+      this.model.update(m => {
+        const ativos = [...m.ativos];
+        ativos[index] = { ...ativos[index], quantidade: asset.quantidade! };
+        return { ...m, ativos };
+      });
+    }
   }
 
   onClose(): void {

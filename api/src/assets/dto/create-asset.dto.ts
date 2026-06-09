@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsInt, Min, MaxLength } from 'class-validator';
 import { AssetType } from '../../generated/prisma/client';
 
 export class CreateAssetDto {
@@ -12,9 +12,9 @@ export class CreateAssetDto {
   @IsEnum(AssetType)
   tipo: AssetType;
 
-  @ApiPropertyOptional({ example: 'Petrobras PN' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  nome?: string;
+  @IsInt()
+  @Min(0)
+  quantidade?: number;
 }

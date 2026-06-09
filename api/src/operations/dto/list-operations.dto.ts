@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
-import { OperationType } from '../../generated/prisma/client';
+import { IsOptional, IsString, IsDateString } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class ListOperationsDto extends PaginationDto {
@@ -9,10 +8,10 @@ export class ListOperationsDto extends PaginationDto {
   @IsString()
   ticker?: string;
 
-  @ApiPropertyOptional({ enum: OperationType })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(OperationType)
-  tipo?: OperationType;
+  @IsString()
+  tipo?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

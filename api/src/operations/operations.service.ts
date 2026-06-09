@@ -13,6 +13,57 @@ import { OperationResponseDto } from './dto/operation-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pagination.utils';
 import { generateRandomString } from '../common/utils/file-generator.utils';
+import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
+
+function isFIPrefixedId(id: number): boolean {
+  return id >= FI_ID_PREFIX && id < FI_YIELD_PREFIX;
+}
+
+function isYieldPrefixedId(id: number): boolean {
+  return id >= FI_YIELD_PREFIX;
+}
+
+function toFiDto(fi: Record<string, any>): OperationResponseDto {
+  return {
+    id: fi.id + FI_ID_PREFIX,
+    assetId: fi.assetId ?? 0,
+    ticker: fi.emissor,
+    tipo: 'Renda Fixa',
+    data: fi.dataCompra,
+    qtd: null,
+    precoUn: fi.valorAplicado,
+    taxas: 0,
+    total: fi.valorAplicado,
+    lucroRealizado: undefined,
+    notaPath: fi.notaPath,
+    notaNome: fi.notaNome,
+    observacoes: fi.observacoes,
+    vencimento: fi.vencimento ?? undefined,
+    createdAt: fi.createdAt,
+    updatedAt: fi.updatedAt,
+  };
+}
+
+function toYieldDto(y: Record<string, any>): OperationResponseDto {
+  return {
+    id: y.id + FI_YIELD_PREFIX,
+    assetId: 0,
+    ticker: y.emissor,
+    tipo: 'Renda Fixa - Rendimento',
+    data: y.dataOperacao,
+    qtd: null,
+    precoUn: y.valor,
+    taxas: 0,
+    total: y.valor,
+    lucroRealizado: undefined,
+    notaPath: undefined,
+    notaNome: undefined,
+    observacoes: y.observacoes,
+    vencimento: undefined,
+    createdAt: y.createdAt,
+    updatedAt: y.updatedAt,
+  };
+}
 
 @Injectable()
 export class OperationsService {
@@ -28,28 +79,72 @@ export class OperationsService {
     const { page = 1, limit = 20, ticker, tipo, dataInicio, dataFim } = dto;
     const { skip, take } = getPaginationParams(page, limit);
 
-    const where: Record<string, unknown> = {};
-    if (userId) where['createdBy'] = userId;
-    if (ticker) where['ticker'] = { contains: ticker };
-    if (tipo) where['tipo'] = tipo;
+    const includeFi = !tipo || ['Renda Fixa', 'Renda Fixa - Rendimento'].includes(tipo);
+    const includeOp = !tipo || !['Renda Fixa', 'Rendimento'].includes(tipo);
+
+    let operations: OperationResponseDto[] = [];
+    let fiRecords: OperationResponseDto[] = [];
+    let yieldRecords: OperationResponseDto[] = [];
+
+    const opWhere: Record<string, unknown> = {};
+    if (userId) opWhere['createdBy'] = userId;
+    if (ticker) opWhere['ticker'] = { contains: ticker };
+    if (tipo && includeOp) opWhere['tipo'] = tipo;
     if (dataInicio || dataFim) {
-      where['data'] = {};
-      if (dataInicio) where['data']['gte'] = new Date(dataInicio);
-      if (dataFim) where['data']['lte'] = new Date(dataFim);
+      opWhere['data'] = {};
+      if (dataInicio) opWhere['data']['gte'] = new Date(dataInicio);
+      if (dataFim) opWhere['data']['lte'] = new Date(dataFim);
     }
 
-    const [data, total] = await Promise.all([
-      this.prisma.operation.findMany({
-        where,
-        skip,
-        take,
+    const fiWhere: Record<string, unknown> = {};
+    if (userId) fiWhere['createdBy'] = userId;
+    if (ticker) fiWhere['emissor'] = { contains: ticker };
+    if (dataInicio || dataFim) {
+      fiWhere['dataCompra'] = {};
+      if (dataInicio) fiWhere['dataCompra']['gte'] = new Date(dataInicio);
+      if (dataFim) fiWhere['dataCompra']['lte'] = new Date(dataFim);
+    }
+
+    const yieldWhere: Record<string, unknown> = {};
+    if (userId) yieldWhere['createdBy'] = userId;
+    if (ticker) yieldWhere['emissor'] = { contains: ticker };
+    if (dataInicio || dataFim) {
+      yieldWhere['dataOperacao'] = {};
+      if (dataInicio) yieldWhere['dataOperacao']['gte'] = new Date(dataInicio);
+      if (dataFim) yieldWhere['dataOperacao']['lte'] = new Date(dataFim);
+    }
+
+    if (includeOp) {
+      const ops = await this.prisma.operation.findMany({
+        where: opWhere,
         orderBy: { data: 'desc' },
-      }),
-      this.prisma.operation.count({ where }),
-    ]);
+      });
+      operations = ops as unknown as OperationResponseDto[];
+    }
+
+    if (includeFi) {
+      const fi = await this.prisma.fixedIncomePosition.findMany({
+        where: fiWhere,
+        orderBy: { dataCompra: 'desc' },
+      });
+      fiRecords = fi.map(toFiDto);
+
+      const yields = await this.prisma.fixedIncomeYield.findMany({
+        where: yieldWhere,
+        orderBy: { dataOperacao: 'desc' },
+      });
+      yieldRecords = yields.map(toYieldDto);
+    }
+
+    const all = [...operations, ...fiRecords, ...yieldRecords].sort(
+      (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
+    );
+
+    const total = all.length;
+    const paginated = all.slice(skip, skip + take);
 
     return {
-      data,
+      data: paginated,
       meta: calculatePaginationMeta(total, page, limit),
     };
   }
@@ -86,7 +181,7 @@ export class OperationsService {
       data: {
         assetId: asset.id,
         ticker: dto.ticker,
-        tipo: dto.tipo,
+        tipo: dto.tipo as any,
         data: new Date(dto.data),
         qtd: dto.qtd,
         precoUn: dto.precoUn,
@@ -98,7 +193,7 @@ export class OperationsService {
         observacoes: dto.observacoes ?? null,
         createdBy: userId,
       },
-    });
+    }) as unknown as OperationResponseDto;
   }
 
   async createBatch(
@@ -139,7 +234,7 @@ export class OperationsService {
           data: {
             assetId: asset.id,
             ticker: dto.ticker,
-            tipo: dto.tipo,
+            tipo: dto.tipo as any,
             data: new Date(dto.data),
             qtd: dto.qtd,
             precoUn: dto.precoUn,
@@ -153,7 +248,7 @@ export class OperationsService {
           },
         });
 
-        results.push(operation);
+        results.push(operation as unknown as OperationResponseDto);
       }
 
       return results;
@@ -171,6 +266,28 @@ export class OperationsService {
   }
 
   async findById(id: number, userId?: number): Promise<OperationResponseDto> {
+    if (isFIPrefixedId(id)) {
+      const realId = id - FI_ID_PREFIX;
+      const fi = await this.prisma.fixedIncomePosition.findFirst({
+        where: { id: realId, createdBy: userId },
+      });
+      if (!fi) {
+        throw new NotFoundException(`Fixed income position with id ${id} not found`);
+      }
+      return toFiDto(fi as any);
+    }
+
+    if (isYieldPrefixedId(id)) {
+      const realId = id - FI_YIELD_PREFIX;
+      const y = await this.prisma.fixedIncomeYield.findFirst({
+        where: { id: realId, createdBy: userId },
+      });
+      if (!y) {
+        throw new NotFoundException(`Fixed income yield with id ${id} not found`);
+      }
+      return toYieldDto(y as any);
+    }
+
     const where: Record<string, unknown> = { id };
     if (userId) where['createdBy'] = userId;
 
@@ -178,7 +295,7 @@ export class OperationsService {
     if (!operation) {
       throw new NotFoundException(`Operation with id ${id} not found`);
     }
-    return operation;
+    return operation as unknown as OperationResponseDto;
   }
 
   async update(
@@ -187,6 +304,56 @@ export class OperationsService {
     userId: number,
     arquivo?: Express.Multer.File,
   ): Promise<OperationResponseDto> {
+    if (isFIPrefixedId(id)) {
+      const realId = id - FI_ID_PREFIX;
+      const existing = await this.prisma.fixedIncomePosition.findFirst({
+        where: { id: realId, createdBy: userId },
+      });
+      if (!existing) {
+        throw new NotFoundException(`Fixed income position with id ${id} not found`);
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (dto.ticker) updateData['emissor'] = dto.ticker;
+      if (dto.data) updateData['dataCompra'] = new Date(dto.data);
+      if (dto.precoUn !== undefined) updateData['valorAplicado'] = dto.precoUn;
+      if (dto.total !== undefined) updateData['valorAplicado'] = dto.total;
+      if (dto.observacoes !== undefined) updateData['observacoes'] = dto.observacoes;
+
+      if (arquivo) {
+        updateData['notaPath'] = generateRandomString();
+        updateData['notaNome'] = arquivo.originalname;
+      }
+
+      const updated = await this.prisma.fixedIncomePosition.update({
+        where: { id: realId },
+        data: updateData,
+      });
+      return toFiDto(updated as any);
+    }
+
+    if (isYieldPrefixedId(id)) {
+      const realId = id - FI_YIELD_PREFIX;
+      const existing = await this.prisma.fixedIncomeYield.findFirst({
+        where: { id: realId, createdBy: userId },
+      });
+      if (!existing) {
+        throw new NotFoundException(`Fixed income yield with id ${id} not found`);
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (dto.data) updateData['dataOperacao'] = new Date(dto.data);
+      if (dto.precoUn !== undefined) updateData['valor'] = dto.precoUn;
+      if (dto.total !== undefined) updateData['valor'] = dto.total;
+      if (dto.observacoes !== undefined) updateData['observacoes'] = dto.observacoes;
+
+      const updated = await this.prisma.fixedIncomeYield.update({
+        where: { id: realId },
+        data: updateData,
+      });
+      return toYieldDto(updated as any);
+    }
+
     await this.findById(id, userId);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -216,10 +383,34 @@ export class OperationsService {
     return this.prisma.operation.update({
       where: { id },
       data: updateData,
-    });
+    }) as unknown as OperationResponseDto;
   }
 
   async remove(id: number, userId?: number): Promise<void> {
+    if (isFIPrefixedId(id)) {
+      const realId = id - FI_ID_PREFIX;
+      const existing = await this.prisma.fixedIncomePosition.findFirst({
+        where: { id: realId, createdBy: userId },
+      });
+      if (!existing) {
+        throw new NotFoundException(`Fixed income position with id ${id} not found`);
+      }
+      await this.prisma.fixedIncomePosition.delete({ where: { id: realId } });
+      return;
+    }
+
+    if (isYieldPrefixedId(id)) {
+      const realId = id - FI_YIELD_PREFIX;
+      const existing = await this.prisma.fixedIncomeYield.findFirst({
+        where: { id: realId, createdBy: userId },
+      });
+      if (!existing) {
+        throw new NotFoundException(`Fixed income yield with id ${id} not found`);
+      }
+      await this.prisma.fixedIncomeYield.delete({ where: { id: realId } });
+      return;
+    }
+
     await this.findById(id, userId);
     await this.prisma.operation.delete({ where: { id } });
   }

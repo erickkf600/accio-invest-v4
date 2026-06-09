@@ -8,7 +8,15 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
+
+const toBoolean = Transform(({ value }: { value: unknown }) => {
+  if (value === undefined || value === null) return value;
+  if (typeof value === 'string') {
+    return value === 'true' || value === '1';
+  }
+  return Boolean(value);
+});
 
 export class CreateFixedIncomeDto {
   @ApiProperty({ example: 'Tesouro Selic' })
@@ -32,12 +40,12 @@ export class CreateFixedIncomeDto {
   taxaJuros: number;
 
   @ApiProperty({ example: true })
-  @Type(() => Boolean)
+  @toBoolean
   @IsBoolean()
   liquidezDiaria: boolean;
 
   @ApiProperty({ example: false })
-  @Type(() => Boolean)
+  @toBoolean
   @IsBoolean()
   possuiImposto: boolean;
 

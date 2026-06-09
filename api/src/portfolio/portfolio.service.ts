@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
 import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
@@ -6,9 +6,12 @@ import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
 import { CreateFixedIncomeDto } from './dto/create-fixed-income.dto';
 import { UpdateFixedIncomeDto } from './dto/update-fixed-income.dto';
+import { CreateFixedIncomeYieldDto } from './dto/create-fixed-income-yield.dto';
+import { FixedIncomeYieldResponseDto } from './dto/fixed-income-yield-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pagination.utils';
 import { generateRandomString } from '../common/utils/file-generator.utils';
+import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
 
 @Injectable()
 export class PortfolioService {
@@ -198,14 +201,36 @@ export class PortfolioService {
     });
   }
 
+  private resolveId(id: number): number {
+    return id >= FI_ID_PREFIX ? id - FI_ID_PREFIX : id;
+  }
+
+  private resolveYieldId(id: number): number {
+    return id >= FI_YIELD_PREFIX ? id - FI_YIELD_PREFIX : id;
+  }
+
+  async findFixedIncomeById(id: number, userId: number): Promise<YieldResponseDto> {
+    const realId = this.resolveId(id);
+    const existing = await this.prisma.fixedIncomePosition.findFirst({
+      where: { id: realId, createdBy: userId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Fixed income position with id ${id} not found`);
+    }
+
+    return existing;
+  }
+
   async updateFixedIncome(
     id: number,
     dto: UpdateFixedIncomeDto,
     userId: number,
     arquivo?: Express.Multer.File,
   ): Promise<YieldResponseDto> {
+    const realId = this.resolveId(id);
     const existing = await this.prisma.fixedIncomePosition.findFirst({
-      where: { id, createdBy: userId },
+      where: { id: realId, createdBy: userId },
     });
 
     if (!existing) {
@@ -233,8 +258,130 @@ export class PortfolioService {
     }
 
     return this.prisma.fixedIncomePosition.update({
-      where: { id },
+      where: { id: realId },
       data: updateData,
     });
+  }
+
+  private validateYieldDate(
+    dataOperacao: Date,
+    parent: { dataCompra: Date; vencimento: Date | null; liquidezDiaria: boolean },
+  ): void {
+    if (dataOperacao < parent.dataCompra) {
+      throw new BadRequestException(
+        'A data da operação não pode ser anterior à data da compra.',
+      );
+    }
+
+    if (!parent.liquidezDiaria && parent.vencimento && dataOperacao > parent.vencimento) {
+      throw new BadRequestException(
+        'A data da operação não pode ser posterior à data de vencimento.',
+      );
+    }
+  }
+
+  async createYield(
+    dto: CreateFixedIncomeYieldDto,
+    userId: number,
+  ): Promise<FixedIncomeYieldResponseDto> {
+    const parent = await this.prisma.fixedIncomePosition.findFirst({
+      where: { emissor: dto.emissor, createdBy: userId },
+    });
+
+    if (!parent) {
+      throw new BadRequestException(
+        `Nenhuma posição de renda fixa encontrada para o emissor "${dto.emissor}". Crie uma compra primeiro.`,
+      );
+    }
+
+    this.validateYieldDate(new Date(dto.dataOperacao), parent);
+
+    return this.prisma.fixedIncomeYield.create({
+      data: {
+        fixedIncomeId: parent.id,
+        emissor: dto.emissor,
+        dataOperacao: new Date(dto.dataOperacao),
+        valor: dto.valor,
+        observacoes: dto.observacoes ?? null,
+        createdBy: userId,
+      },
+    }) as unknown as FixedIncomeYieldResponseDto;
+  }
+
+  async findYieldById(id: number, userId: number): Promise<FixedIncomeYieldResponseDto> {
+    const realId = this.resolveYieldId(id);
+    const existing = await this.prisma.fixedIncomeYield.findFirst({
+      where: { id: realId, createdBy: userId },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Rendimento de renda fixa com id ${id} não encontrado`);
+    }
+    return existing as unknown as FixedIncomeYieldResponseDto;
+  }
+
+  async updateYield(
+    id: number,
+    dto: Partial<CreateFixedIncomeYieldDto>,
+    userId: number,
+  ): Promise<FixedIncomeYieldResponseDto> {
+    const realId = this.resolveYieldId(id);
+    const existing = await this.prisma.fixedIncomeYield.findFirst({
+      where: { id: realId, createdBy: userId },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Rendimento de renda fixa com id ${id} não encontrado`);
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (dto.dataOperacao) {
+      const parent = await this.prisma.fixedIncomePosition.findFirst({
+        where: { id: existing.fixedIncomeId, createdBy: userId },
+      });
+      if (parent) {
+        this.validateYieldDate(new Date(dto.dataOperacao), parent);
+      }
+      updateData['dataOperacao'] = new Date(dto.dataOperacao);
+    }
+    if (dto.valor !== undefined) updateData['valor'] = dto.valor;
+    if (dto.observacoes !== undefined) updateData['observacoes'] = dto.observacoes;
+
+    return this.prisma.fixedIncomeYield.update({
+      where: { id: realId },
+      data: updateData,
+    }) as unknown as FixedIncomeYieldResponseDto;
+  }
+
+  async removeYield(id: number, userId: number): Promise<void> {
+    const realId = this.resolveYieldId(id);
+    const existing = await this.prisma.fixedIncomeYield.findFirst({
+      where: { id: realId, createdBy: userId },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Rendimento de renda fixa com id ${id} não encontrado`);
+    }
+    await this.prisma.fixedIncomeYield.delete({ where: { id: realId } });
+  }
+
+  async getEmissores(userId: number): Promise<string[]> {
+    const result = await this.prisma.fixedIncomePosition.findMany({
+      where: { createdBy: userId },
+      select: { emissor: true },
+      distinct: ['emissor'],
+      orderBy: { emissor: 'asc' },
+    });
+    return result.map(r => r.emissor);
+  }
+
+  async removeFixedIncome(id: number, userId: number): Promise<void> {
+    const realId = this.resolveId(id);
+    const existing = await this.prisma.fixedIncomePosition.findFirst({
+      where: { id: realId, createdBy: userId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Fixed income position with id ${id} not found`);
+    }
+
+    await this.prisma.fixedIncomePosition.delete({ where: { id: realId } });
   }
 }

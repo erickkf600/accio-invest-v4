@@ -1,15 +1,26 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 
 import { DatePipe } from '@angular/common';
-import { FormField, form, submit, required, applyEach } from '@angular/forms/signals';
+import { FormField, form, submit, required, applyEach, disabled } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { FileUploadComponent } from '../../../../components/file-upload/file-upload.component';
+import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
 import { AssetTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
+import type { AssetDto } from '../../service/assets.service';
+
+const TIPO_MAP: Record<number, string> = {
+  [AssetTypeEnum.ACOES]: 'ACOES',
+  [AssetTypeEnum.FII]: 'FII',
+  [AssetTypeEnum.BDR]: 'BDR',
+  [AssetTypeEnum.ETF]: 'ETF',
+  [AssetTypeEnum.CRIPTO]: 'CRIPTO',
+};
 
 const TIPO_LABEL_MAP: Record<number, string> = {
   [AssetTypeEnum.ACOES]: 'Ações',
@@ -38,12 +49,13 @@ interface ConfirmacionAsset {
 @Component({
   selector: 'app-nova-compra',
   standalone: true,
-  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent],
+  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent, AutocompleteComponent],
   providers: [DatePipe],
   templateUrl: './nova-compra.component.html',
 })
 export class NovaCompraComponent {
   private movimentacoesService = inject(MovimentacoesService);
+  private assetsService = inject(AssetsService);
   private toast = inject(ToastService);
   private datePipe = inject(DatePipe);
 
@@ -53,8 +65,19 @@ export class NovaCompraComponent {
   operation = input<Operation | null>(null);
   isEditing = computed(() => this.operation() !== null);
 
-  // Mock datalist for tickers
-  tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
+  assetsByIndex = signal<Record<number, AssetDto[]>>({});
+
+  tickersByIndex = computed(() => {
+    const result: Record<number, string[]> = {};
+    for (const [key, assets] of Object.entries(this.assetsByIndex())) {
+      result[Number(key)] = assets.map(a => a.ticker);
+    }
+    return result;
+  });
+
+  tickerOptions(index: number): string[] {
+    return this.tickersByIndex()[index] ?? [];
+  }
 
   // Signal model matching Signal Forms
   model = signal({
@@ -75,6 +98,17 @@ export class NovaCompraComponent {
       required(item.ticker, { message: 'Obrigatório' });
       required(item.quantidade, { message: 'Obrigatório' });
       required(item.valorUnitario, { message: 'Obrigatório' });
+      disabled(item.ticker, (ctx) =>{
+        const tipoValido = ctx.valueOf(item.tipo);
+        
+        // Se NÃO houver um tipo válido, retorna uma string (motivo) ou true para desabilitar
+        if (!tipoValido) {
+          return 'Selecione um tipo antes de definir o ticker';
+        }
+        
+        // Se o tipo for válido, retorna obrigatoriamente FALSE para habilitar o campo
+        return false;
+      });
     });
   });
 
@@ -95,6 +129,7 @@ export class NovaCompraComponent {
             valorUnitario: formatCurrencyBRL(op.precoUn),
           }],
         });
+        this.onTipoChange(0, '1');
       }
     });
   }
@@ -134,7 +169,34 @@ export class NovaCompraComponent {
         ...m,
         ativos: m.ativos.filter((_, i) => i !== index),
       }));
+      this.assetsByIndex.update(m => {
+        const next: Record<number, AssetDto[]> = {};
+        for (const [key, assets] of Object.entries(m)) {
+          const currentIndex = Number(key);
+          if (currentIndex < index) {
+            next[currentIndex] = assets;
+          } else if (currentIndex > index) {
+            next[currentIndex - 1] = assets;
+          }
+        }
+        return next;
+      });
     }
+  }
+
+  onTipoChange(index: number, tipoValue: string): void {
+    const tipoKey = Number(tipoValue);
+    const assetType = TIPO_MAP[tipoKey];
+    if (!assetType) {
+      this.assetsByIndex.update(m => ({ ...m, [index]: [] }));
+      return;
+    }
+    this.assetsService.list({ tipo: assetType }).subscribe({
+      next: (res) => {
+        const assets = res.data.data.map(a => ({ ...a, ticker: a.ticker.toUpperCase() }));
+        this.assetsByIndex.update(m => ({ ...m, [index]: assets }));
+      },
+    });
   }
 
   onSubmit(): void {

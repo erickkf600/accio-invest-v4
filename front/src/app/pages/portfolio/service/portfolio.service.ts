@@ -1,6 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import type { ApiResponse } from '../../../core/models/auth.models';
 import { PortfolioProduct, PortfolioDividend, PortfolioYield } from '../../../models/portfolio.model';
@@ -170,26 +169,4 @@ export class PortfolioService {
     });
   }
 
-  createFixedIncomeWithFile(data: Record<string, any>, file?: File): Observable<ApiResponse<any>> {
-    const formData = this.buildFormData(data, file);
-    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/fixed-income`, formData);
-  }
-
-  updateFixedIncomeWithFile(id: string, data: Record<string, any>, file?: File): Observable<ApiResponse<any>> {
-    const formData = this.buildFormData(data, file);
-    return this.http.patch<ApiResponse<any>>(`${this.apiUrl}/fixed-income/${id}`, formData);
-  }
-
-  private buildFormData(data: Record<string, any>, file?: File): FormData {
-    const formData = new FormData();
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
-      }
-    }
-    if (file) {
-      formData.append('arquivo', file, file.name);
-    }
-    return formData;
-  }
 }

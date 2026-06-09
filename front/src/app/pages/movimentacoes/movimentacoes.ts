@@ -19,13 +19,14 @@ export interface Operation {
   data: string;
   dataIso: string;
   ativo: string;
-  tipo: 'Compra' | 'Venda' | 'Proventos' | 'Renda Fixa' | 'Reposicionamento';
+  tipo: 'Compra' | 'Venda' | 'Proventos' | 'Renda Fixa' | 'Reposicionamento' | 'Renda Fixa - Rendimento';
   qtd: number | null;
   precoUn: number;
   taxas: number | null;
   total: number;
   observacoes?: string;
   notaNome?: string;
+  vencimento?: string;
 }
 
 export interface OperationTypeOption {
@@ -158,10 +159,12 @@ export default class Movimentacoes implements OnInit {
 
   // Action methods
   public onEdit(row: Operation) {
+    console.log('edit', row)
     const tipoMap: Record<string, number> = {
       'Compra': 1,
       'Proventos': 2,
       'Renda Fixa': 3,
+      'Renda Fixa - Rendimento': 3,
       'Venda': 4,
       'Reposicionamento': 5,
     };

@@ -29,6 +29,7 @@ interface OperationResponseDto {
   observacoes?: string;
   notaNome?: string;
   notaPath?: string;
+  vencimento?: string;
 }
 
 interface PaginationMeta {
@@ -88,6 +89,7 @@ export class MovimentacoesService {
           total: op.total,
           observacoes: op.observacoes ?? '',
           notaNome: op.notaNome ?? '',
+          vencimento: op.vencimento ?? undefined,
         }));
         this.state.set({
           data: { temDados: operations.length > 0, operations },

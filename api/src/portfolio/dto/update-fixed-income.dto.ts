@@ -8,7 +8,15 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
+
+const toBoolean = Transform(({ value }: { value: unknown }) => {
+  if (value === undefined || value === null) return value;
+  if (typeof value === 'string') {
+    return value === 'true' || value === '1';
+  }
+  return Boolean(value);
+});
 
 export class UpdateFixedIncomeDto {
   @ApiPropertyOptional()
@@ -37,13 +45,13 @@ export class UpdateFixedIncomeDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Boolean)
+  @toBoolean
   @IsBoolean()
   liquidezDiaria?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Boolean)
+  @toBoolean
   @IsBoolean()
   possuiImposto?: boolean;
 

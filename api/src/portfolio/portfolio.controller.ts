@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -10,6 +11,8 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,6 +26,8 @@ import { PortfolioService } from './portfolio.service';
 import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { CreateFixedIncomeDto } from './dto/create-fixed-income.dto';
 import { UpdateFixedIncomeDto } from './dto/update-fixed-income.dto';
+import { CreateFixedIncomeYieldDto } from './dto/create-fixed-income-yield.dto';
+import { FixedIncomeYieldResponseDto } from './dto/fixed-income-yield-response.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
@@ -63,6 +68,59 @@ export class PortfolioController {
     @CurrentUser() user: JwtPayload,
   ): Promise<PaginatedResult<YieldResponseDto>> {
     return this.portfolioService.getYields(user.sub, filter);
+  }
+
+  @Get('fixed-income/emissores')
+  @ApiOperation({ summary: 'Listar emissores únicos de renda fixa do usuário' })
+  async getEmissores(@CurrentUser() user: JwtPayload): Promise<string[]> {
+    return this.portfolioService.getEmissores(user.sub);
+  }
+
+  @Get('fixed-income/yield/:id')
+  @ApiOperation({ summary: 'Obter detalhes de um rendimento' })
+  async findYield(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<FixedIncomeYieldResponseDto> {
+    return this.portfolioService.findYieldById(id, user.sub);
+  }
+
+  @Post('fixed-income/yield')
+  @ApiOperation({ summary: 'Criar rendimento de renda fixa' })
+  async createYield(
+    @Body() dto: CreateFixedIncomeYieldDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<FixedIncomeYieldResponseDto> {
+    return this.portfolioService.createYield(dto, user.sub);
+  }
+
+  @Patch('fixed-income/yield/:id')
+  @ApiOperation({ summary: 'Atualizar rendimento de renda fixa' })
+  async updateYield(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: Partial<CreateFixedIncomeYieldDto>,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<FixedIncomeYieldResponseDto> {
+    return this.portfolioService.updateYield(id, dto, user.sub);
+  }
+
+  @Delete('fixed-income/yield/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remover rendimento de renda fixa' })
+  async removeYield(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    return this.portfolioService.removeYield(id, user.sub);
+  }
+
+  @Get('fixed-income/:id')
+  @ApiOperation({ summary: 'Obter detalhes de uma posição de renda fixa' })
+  async findFixedIncome(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<YieldResponseDto> {
+    return this.portfolioService.findFixedIncomeById(id, user.sub);
   }
 
   @Post('fixed-income')
@@ -126,5 +184,15 @@ export class PortfolioController {
     @CurrentUser() user: JwtPayload,
   ): Promise<YieldResponseDto> {
     return this.portfolioService.updateFixedIncome(id, dto, user.sub, arquivo);
+  }
+
+  @Delete('fixed-income/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remover posição de renda fixa' })
+  async removeFixedIncome(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    return this.portfolioService.removeFixedIncome(id, user.sub);
   }
 }

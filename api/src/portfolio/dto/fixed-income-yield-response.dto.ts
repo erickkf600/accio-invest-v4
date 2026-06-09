@@ -1,18 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AssetType } from '../../generated/prisma/client';
 
-export class AssetResponseDto {
+export class FixedIncomeYieldResponseDto {
   @ApiProperty()
   id: number;
 
   @ApiProperty()
-  ticker: string;
+  fixedIncomeId: number;
 
-  @ApiProperty({ enum: AssetType })
-  tipo: AssetType;
+  @ApiProperty()
+  emissor: string;
+
+  @ApiProperty()
+  dataOperacao: Date;
+
+  @ApiProperty()
+  valor: number;
 
   @ApiPropertyOptional()
-  quantidade?: number;
+  observacoes?: string;
 
   @ApiProperty()
   createdAt: Date;

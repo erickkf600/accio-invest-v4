@@ -54,6 +54,7 @@
               <div class="relative w-full sm:w-1/4">
                 <select
                   [formField]="$any(item.tipo)"
+                  (change)="onTipoChange($index, ($any($event.target).value))"
                   class="w-full appearance-none bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
                 >
                   <option disabled selected [value]="null">Tipo</option>
@@ -67,18 +68,13 @@
               </div>
 
               <div class="w-full sm:w-1/4">
-                <input
-                  type="text"
-                  placeholder="EX: PETR4"
+                <app-autocomplete
+                  [options]="tickerOptions($index)"
+                  placeholder="Ex: PETR4"
                   [formField]="item.ticker"
-                  list="tickers"
-                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none uppercase"
+                  inputClass="!bg-[#1E222D] uppercase"
+                  [allowCustomValue]="true"
                 />
-                <datalist id="tickers">
-                  @for (t of tickerDatalist; track t) {
-                    <option [value]="t">{{ t }}</option>
-                  }
-                </datalist>
               </div>
 
               <div class="w-full sm:w-1/6">

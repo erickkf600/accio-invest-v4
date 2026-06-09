@@ -20,7 +20,6 @@ export class AssetsService {
     if (search) {
       where['OR'] = [
         { ticker: { contains: search } },
-        { nome: { contains: search } },
       ];
     }
 
@@ -48,7 +47,7 @@ export class AssetsService {
       data: {
         ticker: dto.ticker,
         tipo: dto.tipo,
-        nome: dto.nome,
+        quantidade: dto.quantidade,
         createdBy: userId,
       },
     });

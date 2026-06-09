@@ -49,22 +49,32 @@
         <h3 class="text-sm font-semibold text-slate-400">Ativo</h3>
 
         <div class="bg-[#242933] border border-[#2c313c] rounded-xl p-4 flex flex-col sm:flex-row items-center gap-3">
-          <div class="w-full sm:w-1/3">
-            <input
-              type="text"
-              placeholder="EX: PETR4"
-              [formField]="vendaForm.ticker"
-              list="vendaTickerList"
-              class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none uppercase"
-            />
-            <datalist id="vendaTickerList">
-              @for (t of tickerDatalist; track t) {
-                <option [value]="t">{{ t }}</option>
-              }
-            </datalist>
+          <div class="relative w-full sm:w-1/4">
+            <select
+              [formField]="$any(vendaForm.tipo)"
+              (change)="onTipoChange(($any($event.target).value))"
+              class="w-full appearance-none bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
+            >
+              <option disabled [value]="null">Tipo</option>
+              <option [value]="1">Ações</option>
+              <option [value]="2">FII</option>
+              <option [value]="3">BDR</option>
+              <option [value]="4">ETF</option>
+              <option [value]="5">Cripto</option>
+            </select>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
           </div>
 
-          <div class="w-full sm:w-1/3">
+          <div class="w-full sm:w-1/4">
+            <app-autocomplete
+              [options]="tickerOptions()"
+              placeholder="EX: PETR4"
+              [formField]="vendaForm.ticker"
+              inputClass="!bg-[#1E222D] uppercase"
+            />
+          </div>
+
+          <div class="w-full sm:w-1/6">
             <input
               type="number"
               [formField]="vendaForm.quantidade"
