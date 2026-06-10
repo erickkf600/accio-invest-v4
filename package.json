@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "front": "nx serve front",
-    "back": "nx serve api"
+    "back": "nx serve api",
+    "ticker": "nx serve api-ticker"
   },
   "private": true,
   "devDependencies": {

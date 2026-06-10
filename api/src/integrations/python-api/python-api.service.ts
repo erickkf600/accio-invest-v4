@@ -1,53 +1,91 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { TICKER_API_CONSTANTS } from '../../config/constants';
 import { QuoteDto } from './dto/quote-response.dto';
-
-const MOCK_QUOTES: Record<string, Partial<QuoteDto>> = {
-  PETR4: { precoAtual: 38.50, change: 1.2, changeValue: 0.46, high: 38.80, low: 38.10 },
-  VALE3: { precoAtual: 65.30, change: -0.8, changeValue: -0.52, high: 66.00, low: 65.00 },
-  BBAS3: { precoAtual: 28.45, change: 0.5, changeValue: 0.14, high: 28.60, low: 28.20 },
-  HGLG11: { precoAtual: 142.50, change: 1.1, changeValue: 1.56, high: 143.00, low: 141.50 },
-  MXRF11: { precoAtual: 10.20, change: 0.3, changeValue: 0.03, high: 10.25, low: 10.15 },
-  B3SA3: { precoAtual: 12.80, change: -0.4, changeValue: -0.05, high: 12.90, low: 12.70 },
-  ITUB4: { precoAtual: 35.20, change: 0.7, changeValue: 0.25, high: 35.40, low: 34.90 },
-  WEGE3: { precoAtual: 46.90, change: 1.5, changeValue: 0.69, high: 47.20, low: 46.50 },
-};
+import { QuoteTickerDto } from './dto/quote-ticker.dto';
+import { TickerHistoryDto } from './dto/history.dto';
+import { ProventoResponseDto, ProventoRequestDto } from './dto/provento.dto';
 
 @Injectable()
 export class PythonApiService {
   private readonly logger = new Logger(PythonApiService.name);
+  private readonly baseUrl: string;
+  private readonly timeout: number;
+
+  constructor() {
+    this.baseUrl = TICKER_API_CONSTANTS.baseUrl;
+    this.timeout = TICKER_API_CONSTANTS.timeout;
+  }
 
   async getQuotes(tickers: string[]): Promise<QuoteDto[]> {
-    this.logger.log(`Fetching quotes for: ${tickers.join(', ')}`);
-
-    // v1: Mocks - futuramente: chamada HTTP para API Python
-    return tickers.map((ticker) => {
-      const mock = MOCK_QUOTES[ticker.toUpperCase()];
-      if (mock) {
-        return {
-          ticker: ticker.toUpperCase(),
-          precoAtual: mock.precoAtual || 0,
-          change: mock.change || 0,
-          changeValue: mock.changeValue || 0,
-          high: mock.high || 0,
-          low: mock.low || 0,
-          timestamp: new Date(),
-        };
-      }
-
-      return {
-        ticker: ticker.toUpperCase(),
-        precoAtual: Math.random() * 200,
-        change: (Math.random() - 0.5) * 5,
-        changeValue: (Math.random() - 0.5) * 10,
-        high: 100,
-        low: 50,
-        timestamp: new Date(),
-      };
-    });
+    const raw = await this.fetchTickers(tickers);
+    return raw.map((item) => ({
+      ticker: item.ticker,
+      precoAtual: item.curPrc,
+      change: 0,
+      changeValue: 0,
+      high: 0,
+      low: 0,
+      timestamp: new Date(),
+    }));
   }
 
   async getQuote(ticker: string): Promise<QuoteDto | null> {
     const quotes = await this.getQuotes([ticker]);
     return quotes[0] || null;
+  }
+
+  async fetchTickers(tickers: string[]): Promise<QuoteTickerDto[]> {
+    try {
+      const url = `${this.baseUrl}/tickers?ticker=${tickers.join('-')}`;
+      const res = await this.request(url);
+      return res as QuoteTickerDto[];
+    } catch (err) {
+      this.logger.error(`fetchTickers failed: ${(err as Error).message}`);
+      throw new HttpException('Falha ao buscar cotações', HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  async fetchHistory(tickers: string[], start: string, end: string): Promise<TickerHistoryDto[]> {
+    try {
+      const url = `${this.baseUrl}/tickers/history?ticker=${tickers.join('-')}&start=${start}&end=${end}`;
+      const res = await this.request(url);
+      return res as TickerHistoryDto[];
+    } catch (err) {
+      this.logger.error(`fetchHistory failed: ${(err as Error).message}`);
+      throw new HttpException('Falha ao buscar histórico', HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  async fetchProventos(dto: ProventoRequestDto): Promise<ProventoResponseDto[]> {
+    try {
+      const url = `${this.baseUrl}/proventos`;
+      const res = await this.request(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dto),
+      });
+      return res as ProventoResponseDto[];
+    } catch (err) {
+      this.logger.error(`fetchProventos failed: ${(err as Error).message}`);
+      throw new HttpException('Falha ao buscar proventos', HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  private async request(url: string, options?: RequestInit): Promise<unknown> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      }
+
+      return response.json();
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }

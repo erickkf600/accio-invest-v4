@@ -12,3 +12,8 @@ export const FILE_CONSTANTS = {
   maxFileSize: 5 * 1024 * 1024,
   allowedMimeTypes: ['application/pdf'],
 };
+
+export const TICKER_API_CONSTANTS = {
+  baseUrl: process.env['TICKER_API_URL'] || 'http://localhost:4444',
+  timeout: 10000,
+};

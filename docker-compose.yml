@@ -73,6 +73,17 @@ services:
     depends_on:
       - api
 
+  api-ticker:
+    build:
+      context: api-ticker
+      dockerfile: Dockerfile
+    container_name: accio-ticker-api
+    restart: unless-stopped
+    ports:
+      - '4444:4444'
+    environment:
+      - FLASK_DEBUG=False
+
 volumes:
   mysql_data:
   minio_data:
