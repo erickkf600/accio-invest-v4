@@ -1,15 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
+import { PythonApiService } from '../integrations/python-api/python-api.service';
+import { OperationType, AssetType } from '../generated/prisma/client';
 import {
   DashboardDataDto,
   AporteInfoDto,
   DistribuicaoItemDto,
   RendimentoMensalDto,
 } from './dto/dashboard-data.dto';
+import { ProximoPagamentoDto } from './dto/proximo-pagamento.dto';
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private pythonApi: PythonApiService,
+  ) {}
 
   async getDashboard(userId: number, ano?: string): Promise<DashboardDataDto> {
     const targetYear = ano ? parseInt(ano) : new Date().getFullYear();
@@ -20,15 +26,15 @@ export class DashboardService {
     });
 
     const totalCompras = operations
-      .filter((op) => op.tipo === 'Compra')
+      .filter((op) => op.tipo === OperationType.Compra)
       .reduce((acc, op) => acc + op.total, 0);
 
     const totalVendas = operations
-      .filter((op) => op.tipo === 'Venda')
+      .filter((op) => op.tipo === OperationType.Venda)
       .reduce((acc, op) => acc + op.total, 0);
 
     const totalProventos = operations
-      .filter((op) => op.tipo === 'Proventos')
+      .filter((op) => op.tipo === OperationType.Proventos)
       .reduce((acc, op) => acc + op.total, 0);
 
     const patrimonioTotal = totalCompras - totalVendas + totalProventos;
@@ -60,7 +66,7 @@ export class DashboardService {
     const grouped = new Map<string, AporteInfoDto>();
 
     for (const op of operations) {
-      if (op.tipo !== 'Compra') continue;
+      if (op.tipo !== OperationType.Compra) continue;
       const d = new Date(op.data);
       const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
       const existing = grouped.get(key) || {
@@ -107,12 +113,12 @@ export class DashboardService {
     const totalFI = fixedIncome.reduce((acc, fi) => acc + fi.valorAplicado, 0);
 
     const categorias: Record<string, { valor: number; cor: string; rotulo: string }> = {
-      ACOES: { valor: tipoValor.get('ACOES') || 0, cor: '#75d33b', rotulo: 'Ações' },
-      FII: { valor: tipoValor.get('FII') || 0, cor: '#3b82f6', rotulo: 'FIIs' },
+      [AssetType.ACOES]: { valor: tipoValor.get(AssetType.ACOES) || 0, cor: '#75d33b', rotulo: 'Ações' },
+      [AssetType.FII]: { valor: tipoValor.get(AssetType.FII) || 0, cor: '#3b82f6', rotulo: 'FIIs' },
       RENDA_FIXA: { valor: totalFI, cor: '#fb923c', rotulo: 'Renda Fixa' },
     };
 
-    const outrosTipos = ['BDR', 'ETF', 'CRIPTO'];
+    const outrosTipos = [AssetType.BDR, AssetType.ETF, AssetType.CRIPTO];
     const outrosValor = outrosTipos.reduce((acc, t) => acc + (tipoValor.get(t) || 0), 0);
     if (outrosValor > 0) {
       categorias['OUTROS'] = { valor: outrosValor, cor: '#64748b', rotulo: 'Outros' };
@@ -148,8 +154,8 @@ export class DashboardService {
       orderBy: { data: 'asc' },
     });
 
-    const proventos = operations.filter((op) => op.tipo === 'Proventos');
-    const compras = operations.filter((op) => op.tipo === 'Compra');
+    const proventos = operations.filter((op) => op.tipo === OperationType.Proventos);
+    const compras = operations.filter((op) => op.tipo === OperationType.Compra);
 
     const fixedIncomeHistories = await this.prisma.fixedIncomeHistory.findMany({
       where: {
@@ -242,9 +248,48 @@ export class DashboardService {
     }
   }
 
+  async getProximosPagamentos(userId: number): Promise<ProximoPagamentoDto[]> {
+    const assets = await this.prisma.asset.findMany({
+      where: { createdBy: userId },
+    });
+
+    if (!assets.length) {
+      return [];
+    }
+
+    const papeisTipos = assets.map((a) => ({
+      papel: a.ticker,
+      tipo: a.tipo === AssetType.FII ? 1 : 2,
+    }));
+
+    const hoje = new Date();
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    const fmt = (d: Date) => d.toISOString().split('T')[0];
+    const result = await this.pythonApi.fetchProventos({
+      papeis_tipos: papeisTipos,
+      dataInicio: fmt(primeiroDia),
+      dataFim: fmt(ultimoDia),
+    });
+    
+
+    return result
+      .flatMap((r) =>
+        r.proventos.map((p) => ({
+          ticker: r.ticker,
+          tipo: 'Dividendo',
+          valor: p.value,
+          dataPagamento: p.payment_date,
+          dataCom: p.date_com,
+          percentual: p.percent,
+        })),
+      )
+      .sort((a, b) => a.dataPagamento.localeCompare(b.dataPagamento));
+  }
+
   private async calcularAvailableYears(userId: number): Promise<number[]> {
     const operations = await this.prisma.operation.findMany({
-      where: { createdBy: userId, tipo: 'Compra' },
+      where: { createdBy: userId, tipo: OperationType.Compra },
       select: { data: true },
     });
 

@@ -10,11 +10,12 @@ import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
 import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
+import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
 interface ProventoAsset {
-  tipo: number | null;
+  tipo: AssetTypeEnum | null;
   ticker: string;
   quantidade: number | null;
   valorUnitario: string;
@@ -29,14 +30,6 @@ interface SummaryProventoAsset {
   total: number;
   data: string;
 }
-
-const TIPO_MAP: Record<number, string> = {
-  1: 'ACOES',
-  2: 'FII',
-  3: 'BDR',
-  4: 'ETF',
-  5: 'CRIPTO',
-};
 
 @Component({
   selector: 'app-novo-provento',
@@ -108,7 +101,7 @@ export class NovoProventoComponent {
           tipoProvento: 1,
           observacoes: '',
           ativos: [{
-            tipo: 1,
+            tipo: AssetTypeEnum.ACOES,
             ticker: op.ativo,
             quantidade: op.qtd ?? 1,
             valorUnitario: formatCurrencyBRL(op.precoUn),
@@ -121,9 +114,8 @@ export class NovoProventoComponent {
   }
 
   onTipoChange(index: number, tipoValue: string): void {
-    const tipoKey = Number(tipoValue);
-    const assetType = TIPO_MAP[tipoKey];
-    if (!assetType) {
+    const assetType = tipoValue as AssetTypeEnum;
+    if (!Object.values(AssetTypeEnum).includes(assetType)) {
       this.assetsByIndex.update(m => ({ ...m, [index]: [] }));
       return;
     }
@@ -158,9 +150,9 @@ export class NovoProventoComponent {
 
   onDateRangeSelected(range: { startDate: string; endDate: string }): void {
     const simulatedDividends: ProventoAsset[] = [
-      { tipo: 1, ticker: 'PETR4', quantidade: 100, valorUnitario: 'R$ 1,45', data: range.startDate },
-      { tipo: 2, ticker: 'ITUB4', quantidade: 80, valorUnitario: 'R$ 1,02', data: range.startDate },
-      { tipo: 2, ticker: 'MXRF11', quantidade: 50, valorUnitario: 'R$ 0,90', data: range.endDate },
+      { tipo: AssetTypeEnum.ACOES, ticker: 'PETR4', quantidade: 100, valorUnitario: 'R$ 1,45', data: range.startDate },
+      { tipo: AssetTypeEnum.FII, ticker: 'ITUB4', quantidade: 80, valorUnitario: 'R$ 1,02', data: range.startDate },
+      { tipo: AssetTypeEnum.FII, ticker: 'MXRF11', quantidade: 50, valorUnitario: 'R$ 0,90', data: range.endDate },
     ];
     this.calculateSummaryFrom(simulatedDividends);
     this.fromAutoSearch.set(true);
@@ -181,7 +173,7 @@ export class NovoProventoComponent {
 
         this.movimentacoesService.updateOperation(op.id, {
           ticker: ativo.ticker.toUpperCase(),
-          tipo: 'Proventos',
+          tipo: OperationTypeEnum.Proventos,
           data: dataIso,
           qtd,
           precoUn,
@@ -211,8 +203,8 @@ export class NovoProventoComponent {
       const qtd = a.quantidade ?? 0;
       const sub = qtd * preco;
       let label = 'Dividendos';
-      if (a.tipo === 2) label = 'JCP';
-      if (a.tipo === 3) label = 'Rendimento';
+      if (a.tipo === AssetTypeEnum.FII) label = 'JCP';
+      if (a.tipo === AssetTypeEnum.BDR) label = 'Rendimento';
       if (!a.tipo) label = '-';
       return {
         ticker: a.ticker,
@@ -244,7 +236,7 @@ export class NovoProventoComponent {
 
     const operations = ativos.map((a) => ({
       ticker: a.ticker,
-      tipo: 'Proventos' as const,
+      tipo: OperationTypeEnum.Proventos as const,
       data: this.toDateIso(a.data || this.model().dataOperacao),
       qtd: a.quantidade,
       precoUn: a.valorUnitario,

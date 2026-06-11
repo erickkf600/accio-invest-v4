@@ -10,28 +10,12 @@ import { AutocompleteComponent } from '../../../../components/autocomplete/autoc
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
-import { AssetTypeEnum } from '../../../../models/enums';
+import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
-const TIPO_MAP: Record<number, string> = {
-  [AssetTypeEnum.ACOES]: 'ACOES',
-  [AssetTypeEnum.FII]: 'FII',
-  [AssetTypeEnum.BDR]: 'BDR',
-  [AssetTypeEnum.ETF]: 'ETF',
-  [AssetTypeEnum.CRIPTO]: 'CRIPTO',
-};
-
-const TIPO_LABEL_MAP: Record<number, string> = {
-  [AssetTypeEnum.ACOES]: 'Ações',
-  [AssetTypeEnum.FII]: 'FII',
-  [AssetTypeEnum.BDR]: 'BDR',
-  [AssetTypeEnum.ETF]: 'ETF',
-  [AssetTypeEnum.CRIPTO]: 'Cripto',
-};
-
 interface CompraAsset {
-  tipo: number | null;
+  tipo: AssetTypeEnum | null;
   ticker: string;
   quantidade: number | null;
   valorUnitario: string;
@@ -123,7 +107,7 @@ export class NovaCompraComponent {
           observacoes: op.observacoes ?? '',
           anexo: { file: null, nome: '' },
           ativos: [{
-            tipo: 1,
+            tipo: AssetTypeEnum.ACOES,
             ticker: op.ativo,
             quantidade: op.qtd ?? 1,
             valorUnitario: formatCurrencyBRL(op.precoUn),
@@ -185,9 +169,8 @@ export class NovaCompraComponent {
   }
 
   onTipoChange(index: number, tipoValue: string): void {
-    const tipoKey = Number(tipoValue);
-    const assetType = TIPO_MAP[tipoKey];
-    if (!assetType) {
+    const assetType = tipoValue as AssetTypeEnum;
+    if (!Object.values(AssetTypeEnum).includes(assetType)) {
       this.assetsByIndex.update(m => ({ ...m, [index]: [] }));
       return;
     }
@@ -213,7 +196,7 @@ export class NovaCompraComponent {
         const total = precoUn * qtd + taxas;
         this.movimentacoesService.updateOperation(op.id, {
           ticker: ativo.ticker.toUpperCase(),
-          tipo: 'Compra',
+          tipo: OperationTypeEnum.Compra,
           data: dataIso,
           qtd,
           precoUn,
@@ -248,7 +231,7 @@ export class NovaCompraComponent {
       totalCustoNota += sub;
       return {
         ticker: a.ticker.toUpperCase(),
-        tipoLabel: a.tipo ? TIPO_LABEL_MAP[a.tipo] || '-' : '-',
+        tipoLabel: a.tipo ? AssetTypeLabel[a.tipo] || '-' : '-',
         quantidade: a.quantidade,
         valorUnitario: preco,
         subtotal: sub
@@ -300,7 +283,7 @@ export class NovaCompraComponent {
 
     const operations = ativos.map(a => ({
       ticker: a.ticker,
-      tipo: 'Compra' as const,
+      tipo: OperationTypeEnum.Compra as const,
       data: dataIso,
       qtd: a.quantidade,
       precoUn: a.valorUnitario,

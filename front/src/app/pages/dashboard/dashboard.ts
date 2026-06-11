@@ -65,6 +65,10 @@ export default class Dashboard implements OnInit {
         }
       },
     });
+
+    this.dashboardService.getProximosPagamentos().subscribe({
+      next: (data) => this.pagamentos.set(data),
+    });
   }
 
   private initChart() {

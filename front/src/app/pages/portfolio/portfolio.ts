@@ -3,6 +3,7 @@ import { TabsComponent, TabOption } from '../../components/tabs/tabs.component';
 import { MeusProdutosComponent } from './components/meus-produtos/meus-produtos.component';
 import { ProventosTabComponent } from './components/proventos-tab/proventos-tab.component';
 import { RendimentosTabComponent } from './components/rendimentos-tab/rendimentos-tab.component';
+import { AnalisesTabComponent } from './components/analises-tab/analises-tab.component';
 
 @Component({
   selector: 'app-portfolio',
@@ -12,6 +13,7 @@ import { RendimentosTabComponent } from './components/rendimentos-tab/rendimento
     MeusProdutosComponent,
     ProventosTabComponent,
     RendimentosTabComponent,
+    AnalisesTabComponent,
   ],
   templateUrl: './portfolio.html',
   styleUrl: './portfolio.scss',
@@ -23,6 +25,7 @@ export default class Portfolio {
     { id: 'produtos', label: 'Meus Produtos', icon: 'grid_view' },
     { id: 'proventos', label: 'Proventos', icon: 'payments' },
     { id: 'rendimentos', label: 'Rendimentos', icon: 'trending_up' },
+    { id: 'analises', label: 'Análises', icon: 'analytics' },
   ]);
 
   activeTabId = signal<string>('produtos');

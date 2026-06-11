@@ -14,12 +14,29 @@ export enum MonthEnum {
 }
 
 export enum AssetTypeEnum {
-  ACOES = 1,
-  FII = 2,
-  BDR = 3,
-  ETF = 4,
-  CRIPTO = 5
+  ACOES = 'ACOES',
+  FII = 'FII',
+  BDR = 'BDR',
+  ETF = 'ETF',
+  CRIPTO = 'CRIPTO',
 }
+
+export enum OperationTypeEnum {
+  Compra = 'Compra',
+  Venda = 'Venda',
+  Proventos = 'Proventos',
+  RendaFixa = 'Renda Fixa',
+  Reposicionamento = 'Reposicionamento',
+  RendaFixaRendimento = 'Renda Fixa - Rendimento',
+}
+
+export const AssetTypeLabel: Record<AssetTypeEnum, string> = {
+  [AssetTypeEnum.ACOES]: 'Ações',
+  [AssetTypeEnum.FII]: 'FII',
+  [AssetTypeEnum.BDR]: 'BDR',
+  [AssetTypeEnum.ETF]: 'ETF',
+  [AssetTypeEnum.CRIPTO]: 'Cripto',
+};
 
 export enum IndexerEnum {
   CDI = 'CDI',

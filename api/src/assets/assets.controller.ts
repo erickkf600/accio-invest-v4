@@ -47,8 +47,11 @@ export class AssetsController {
 
   @Get(':ticker')
   @ApiOperation({ summary: 'Obter ativo por ticker' })
-  async findByTicker(@Param('ticker') ticker: string): Promise<AssetResponseDto> {
-    return this.assetsService.findByTicker(ticker);
+  async findByTicker(
+    @Param('ticker') ticker: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<AssetResponseDto> {
+    return this.assetsService.findByTicker(ticker, user.sub);
   }
 
   @Patch(':ticker')
@@ -56,14 +59,18 @@ export class AssetsController {
   async update(
     @Param('ticker') ticker: string,
     @Body() dto: UpdateAssetDto,
+    @CurrentUser() user: JwtPayload,
   ): Promise<AssetResponseDto> {
-    return this.assetsService.update(ticker, dto);
+    return this.assetsService.update(ticker, dto, user.sub);
   }
 
   @Delete(':ticker')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remover ativo' })
-  async remove(@Param('ticker') ticker: string): Promise<void> {
-    return this.assetsService.remove(ticker);
+  async remove(
+    @Param('ticker') ticker: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    return this.assetsService.remove(ticker, user.sub);
   }
 }

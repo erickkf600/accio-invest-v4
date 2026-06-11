@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
+import { OperationType } from '../generated/prisma/client';
 import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
@@ -24,68 +25,35 @@ export class PortfolioService {
     const { page = 1, limit = 20, ticker } = filter || { page: 1, limit: 20 };
     const { skip, take } = getPaginationParams(page, limit);
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      asset: { createdBy: userId },
+    };
     if (ticker) where['ticker'] = { contains: ticker };
 
-    const operations = await this.prisma.operation.findMany({
-      where: { createdBy: userId, ...where },
-      include: { asset: true },
-      orderBy: { ticker: 'asc' },
-    });
+    const [positions, total] = await Promise.all([
+      this.prisma.portfolioPosition.findMany({
+        where,
+        skip,
+        take,
+        include: { asset: true },
+        orderBy: { ticker: 'asc' },
+      }),
+      this.prisma.portfolioPosition.count({ where }),
+    ]);
 
-    const grouped = new Map<
-      string,
-      { ticker: string; tipo: string; qtd: number; custoTotal: number; precoMedio: number }
-    >();
+    const totalValor = positions.reduce((acc, p) => acc + p.custoTotal, 0);
 
-    for (const op of operations) {
-      const existing = grouped.get(op.ticker) || {
-        ticker: op.ticker,
-        tipo: op.asset.tipo,
-        qtd: 0,
-        custoTotal: 0,
-        precoMedio: 0,
-      };
-
-      if (op.tipo === 'Compra') {
-        existing.qtd += op.qtd || 0;
-        existing.custoTotal += op.total;
-      } else if (op.tipo === 'Venda') {
-        existing.qtd -= op.qtd || 0;
-        existing.custoTotal -= op.total;
-      }
-
-      if (existing.qtd > 0) {
-        existing.precoMedio = existing.custoTotal / existing.qtd;
-      }
-
-      grouped.set(op.ticker, existing);
-    }
-
-    const positions = Array.from(grouped.values())
-      .filter((p) => p.qtd > 0)
-      .map((p) => ({
-        id: 0,
-        ticker: p.ticker,
-        tipo: p.tipo as PositionResponseDto['tipo'],
-        qtd: p.qtd,
-        precoMedio: p.precoMedio,
-        custoTotal: p.custoTotal,
-        precoAtual: 0,
-        valorAtual: 0,
-        lucroPrejuizo: 0,
-        lucroPrejuizoPct: 0,
-        participacao: 0,
-      }));
-
-    const total = positions.length;
-    const paginatedData = positions.slice(skip, skip + take);
-
-    const totalValor = paginatedData.reduce((acc, p) => acc + p.custoTotal, 0);
-
-    const data = paginatedData.map((p) => ({
-      ...p,
+    const data: PositionResponseDto[] = positions.map((p) => ({
+      id: p.id,
+      ticker: p.ticker,
+      tipo: p.asset.tipo as PositionResponseDto['tipo'],
+      qtd: p.qtd,
+      precoMedio: p.precoMedio,
+      custoTotal: p.custoTotal,
+      precoAtual: 0,
       valorAtual: p.qtd * p.precoMedio,
+      lucroPrejuizo: 0,
+      lucroPrejuizoPct: 0,
       participacao: totalValor > 0 ? (p.custoTotal / totalValor) * 100 : 0,
     }));
 
@@ -107,7 +75,7 @@ export class PortfolioService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: 'Proventos',
+      tipo: OperationType.Proventos,
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {

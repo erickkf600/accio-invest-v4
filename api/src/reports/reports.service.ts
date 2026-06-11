@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
+import { OperationType } from '../generated/prisma/client';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 import { RelatorioAporteDto } from './dto/report-aporte.dto';
 import { RelatorioVendaDto } from './dto/report-venda.dto';
@@ -24,7 +25,7 @@ export class ReportsService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: 'Compra',
+      tipo: OperationType.Proventos,
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {
@@ -73,7 +74,7 @@ export class ReportsService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: 'Venda',
+      tipo: OperationType.Venda,
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {
@@ -182,58 +183,32 @@ export class ReportsService {
     const { page = 1, limit = 20, ticker } = filter || { page: 1, limit: 20 };
     const { skip, take } = getPaginationParams(page, limit);
 
-    const where: Record<string, unknown> = { createdBy: userId };
+    const where: Record<string, unknown> = {
+      asset: { createdBy: userId },
+    };
     if (ticker) where['ticker'] = { contains: ticker };
 
-    const operations = await this.prisma.operation.findMany({
-      where,
-      orderBy: { ticker: 'asc' },
-    });
+    const [positions, total] = await Promise.all([
+      this.prisma.portfolioPosition.findMany({
+        where,
+        skip,
+        take,
+        include: { asset: true },
+        orderBy: { ticker: 'asc' },
+      }),
+      this.prisma.portfolioPosition.count({ where }),
+    ]);
 
-    const grouped = new Map<
-      string,
-      { ticker: string; tipo: string; qtd: number; precoMedio: number; custoTotal: number }
-    >();
-
-    for (const op of operations) {
-      const existing = grouped.get(op.ticker) || {
-        ticker: op.ticker,
-        tipo: op.tipo,
-        qtd: 0,
-        precoMedio: 0,
-        custoTotal: 0,
-      };
-
-      if (op.tipo === 'Compra') {
-        existing.qtd += op.qtd || 0;
-        existing.custoTotal += op.total;
-      } else if (op.tipo === 'Venda') {
-        existing.qtd -= op.qtd || 0;
-        existing.custoTotal -= op.total;
-      }
-
-      if (existing.qtd > 0) {
-        existing.precoMedio = existing.custoTotal / existing.qtd;
-      }
-
-      grouped.set(op.ticker, existing);
-    }
-
-    const data = Array.from(grouped.values())
-      .filter((p) => p.qtd > 0)
-      .map((p) => ({
-        ticker: p.ticker,
-        tipo: p.tipo,
-        qtd: p.qtd,
-        precoMedio: p.precoMedio,
-        custoTotal: p.custoTotal,
-      }));
-
-    const total = data.length;
-    const paginatedData = data.slice(skip, skip + take);
+    const data = positions.map((p) => ({
+      ticker: p.ticker,
+      tipo: p.asset.tipo,
+      qtd: p.qtd,
+      precoMedio: p.precoMedio,
+      custoTotal: p.custoTotal,
+    }));
 
     return {
-      data: paginatedData,
+      data,
       meta: calculatePaginationMeta(total, page, limit),
     };
   }

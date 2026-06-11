@@ -45,3 +45,11 @@
 - **Acesso às Skills**: SEMPRE consulte, leia e utilize as instruções das skills customizadas armazenadas em `.agents\skills` durante a execução das tarefas.
 - **Strict Execution Rule**: You MUST analyze, guide yourself by, and adhere to these custom skills in ALL prompts and interactions, regardless of whether the user explicitly requests it or not. This is a foundational behavior that applies to every single task.
 - **Uso do Tailwind CSS**: Ao criar ou estilizar componentes, siga rigorosamente as diretrizes, padrões e utilitários do Tailwind CSS descritos na skill específica contida no diretório de skills.
+
+## Enums — proibido strings hardcoded para OperationType / AssetType
+
+- **Nunca use string literal** para `OperationType` ou `AssetType`. Sempre importe e use o enum correspondente.
+- **Backend**: `import { OperationType, AssetType } from '../generated/prisma/client'`
+- **Frontend**: `import { OperationTypeEnum, AssetTypeEnum } from '@app/models/enums'`
+- **Template (HTML)**: exponha o enum como propriedade pública no component e use a sintaxe `tipo === OperationTypeEnum.Compra` no template.
+- **Mock data**: valores de tipo em mocks devem usar os mesmos enums para consistência com a API real.

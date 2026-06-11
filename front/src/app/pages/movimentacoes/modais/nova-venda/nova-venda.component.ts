@@ -10,11 +10,12 @@ import { AutocompleteComponent } from '../../../../components/autocomplete/autoc
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
+import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
 interface VendaAsset {
-  tipo: number | null;
+  tipo: AssetTypeEnum | null;
   ticker: string;
   quantidade: number;
   precoUnitario: string;
@@ -23,14 +24,6 @@ interface VendaAsset {
   observacoes: string;
   anexo: { file: File | null; nome: string };
 }
-
-const TIPO_MAP: Record<number, string> = {
-  1: 'ACOES',
-  2: 'FII',
-  3: 'BDR',
-  4: 'ETF',
-  5: 'CRIPTO',
-};
 
 /**
  * NovaVendaComponent – modal for creating a single sale operation.
@@ -95,9 +88,8 @@ export class NovaVendaComponent {
   });
 
   onTipoChange(tipoValue: string): void {
-    const tipoKey = Number(tipoValue);
-    const assetType = TIPO_MAP[tipoKey];
-    if (!assetType) {
+    const assetType = tipoValue as AssetTypeEnum;
+    if (!Object.values(AssetTypeEnum).includes(assetType)) {
       this.currentAssets.set([]);
       return;
     }
@@ -124,14 +116,11 @@ export class NovaVendaComponent {
         });
         this.assetsService.list({}).subscribe({
           next: (res) => {
-            const asset = res.data.data.find(a => a.ticker.toUpperCase() === op.ativo.toUpperCase());
-            if (asset?.tipo) {
-              const tipoKey = Object.entries(TIPO_MAP).find(([, v]) => v === asset.tipo)?.[0];
-              if (tipoKey) {
-                this.model.update(m => ({ ...m, tipo: Number(tipoKey) }));
-                this.onTipoChange(tipoKey);
-              }
-            }
+          const asset = res.data.data.find(a => a.ticker.toUpperCase() === op.ativo.toUpperCase());
+          if (asset?.tipo && Object.values(AssetTypeEnum).includes(asset.tipo as AssetTypeEnum)) {
+            this.model.update(m => ({ ...m, tipo: asset.tipo as AssetTypeEnum }));
+            this.onTipoChange(asset.tipo);
+          }
           },
         });
       }
@@ -186,7 +175,7 @@ export class NovaVendaComponent {
     try {
       await lastValueFrom(this.movimentacoesService.createBatchWithFile([{
         ticker: m.ticker,
-        tipo: 'Venda',
+        tipo: OperationTypeEnum.Venda,
         data: this.toIsoDate(m.data),
         qtd,
         precoUn,

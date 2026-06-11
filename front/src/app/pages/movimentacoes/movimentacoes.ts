@@ -13,13 +13,14 @@ import { NovaRendaFixaComponent } from './modais/nova-renda-fixa/nova-renda-fixa
 import { NovaVendaComponent } from './modais/nova-venda/nova-venda.component';
 import { NovaPosicaoComponent } from './modais/nova-posicao/nova-posicao.component';
 import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
+import { OperationTypeEnum } from '../../models/enums';
 
 export interface Operation {
   id: string;
   data: string;
   dataIso: string;
   ativo: string;
-  tipo: 'Compra' | 'Venda' | 'Proventos' | 'Renda Fixa' | 'Reposicionamento' | 'Renda Fixa - Rendimento';
+  tipo: OperationTypeEnum;
   qtd: number | null;
   precoUn: number;
   taxas: number | null;
@@ -42,6 +43,7 @@ export interface OperationTypeOption {
   styleUrl: './movimentacoes.scss',
 })
 export default class Movimentacoes implements OnInit {
+  protected readonly OperationTypeEnum = OperationTypeEnum;
   protected readonly title = 'Movimentações';
 
   protected movimentacoesService = inject(MovimentacoesService);
@@ -161,12 +163,12 @@ export default class Movimentacoes implements OnInit {
   public onEdit(row: Operation) {
     console.log('edit', row)
     const tipoMap: Record<string, number> = {
-      'Compra': 1,
-      'Proventos': 2,
-      'Renda Fixa': 3,
-      'Renda Fixa - Rendimento': 3,
-      'Venda': 4,
-      'Reposicionamento': 5,
+      [OperationTypeEnum.Compra]: 1,
+      [OperationTypeEnum.Proventos]: 2,
+      [OperationTypeEnum.RendaFixa]: 3,
+      [OperationTypeEnum.RendaFixaRendimento]: 3,
+      [OperationTypeEnum.Venda]: 4,
+      [OperationTypeEnum.Reposicionamento]: 5,
     };
     const modalType = tipoMap[row.tipo];
     if (modalType !== undefined) {

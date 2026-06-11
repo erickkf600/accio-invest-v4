@@ -26,7 +26,7 @@
                 class="w-2 h-2 rounded-full flex-shrink-0"
                 [style.background]="allocationColors[item.tipo] || '#8a947f'"
               ></span>
-              <span class="text-xs text-text-muted">{{ item.tipo === 'FII' ? 'FIIs' : item.tipo }}</span>
+              <span class="text-xs text-text-muted">{{ item.tipo === AssetTypeEnum.FII ? 'FIIs' : item.tipo }}</span>
             </div>
             <div class="flex items-center gap-3">
               <span class="text-xs font-bold text-text-light">R$ {{ item.valor | abbreviateNumber }}</span>
@@ -110,7 +110,7 @@
             <span class="w-1.5 h-6 rounded-full flex-shrink-0"
               [style.background]="allocationColors[row.tipo] || '#64748b'"
             ></span>
-            <span class="text-sm font-bold text-white">{{ row.tipo === 'FII' ? 'FIIs' : row.tipo }}</span>
+            <span class="text-sm font-bold text-white">{{ row.tipo === AssetTypeEnum.FII ? 'FIIs' : row.tipo }}</span>
           </div>
         </ng-template>
         <ng-template appCellTemplate="saldoPM" let-row="row">

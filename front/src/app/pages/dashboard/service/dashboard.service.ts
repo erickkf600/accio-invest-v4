@@ -75,6 +75,15 @@ interface DashboardDataDto {
   availableYears: number[];
 }
 
+interface ProximoPagamentoItemDto {
+  ticker: string;
+  tipo: string;
+  valor: number;
+  dataPagamento: string;
+  dataCom: string;
+  percentual: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -85,6 +94,11 @@ export class DashboardService {
   private readonly MESES = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ];
+
+  private readonly MESES_ABREV = [
+    'JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN',
+    'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ',
   ];
 
   getDashboardData(ano?: number): Observable<DashboardData> {
@@ -114,6 +128,27 @@ export class DashboardService {
           pagamentos: [],
         };
       }),
+    );
+  }
+
+  getProximosPagamentos(): Observable<Pagamento[]> {
+    const hoje = new Date();
+    return this.http.get<ApiResponse<ProximoPagamentoItemDto[]>>(`${this.apiUrl}/proximos-pagamentos`).pipe(
+      map((res) =>
+        res.data.map((item) => {
+          const [dia, mes, ano] = item.dataPagamento.split('/');
+          const dataPagamento = new Date(+ano, +mes - 1, +dia);
+
+          return {
+            ticker: item.ticker,
+            tipo: item.tipo,
+            valor: this.formatCurrency(item.valor),
+            dataDia: dia,
+            dataMes: this.MESES_ABREV[parseInt(mes) - 1],
+            pago: dataPagamento <= hoje,
+          };
+        }),
+      ),
     );
   }
 

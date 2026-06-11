@@ -3,7 +3,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { OperationsController } from './operations.controller';
 import { OperationsService } from './operations.service';
-import { AssetsModule } from '../assets/assets.module';
+import { PortfolioModule } from '../portfolio/portfolio.module';
 import { FILE_CONSTANTS } from '../config/constants';
 
 @Module({
@@ -12,7 +12,7 @@ import { FILE_CONSTANTS } from '../config/constants';
       storage: memoryStorage(),
       limits: { fileSize: FILE_CONSTANTS.maxFileSize },
     }),
-    AssetsModule,
+    PortfolioModule,
   ],
   controllers: [OperationsController],
   providers: [OperationsService],

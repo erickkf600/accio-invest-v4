@@ -2,6 +2,7 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { DashboardDataDto } from './dto/dashboard-data.dto';
+import { ProximoPagamentoDto } from './dto/proximo-pagamento.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/types/jwt-payload.interface';
@@ -30,5 +31,13 @@ export class DashboardController {
   ): Promise<{ years: number[] }> {
     const years = await this.dashboardService.getAvailableYears(user.sub);
     return { years };
+  }
+
+  @Get('proximos-pagamentos')
+  @ApiOperation({ summary: 'Obter próximos pagamentos do mês corrente' })
+  async getProximosPagamentos(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<ProximoPagamentoDto[]> {
+    return this.dashboardService.getProximosPagamentos(user.sub);
   }
 }

@@ -34,9 +34,9 @@ export class AssetsService {
     };
   }
 
-  async create(dto: CreateAssetDto, userId?: number): Promise<AssetResponseDto> {
-    const existing = await this.prisma.asset.findUnique({
-      where: { ticker: dto.ticker },
+  async create(dto: CreateAssetDto, userId: number): Promise<AssetResponseDto> {
+    const existing = await this.prisma.asset.findFirst({
+      where: { ticker: dto.ticker, createdBy: userId },
     });
 
     if (existing) {
@@ -53,25 +53,27 @@ export class AssetsService {
     });
   }
 
-  async findByTicker(ticker: string): Promise<AssetResponseDto> {
-    const asset = await this.prisma.asset.findUnique({ where: { ticker } });
+  async findByTicker(ticker: string, userId: number): Promise<AssetResponseDto> {
+    const asset = await this.prisma.asset.findFirst({
+      where: { ticker, createdBy: userId },
+    });
     if (!asset) {
       throw new NotFoundException(`Asset with ticker ${ticker} not found`);
     }
     return asset;
   }
 
-  async update(ticker: string, dto: UpdateAssetDto): Promise<AssetResponseDto> {
-    await this.findByTicker(ticker);
+  async update(ticker: string, dto: UpdateAssetDto, userId: number): Promise<AssetResponseDto> {
+    await this.findByTicker(ticker, userId);
 
-    return this.prisma.asset.update({
-      where: { ticker },
+    return this.prisma.asset.updateMany({
+      where: { ticker, createdBy: userId },
       data: dto,
-    });
+    }).then(() => this.findByTicker(ticker, userId));
   }
 
-  async remove(ticker: string): Promise<void> {
-    await this.findByTicker(ticker);
-    await this.prisma.asset.delete({ where: { ticker } });
+  async remove(ticker: string, userId: number): Promise<void> {
+    const asset = await this.findByTicker(ticker, userId);
+    await this.prisma.asset.delete({ where: { id: asset.id } });
   }
 }

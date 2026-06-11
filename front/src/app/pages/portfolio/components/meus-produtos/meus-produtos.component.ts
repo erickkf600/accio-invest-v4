@@ -6,6 +6,7 @@ import { CellTemplateDirective } from '../../../../components/Table/cell-templat
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
+import { AssetTypeEnum } from '../../../../models/enums';
 
 @Component({
   selector: 'app-meus-produtos',
@@ -14,6 +15,7 @@ import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pip
   templateUrl: './meus-produtos.component.html',
 })
 export class MeusProdutosComponent {
+  protected readonly AssetTypeEnum = AssetTypeEnum;
   private _abbreviate = new AbbreviateNumberPipe();
   private portfolioService = inject(PortfolioService);
 
@@ -59,11 +61,11 @@ export class MeusProdutosComponent {
   ];
 
   allocationColors: Record<string, string> = {
-    'Ações': '#75d33b',
-    'FII': '#60a5fa',
-    'BDR': '#8b5cf6',
-    'ETF': '#06b6d4',
-    'Cripto': '#f97316',
+    [AssetTypeEnum.ACOES]: '#75d33b',
+    [AssetTypeEnum.FII]: '#60a5fa',
+    [AssetTypeEnum.BDR]: '#8b5cf6',
+    [AssetTypeEnum.ETF]: '#06b6d4',
+    [AssetTypeEnum.CRIPTO]: '#f97316',
     'Renda Fixa': '#f59e0b',
     'Outros': '#a855f7',
   };
@@ -120,7 +122,7 @@ export class MeusProdutosComponent {
   allocationChartOptions = computed(() => {
     const alloc = this.allocationByType();
     const total = alloc.reduce((acc, a) => acc + a.valor, 0) || 1;
-    const labels = alloc.map(a => a.tipo === 'FII' ? 'FIIs' : a.tipo);
+    const labels = alloc.map(a => a.tipo === AssetTypeEnum.FII ? 'FIIs' : a.tipo);
     const colors = alloc.map(a => this.allocationColors[a.tipo] || '#8a947f');
 
     return {

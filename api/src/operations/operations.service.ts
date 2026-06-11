@@ -4,8 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
-import { AssetsService } from '../assets/assets.service';
-import { AssetType } from '../generated/prisma/client';
+import { PositionSyncService } from '../portfolio/position-sync.service';
+import { AssetType, OperationType } from '../generated/prisma/client';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { UpdateOperationDto } from './dto/update-operation.dto';
 import { ListOperationsDto } from './dto/list-operations.dto';
@@ -69,7 +69,7 @@ function toYieldDto(y: Record<string, any>): OperationResponseDto {
 export class OperationsService {
   constructor(
     private prisma: PrismaService,
-    private assetsService: AssetsService,
+    private positionSync: PositionSyncService,
   ) {}
 
   async list(
@@ -79,12 +79,8 @@ export class OperationsService {
     const { page = 1, limit = 20, ticker, tipo, dataInicio, dataFim } = dto;
     const { skip, take } = getPaginationParams(page, limit);
 
-    const includeFi = !tipo || ['Renda Fixa', 'Renda Fixa - Rendimento'].includes(tipo);
-    const includeOp = !tipo || !['Renda Fixa', 'Rendimento'].includes(tipo);
-
-    let operations: OperationResponseDto[] = [];
-    let fiRecords: OperationResponseDto[] = [];
-    let yieldRecords: OperationResponseDto[] = [];
+    const includeFi = !tipo || tipo === 'Renda Fixa' || tipo === 'Renda Fixa - Rendimento';
+    const includeOp = !tipo || (tipo !== 'Renda Fixa' && tipo !== 'Rendimento');
 
     const opWhere: Record<string, unknown> = {};
     if (userId) opWhere['createdBy'] = userId;
@@ -114,33 +110,53 @@ export class OperationsService {
       if (dataFim) yieldWhere['dataOperacao']['lte'] = new Date(dataFim);
     }
 
+    const mergeTake = skip + take;
+
+    let total = 0;
+    let all: OperationResponseDto[] = [];
+
     if (includeOp) {
-      const ops = await this.prisma.operation.findMany({
-        where: opWhere,
-        orderBy: { data: 'desc' },
-      });
-      operations = ops as unknown as OperationResponseDto[];
+      const [ops, opCount] = await Promise.all([
+        this.prisma.operation.findMany({
+          where: opWhere,
+          take: mergeTake,
+          orderBy: { data: 'desc' },
+        }),
+        this.prisma.operation.count({ where: opWhere }),
+      ]);
+      all = ops as unknown as OperationResponseDto[];
+      total += opCount;
     }
 
     if (includeFi) {
-      const fi = await this.prisma.fixedIncomePosition.findMany({
-        where: fiWhere,
-        orderBy: { dataCompra: 'desc' },
-      });
-      fiRecords = fi.map(toFiDto);
+      const [fi, fiCount] = await Promise.all([
+        this.prisma.fixedIncomePosition.findMany({
+          where: fiWhere,
+          take: mergeTake,
+          orderBy: { dataCompra: 'desc' },
+        }),
+        this.prisma.fixedIncomePosition.count({ where: fiWhere }),
+      ]);
+      const fiDtos = fi.map(toFiDto);
 
-      const yields = await this.prisma.fixedIncomeYield.findMany({
-        where: yieldWhere,
-        orderBy: { dataOperacao: 'desc' },
-      });
-      yieldRecords = yields.map(toYieldDto);
+      const [yields, yieldCount] = await Promise.all([
+        this.prisma.fixedIncomeYield.findMany({
+          where: yieldWhere,
+          take: mergeTake,
+          orderBy: { dataOperacao: 'desc' },
+        }),
+        this.prisma.fixedIncomeYield.count({ where: yieldWhere }),
+      ]);
+      const yieldDtos = yields.map(toYieldDto);
+
+      all = [...all, ...fiDtos, ...yieldDtos];
+      total += fiCount + yieldCount;
     }
 
-    const all = [...operations, ...fiRecords, ...yieldRecords].sort(
+    all.sort(
       (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
     );
 
-    const total = all.length;
     const paginated = all.slice(skip, skip + take);
 
     return {
@@ -154,14 +170,16 @@ export class OperationsService {
     userId: number,
     arquivo?: Express.Multer.File,
   ): Promise<OperationResponseDto> {
-    let asset: { id: number } | null = await this.prisma.asset.findUnique({
-      where: { ticker: dto.ticker },
+    let asset = await this.prisma.asset.findFirst({
+      where: { ticker: dto.ticker, createdBy: userId },
     });
 
     if (!asset) {
-      if (dto.tipo === 'Compra') {
+      if (dto.tipo === OperationType.Compra) {
         const tipo = this.inferAssetType(dto.ticker);
-        asset = await this.assetsService.create({ ticker: dto.ticker, tipo }, userId);
+        asset = await this.prisma.asset.create({
+          data: { ticker: dto.ticker, tipo, createdBy: userId },
+        });
       } else {
         throw new BadRequestException(
           `Asset with ticker ${dto.ticker} not found. Create the asset first.`,
@@ -177,7 +195,7 @@ export class OperationsService {
       notaNome = arquivo.originalname;
     }
 
-    return this.prisma.operation.create({
+    const operation = await this.prisma.operation.create({
       data: {
         assetId: asset.id,
         ticker: dto.ticker,
@@ -193,7 +211,13 @@ export class OperationsService {
         observacoes: dto.observacoes ?? null,
         createdBy: userId,
       },
-    }) as unknown as OperationResponseDto;
+    });
+
+    if (dto.tipo === OperationType.Compra || dto.tipo === OperationType.Venda) {
+      await this.positionSync.syncPosition(dto.ticker, userId);
+    }
+
+    return operation as unknown as OperationResponseDto;
   }
 
   async createBatch(
@@ -209,16 +233,16 @@ export class OperationsService {
       notaNome = arquivo.originalname;
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const results: OperationResponseDto[] = [];
+    const results = await this.prisma.$transaction(async (tx) => {
+      const ops: OperationResponseDto[] = [];
 
       for (const dto of dtoList) {
-        let asset: { id: number } | null = await tx.asset.findUnique({
-          where: { ticker: dto.ticker },
+        let asset = await tx.asset.findFirst({
+          where: { ticker: dto.ticker, createdBy: userId },
         });
 
         if (!asset) {
-          if (dto.tipo === 'Compra') {
+          if (dto.tipo === OperationType.Compra) {
             const tipo = this.inferAssetType(dto.ticker);
             asset = await tx.asset.create({
               data: { ticker: dto.ticker, tipo, createdBy: userId },
@@ -248,11 +272,25 @@ export class OperationsService {
           },
         });
 
-        results.push(operation as unknown as OperationResponseDto);
+        ops.push(operation as unknown as OperationResponseDto);
       }
 
-      return results;
+      return ops;
     });
+
+    const tickersToSync = new Set<string>();
+    for (const dto of dtoList) {
+      if (dto.tipo === OperationType.Compra || dto.tipo === OperationType.Venda) {
+        tickersToSync.add(dto.ticker);
+      }
+    }
+    await Promise.all(
+      Array.from(tickersToSync).map((ticker) =>
+        this.positionSync.syncPosition(ticker, userId),
+      ),
+    );
+
+    return results;
   }
 
   private inferAssetType(ticker: string): AssetType {
@@ -354,7 +392,8 @@ export class OperationsService {
       return toYieldDto(updated as any);
     }
 
-    await this.findById(id, userId);
+    const oldOp = await this.findById(id, userId);
+    const oldTicker = oldOp.ticker;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nota, ...rest } = dto;
@@ -370,20 +409,41 @@ export class OperationsService {
       updateData['observacoes'] = dto.observacoes;
     }
 
+    const newTicker = dto.ticker ?? oldTicker;
+
     if (dto.ticker) {
-      const asset = await this.prisma.asset.findUnique({
-        where: { ticker: dto.ticker },
+      let asset = await this.prisma.asset.findFirst({
+        where: { ticker: dto.ticker, createdBy: userId },
       });
       if (!asset) {
-        throw new BadRequestException(`Asset with ticker ${dto.ticker} not found`);
+        const tipo = this.inferAssetType(dto.ticker);
+        asset = await this.prisma.asset.create({
+          data: { ticker: dto.ticker, tipo, createdBy: userId },
+        });
       }
       updateData['assetId'] = asset.id;
     }
 
-    return this.prisma.operation.update({
+    const updated = await this.prisma.operation.update({
       where: { id },
       data: updateData,
     }) as unknown as OperationResponseDto;
+
+    const tipo = dto.tipo ?? oldOp.tipo;
+    if (tipo === OperationType.Compra || tipo === OperationType.Venda) {
+      const tickersToSync = new Set<string>([oldTicker, newTicker]);
+      await Promise.all(
+        Array.from(tickersToSync).map((t) =>
+          this.positionSync.syncPosition(t, userId),
+        ),
+      );
+
+      if (oldTicker !== newTicker) {
+        await this.cleanupOrphanAsset(oldTicker, userId);
+      }
+    }
+
+    return updated;
   }
 
   async remove(id: number, userId?: number): Promise<void> {
@@ -411,7 +471,26 @@ export class OperationsService {
       return;
     }
 
-    await this.findById(id, userId);
+    const operation = await this.findById(id, userId);
+    const ticker = operation.ticker;
+    const tipo = operation.tipo;
     await this.prisma.operation.delete({ where: { id } });
+
+    if (tipo === OperationType.Compra || tipo === OperationType.Venda) {
+      await this.positionSync.syncPosition(ticker, userId);
+      await this.cleanupOrphanAsset(ticker, userId);
+    }
+  }
+
+  private async cleanupOrphanAsset(ticker: string, userId: number): Promise<void> {
+    const count = await this.prisma.operation.count({
+      where: { ticker, createdBy: userId },
+    });
+
+    if (count === 0) {
+      await this.prisma.asset.deleteMany({
+        where: { ticker, createdBy: userId },
+      });
+    }
   }
 }

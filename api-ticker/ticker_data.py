@@ -1,7 +1,7 @@
 import yfinance as yf
 from cache_decorator import cache_memory
 
-@cache_memory(maxsize=100)
+@cache_memory(maxsize=100, ttl_seconds=60)
 def fetch_ticker_price(tickers):
     
     tickers_data = yf.Tickers(' '.join([ticker + '.SA' for ticker in tickers]))

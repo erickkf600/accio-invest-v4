@@ -64,6 +64,7 @@ export class PythonApiService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dto),
       });
+      console.log('TESTEEE')
       return res as ProventoResponseDto[];
     } catch (err) {
       this.logger.error(`fetchProventos failed: ${(err as Error).message}`);
