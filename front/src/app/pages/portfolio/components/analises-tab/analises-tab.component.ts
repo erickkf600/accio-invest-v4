@@ -1,4 +1,6 @@
 import { Component, signal } from '@angular/core';
+import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
+import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 
 interface FiiAnalysis {
   ticker: string;
@@ -38,11 +40,27 @@ interface TituloReferencia {
 @Component({
   selector: 'app-analises-tab',
   standalone: true,
-  imports: [],
+  imports: [TableComponent, CellTemplateDirective],
   templateUrl: './analises-tab.component.html',
 })
 export class AnalisesTabComponent {
   data = signal<FiiAnalysis[]>(MOCK_DATA);
+
+  columns: TableColumn[] = [
+    { key: 'ticker', label: 'Ativo' },
+    { key: 'pvp', label: 'P/VP' },
+    { key: 'cotacao', label: 'Cotação' },
+    { key: 'div12m', label: 'Div. 12M' },
+    { key: 'ipca', label: 'IPCA' },
+    { key: 'ipcaMais', label: 'IPCA+' },
+    { key: 'premio', label: 'Prêmio' },
+    { key: 'yieldAlvo', label: 'Yield Alvo' },
+    { key: 'precoTeto', label: 'Preço Teto' },
+    { key: 'margemSeguranca', label: 'M. Seg.' },
+    { key: 'yieldBruto', label: 'Yield' },
+    { key: 'tetoBruto', label: 'Teto' },
+    { key: 'margemSegurancaBruta', label: 'M. Seg.' },
+  ];
 
   tituloReferencia = signal<TituloReferencia>({
     nome: 'IPCA + 2035',
