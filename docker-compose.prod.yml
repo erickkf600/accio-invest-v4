@@ -30,7 +30,7 @@ services:
   api-ticker:
     image: ghcr.io/erickdf/accio-ticker:latest
 
-    container_name: accio-api-ticker
+    container_name: accio-ticker
 
     restart: unless-stopped
 
