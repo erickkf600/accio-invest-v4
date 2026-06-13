@@ -1,0 +1,49 @@
+services:
+  api:
+    image: ghcr.io/erickdf/accio-api:latest
+
+    container_name: accio-api
+
+    restart: unless-stopped
+
+    ports:
+      - '3000:3000'
+
+    environment:
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@accio-mysql:3306/accio_invest
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      JWT_EXPIRES_IN: 15m
+
+      JWT_REFRESH_EXPIRES_IN: 7d
+
+      PORT: 3000
+
+      NODE_ENV: production
+
+      CORS_ORIGIN: https://app.accioinvest.uk
+
+    networks:
+      - accio-network
+
+  api-ticker:
+    image: ghcr.io/erickdf/accio-ticker:latest
+
+    container_name: accio-api-ticker
+
+    restart: unless-stopped
+
+    ports:
+      - '4444:4444'
+
+    environment:
+      FLASK_DEBUG: 'False'
+
+    networks:
+      - accio-network
+
+networks:
+  accio-network:
+    external: true
+    name: cicd-base-infra_accio-network
