@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/erickdf/accio-api:latest
+    image: ghcr.io/erickkf600/accio-api:latest
 
     container_name: accio-api
 
@@ -28,7 +28,7 @@ services:
       - accio-network
 
   api-ticker:
-    image: ghcr.io/erickdf/accio-ticker:latest
+    image: ghcr.io/erickkf600/accio-ticker:latest
 
     container_name: accio-ticker
 

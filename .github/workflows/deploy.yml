@@ -40,7 +40,7 @@ jobs:
           secret_key: ${{ secrets.MINIO_SECRET_KEY }}
           bucket: 'accio-front' # O bucket de destino
           source_dir: 'dist/front/browser' # A pasta gerada pelo build do Angular
-          target_dir: '/' # Sobe direto para a raiz do bucket
+          target_dir: '' # Sobe direto para a raiz do bucket
 
   build-api:
     name: Build Nest
