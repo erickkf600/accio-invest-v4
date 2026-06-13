@@ -1,0 +1,55 @@
+<main class="pt-24 pb-20 md:pb-12 max-w-[1600px] mx-auto px-4 md:px-10">
+  <!-- Page Header with Stats -->
+  <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-text-light mb-2">Seu Portfólio</h1>
+      <p class="text-text-muted text-sm">Visão consolidada de seus investimentos e performance.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:w-auto w-full">
+      <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px]">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
+          <span class="text-text-muted">Patrimônio</span>
+          <span class="material-symbols-outlined text-sm text-primary-success">trending_up</span>
+        </div>
+        <div class="text-lg font-bold text-white mt-1">R$ 305,86</div>
+      </div>
+      <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px] relative overflow-hidden">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
+          <span class="text-text-muted">Saldo Médio</span>
+          <span class="material-symbols-outlined text-primary-success text-lg">account_balance_wallet</span>
+        </div>
+        <div class="text-lg font-bold text-white mt-1">R$ 730,66</div>
+      </div>
+      <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px]">
+        <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
+          <span class="text-text-muted">Total Rendimento</span>
+          <span class="material-symbols-outlined text-primary-success text-lg">payments</span>
+        </div>
+        <div class="text-lg font-bold text-[#22c55e] mt-1">R$ 18,47</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-8">
+    <app-tabs
+      [options]="tabOptions()"
+      [activeTab]="activeTabId()"
+      (tabChange)="onTabChange($event)"
+    ></app-tabs>
+  </div>
+
+  <!-- Tab Contents -->
+  <div>
+    @if (activeTabId() === 'produtos') {
+      <app-meus-produtos></app-meus-produtos>
+    } @else if (activeTabId() === 'proventos') {
+      <app-proventos-tab></app-proventos-tab>
+    } @else if (activeTabId() === 'rendimentos') {
+      <app-rendimentos-tab></app-rendimentos-tab>
+    } @else if (activeTabId() === 'analises') {
+      <app-analises-tab></app-analises-tab>
+    }
+  </div>
+</main>

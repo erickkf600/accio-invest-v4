@@ -1,0 +1,235 @@
+<main class="pt-32 pb-24 px-6 md:px-10 max-w-[1440px] mx-auto">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-text-light mb-2">Central de Ferramentas</h1>
+    <p class="text-text-muted text-sm">Simuladores e calculadoras de precisão para investidores profissionais.</p>
+  </div>
+
+  <div class="space-y-6 mb-9 flex flex-col">
+    <section class="glass-card rounded-xl p-8">
+      <div class="flex flex-col lg:flex-row gap-12">
+        <div class="flex-1">
+          <div class="flex items-center gap-4 mb-8">
+            <div class="w-12 h-12 bg-primary-success/10 rounded-xl flex items-center justify-center">
+              <span class="material-symbols-outlined text-primary-success text-3xl">rocket_launch</span>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-on-surface">Simulador de Liberdade Financeira</h2>
+              <p class="text-sm text-on-surface-variant">Projete o crescimento do seu patrimônio no longo prazo</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="space-y-2 flex flex-col">
+              <label for="lib-inicial" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Valor Investido Inicial</label>
+              <div class="relative">
+                <input #libInicial id="lib-inicial" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none" placeholder="R$ 0,00" type="text" appCurrencyMask>
+              </div>
+            </div>
+            <div class="space-y-2 flex flex-col">
+              <label for="lib-aporte" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Aporte Mensal</label>
+              <div class="relative">
+                <input #libAporte id="lib-aporte" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none" placeholder="R$ 0,00" type="text" appCurrencyMask>
+              </div>
+            </div>
+            <div class="space-y-2 flex flex-col">
+              <label for="lib-taxa" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Taxa de Juros Mensal (%)</label>
+              <input #libTaxa id="lib-taxa" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0,8" step="0.01" type="number">
+            </div>
+            <div class="space-y-2 flex flex-col">
+              <label for="lib-meses" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Quantidade de Meses</label>
+              <input #libMeses id="lib-meses" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="120" type="number">
+            </div>
+          </div>
+          <button class="mt-8 w-full bg-primary-success hover:brightness-110 text-bg-main font-bold py-3 rounded-lg active:scale-[0.98] transition-all" (click)="calculateFinancialFreedom(libInicial.value, libAporte.value, libTaxa.value, libMeses.value)">Simular Evolução</button>
+        </div>
+
+        <div class="lg:w-80 bg-surface-container-low rounded-xl p-8 flex flex-col justify-center border border-white/5">
+          <div class="mb-8">
+            <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Total Acumulado</p>
+            <h3 class="text-3xl font-black text-primary-success">{{ resultTotal }}</h3>
+          </div>
+          <div>
+            <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Juros Ganhos</p>
+            <h3 class="text-xl font-bold text-on-surface">{{ resultJuros }}</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="w-full h-px bg-white/5 mb-9"></div>
+
+  <div class="space-y-6 mb-9">
+    <div class="flex items-center gap-3 text-on-surface-variant uppercase tracking-widest text-[10px] font-bold">
+      <span class="w-8 h-px bg-white/5"></span>
+      Análises de mercado
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section class="glass-card rounded-xl p-8 flex flex-col">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
+            <span class="material-symbols-outlined text-secondary text-2xl">calculate</span>
+          </div>
+          <h2 class="text-lg font-bold text-on-surface">Calculadora de Preço Médio</h2>
+        </div>
+
+        <div class="flex-grow space-y-4 overflow-y-auto max-h-[300px] pr-2">
+          @for (entry of pmEntries; track $index) {
+            <div class="grid grid-cols-2 gap-4 pb-4 border-b border-white/5">
+              <div class="space-y-2 flex flex-col">
+                <label [for]="'pm-qtd-' + $index" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Quantidade</label>
+                <input [(ngModel)]="entry.qtd" [id]="'pm-qtd-' + $index" class="w-full bg-surface-variant border-none rounded-lg py-2.5 px-4 text-sm text-on-surface focus:ring-1 focus:ring-secondary outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" type="number">
+              </div>
+              <div class="space-y-2 flex flex-col">
+                <label [for]="'pm-price-' + $index" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Preço Unitário (R$)</label>
+                <div class="flex gap-2 items-center">
+                  <input [(ngModel)]="entry.price" [id]="'pm-price-' + $index" class="flex-1 w-full bg-surface-variant border-none rounded-lg py-2.5 px-4 text-sm text-on-surface focus:ring-1 focus:ring-secondary outline-none" placeholder="R$ 0,00" type="text" appCurrencyMask>
+                  @if (pmEntries.length > 1) {
+                    <button class="p-2 text-on-surface-variant hover:text-error transition-colors" (click)="removePMRow($index)">
+                      <span class="material-symbols-outlined text-lg">remove_circle</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="mt-8">
+          <div class="flex justify-between items-end mb-6">
+            <button class="text-sm text-primary-success flex max-md:flex-col md:flex-row md:items-center md:gap-2 gap-2 hover:brightness-110 font-bold" (click)="addPMRow()">
+              <span class="material-symbols-outlined text-sm">add_circle</span> Adicionar Lote
+            </button>
+            <div class="text-right">
+              <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Média Ponderada</p>
+              <span class="text-2xl font-black text-on-surface">{{ precoMedio }}</span>
+            </div>
+          </div>
+          <button class="w-full bg-surface-variant hover:bg-surface-bright text-on-surface font-bold py-3 rounded-lg transition-all" (click)="calcPM()">Calcular Médias</button>
+        </div>
+      </section>
+
+      <section class="glass-card rounded-xl p-8">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-tertiary-container/20 rounded-lg flex items-center justify-center">
+            <span class="material-symbols-outlined text-tertiary-fixed-dim text-2xl">savings</span>
+          </div>
+          <h2 class="text-lg font-bold text-on-surface">Calculadora de Preço Justo</h2>
+        </div>
+
+        <div class="space-y-6">
+          <div class="space-y-2 flex flex-col">
+            <label for="pt-rendimento" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase tracking-wider">Rendimento dos Últimos 12 Meses</label>
+            <input #ptRendimento id="pt-rendimento" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none" placeholder="R$ 0,00" type="text" appCurrencyMask>
+          </div>
+          <div class="space-y-2 flex flex-col">
+            <label for="pt-taxa" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase tracking-wider">Rendimento Anual Desejado (%)</label>
+            <input #ptTaxa id="pt-taxa" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="8" step="0.1" type="number">
+          </div>
+          <div class="bg-surface-container-low rounded-xl p-6 border border-dashed border-white/10 text-center mt-4">
+            <span class="text-[10px] text-on-surface-variant uppercase font-bold mb-2 block">Preço Teto Sugerido</span>
+            <div class="text-3xl font-black text-primary-success">{{ precoTeto }}</div>
+            <p class="text-[9px] text-on-surface-variant mt-3 italic opacity-60">Preço Teto = Rendimento 12m ÷ (Taxa Desejada ÷ 100)</p>
+          </div>
+          <button class="w-full bg-primary-success hover:brightness-110 text-bg-main font-bold py-3 rounded-lg active:scale-[0.98] transition-all" (click)="calcularPrecoTeto(ptRendimento.value, ptTaxa.value)">Calcular Preço Teto</button>
+        </div>
+      </section>
+
+      <section class="glass-card rounded-xl p-8">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
+            <span class="material-symbols-outlined text-secondary text-2xl">trending_up</span>
+          </div>
+          <h2 class="text-lg font-bold text-on-surface">Calculadora de Rentabilidade</h2>
+        </div>
+
+        <div class="space-y-6">
+          <div class="space-y-2 flex flex-col">
+            <label for="rent-inicial" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase tracking-wider">Valor Investido</label>
+            <input #rentInicial id="rent-inicial" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none" placeholder="R$ 0,00" type="text" appCurrencyMask>
+          </div>
+          <div class="space-y-2 flex flex-col">
+            <label for="rent-final" class="text-[10px] font-bold tracking-wider text-slate-400 uppercase tracking-wider">Valor Atual</label>
+            <input #rentFinal id="rent-final" class="w-full bg-surface-variant border-none rounded-lg py-3 px-4 focus:ring-1 focus:ring-primary-success/50 text-on-surface text-sm outline-none" placeholder="R$ 0,00" type="text" appCurrencyMask>
+          </div>
+          <div class="bg-surface-container-low rounded-xl p-6 border border-dashed border-white/10 text-center mt-4">
+            <span class="text-[10px] text-on-surface-variant uppercase font-bold mb-2 block">Rentabilidade</span>
+            <div class="text-3xl font-black" [class.text-primary-success]="rentabilidadeValor >= 0" [class.text-error]="rentabilidadeValor < 0">{{ rentabilidade }}%</div>
+            <p class="text-[9px] text-on-surface-variant mt-3 italic opacity-60">Rentabilidade = (Valor Atual ÷ Valor Investido − 1) × 100</p>
+          </div>
+          <button class="w-full bg-primary-success hover:brightness-110 text-bg-main font-bold py-3 rounded-lg active:scale-[0.98] transition-all" (click)="calcularRentabilidade(rentInicial.value, rentFinal.value)">Calcular Rentabilidade</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="w-full h-px bg-white/5 mb-9"></div>
+
+  <div class="space-y-6">
+    <div class="flex items-center gap-3 text-on-surface-variant uppercase tracking-widest text-[10px] font-bold">
+      <span class="w-8 h-px bg-white/5"></span>
+      Utilitário de porcentagem
+    </div>
+
+    <div class="grid grid-cols-1 gap-8">
+      <section class="glass-card rounded-xl p-8">
+        <div class="flex items-center gap-3 mb-8">
+          <span class="material-symbols-outlined text-primary-success">percent</span>
+          <h2 class="text-lg font-bold text-on-surface">Calculadora de Porcentagem</h2>
+        </div>
+
+        <div class="space-y-6">
+          <div class="flex flex-col gap-2">
+            <div class="flex max-md:flex-col md:flex-row md:items-center md:gap-2 gap-2">
+              <span class="invisible select-none w-[22px] shrink-0 text-xs">De</span>
+              <input #p1x (input)="calcP1(p1x.value, p1y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="%" type="number">
+              <span class="text-xs text-on-surface-variant whitespace-nowrap self-center text-center w-[120px] shrink-0">% de</span>
+              <input #p1y (input)="calcP1(p1x.value, p1y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Valor" type="number">
+              <span class="text-on-surface-variant text-center text-sm w-[20px] shrink-0">=</span>
+              <span class="font-bold text-primary-success text-lg min-w-[140px] shrink-0 text-center ml-auto">{{ p1Res }}</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula o valor absoluto baseado em uma porcentagem. Ex: 10% de 100 é 10.</p>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-6 border-t border-white/5">
+            <div class="flex max-md:flex-col md:flex-row md:items-center md:gap-2 gap-2">
+              <span class="invisible select-none w-[22px] shrink-0 text-xs">De</span>
+              <input #p2x (input)="calcP2(p2x.value, p2y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="X" type="number">
+              <span class="text-xs text-on-surface-variant whitespace-nowrap self-center text-center w-[120px] shrink-0">é quantos % de</span>
+              <input #p2y (input)="calcP2(p2x.value, p2y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Y" type="number">
+              <span class="text-on-surface-variant text-center text-sm w-[20px] shrink-0">=</span>
+              <span class="font-bold text-primary-success text-lg min-w-[140px] shrink-0 text-center ml-auto">{{ p2Res }}</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula a representação percentual de um valor em relação a outro. Ex: 80 de 8000 é 1%.</p>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-6 border-t border-white/5">
+            <div class="flex max-md:flex-col md:flex-row md:items-center md:gap-2 gap-2">
+              <span class="text-xs text-on-surface-variant self-center text-center w-[22px] shrink-0">De</span>
+              <input #p3x (input)="calcP3(p3x.value, p3y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" type="number">
+              <span class="text-xs text-on-surface-variant whitespace-nowrap self-center text-center w-[120px] shrink-0">subiu para</span>
+              <input #p3y (input)="calcP3(p3x.value, p3y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" type="number">
+              <span class="text-on-surface-variant text-center text-sm w-[20px] shrink-0">=</span>
+              <span class="font-bold text-primary-success text-lg min-w-[140px] shrink-0 text-center ml-auto">{{ p3Res }}</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula a variação percentual positiva entre dois valores. Ex: de 100 para 101 é 1% de aumento.</p>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-6 border-t border-white/5">
+            <div class="flex max-md:flex-col md:flex-row md:items-center md:gap-2 gap-2">
+              <span class="text-xs text-on-surface-variant self-center text-center w-[22px] shrink-0">De</span>
+              <input #p4x (input)="calcP4(p4x.value, p4y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" type="number">
+              <span class="text-xs text-on-surface-variant whitespace-nowrap self-center text-center w-[120px] shrink-0">caiu para</span>
+              <input #p4y (input)="calcP4(p4x.value, p4y.value)" class=" w-full md:flex-1 bg-surface-variant border-none rounded-lg p-2 text-center text-sm outline-none focus:ring-1 focus:ring-primary-success/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" type="number">
+              <span class="text-on-surface-variant text-center text-sm w-[20px] shrink-0">=</span>
+              <span class="font-bold text-error text-lg min-w-[140px] shrink-0 text-center ml-auto">{{ p4Res }}</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant opacity-60 italic">Calcula a variação percentual negativa entre dois valores. Ex: de 101 para 100 é 0.99% de queda.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+

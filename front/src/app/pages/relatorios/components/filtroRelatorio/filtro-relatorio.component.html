@@ -1,0 +1,19 @@
+<div class="glass-card p-6 rounded-2xl flex flex-row items-center gap-4 w-full md:justify-between">
+  <div class="w-full md:w-[25%]">
+    <label class="block text-xs font-semibold text-text-muted mb-2">Buscar por Ticker / Ativo</label>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted text-[20px]">search</span>
+      <input
+        class="w-full bg-bg-main border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-text-light text-sm focus:border-primary-success focus:ring-1 focus:ring-primary-success outline-none transition-all"
+        placeholder="Ex: PETR4, AAPL..."
+        type="text"
+        [value]="searchTerm()"
+        (input)="onInput(($any($event.target).value))"
+      />
+    </div>
+  </div>
+  <button type="button" (click)="onClear()" [disabled]="!canClear()" class="relative top-[10px] w-[46px] h-[46px] rounded-lg border border-white/10 text-text-muted hover:text-text-light hover:bg-white/5 transition-all flex items-center justify-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-50" title="Limpar Filtro">
+    <span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
+  </button>
+
+</div>

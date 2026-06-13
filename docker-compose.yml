@@ -1,0 +1,89 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: accio-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: accio_invest
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    healthcheck:
+      test:
+        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-proot']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: accio-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+
+  adminer:
+    image: adminer:latest
+    container_name: accio-adminer
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: accio-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: 'mysql://root:root@mysql:3306/accio_invest'
+      JWT_SECRET: 'accio-invest-jwt-secret-key-change-in-production'
+      JWT_EXPIRES_IN: '15m'
+      JWT_REFRESH_EXPIRES_IN: '7d'
+      PORT: 3000
+      NODE_ENV: production
+      CORS_ORIGIN: 'http://localhost:4200'
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    container_name: accio-front
+    restart: unless-stopped
+    ports:
+      - '4200:80'
+    depends_on:
+      - api
+
+  api-ticker:
+    build:
+      context: api-ticker
+      dockerfile: Dockerfile
+    container_name: accio-ticker-api
+    restart: unless-stopped
+    ports:
+      - '4444:4444'
+    environment:
+      - FLASK_DEBUG=False
+
+volumes:
+  mysql_data:
+  minio_data:

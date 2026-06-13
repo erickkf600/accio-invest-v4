@@ -1,0 +1,317 @@
+import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
+
+import { DatePipe } from '@angular/common';
+import { FormField, form, submit, required, applyEach, disabled } from '@angular/forms/signals';
+import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
+import { DateMaskDirective } from '../../../../directives/date-mask.directive';
+import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
+import { FileUploadComponent } from '../../../../components/file-upload/file-upload.component';
+import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
+import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { AssetsService } from '../../service/assets.service';
+import { ToastService } from '../../../../components/Toast/toast.service';
+import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum } from '../../../../models/enums';
+import type { Operation } from '../../movimentacoes';
+import type { AssetDto } from '../../service/assets.service';
+
+interface CompraAsset {
+  tipo: AssetTypeEnum | null;
+  ticker: string;
+  quantidade: number | null;
+  valorUnitario: string;
+}
+
+interface ConfirmacionAsset {
+  ticker: string;
+  tipoLabel: string;
+  quantidade: number | null;
+  valorUnitario: number;
+  taxa: number;
+  total: number;
+}
+
+@Component({
+  selector: 'app-nova-compra',
+  standalone: true,
+  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent, AutocompleteComponent],
+  providers: [DatePipe],
+  templateUrl: './nova-compra.component.html',
+})
+export class NovaCompraComponent {
+  private movimentacoesService = inject(MovimentacoesService);
+  private assetsService = inject(AssetsService);
+  private toast = inject(ToastService);
+  private datePipe = inject(DatePipe);
+
+  close = output<void>();
+  confirmed = output<void>();
+
+  operation = input<Operation | null>(null);
+  isEditing = computed(() => this.operation() !== null);
+
+  assetsByIndex = signal<Record<number, AssetDto[]>>({});
+
+  tickersByIndex = computed(() => {
+    const result: Record<number, string[]> = {};
+    for (const [key, assets] of Object.entries(this.assetsByIndex())) {
+      result[Number(key)] = assets.map(a => a.ticker);
+    }
+    return result;
+  });
+
+  tickerOptions(index: number): string[] {
+    return this.tickersByIndex()[index] ?? [];
+  }
+
+  // Signal model matching Signal Forms
+  model = signal({
+    taxasTotal: '',
+    dataOperacao: '',
+    observacoes: '',
+    anexo: { file: null as File | null, nome: '' },
+    ativos: [
+      { tipo: null, ticker: '', quantidade: null, valorUnitario: '' }
+    ] as CompraAsset[],
+  });
+
+  compraForm = form(this.model, (s) => {
+    required(s.taxasTotal, { message: 'Campo obrigatório' });
+    required(s.dataOperacao, { message: 'Campo obrigatório' });
+    applyEach(s.ativos, (item) => {
+      required(item.tipo, { message: 'Obrigatório' });
+      required(item.ticker, { message: 'Obrigatório' });
+      required(item.quantidade, { message: 'Obrigatório' });
+      required(item.valorUnitario, { message: 'Obrigatório' });
+      disabled(item.ticker, (ctx) =>{
+        const tipoValido = ctx.valueOf(item.tipo);
+        
+        // Se NÃO houver um tipo válido, retorna uma string (motivo) ou true para desabilitar
+        if (!tipoValido) {
+          return 'Selecione um tipo antes de definir o ticker';
+        }
+        
+        // Se o tipo for válido, retorna obrigatoriamente FALSE para habilitar o campo
+        return false;
+      });
+    });
+  });
+
+  // Populate form when editing
+  constructor() {
+    effect(() => {
+      const op = this.operation();
+      if (op) {
+        this.model.set({
+          taxasTotal: formatCurrencyBRL(op.taxas ?? 0),
+          dataOperacao: this.toIsoDate(op.dataIso, 'dd/MM/yyyy'),
+          observacoes: op.observacoes ?? '',
+          anexo: { file: null, nome: '' },
+          ativos: [{
+            tipo: AssetTypeEnum.ACOES,
+            ticker: op.ativo,
+            quantidade: op.qtd ?? 1,
+            valorUnitario: formatCurrencyBRL(op.precoUn),
+          }],
+        });
+        this.onTipoChange(0, '1');
+      }
+    });
+  }
+
+  // Modal and submodal states
+  showSubmodal = signal(false);
+  confirmationAtivos = signal<ConfirmacionAsset[]>([]);
+  operationTotalCost = signal<number>(0);
+  operationTotalTaxes = signal<number>(0);
+  isSubmitting = signal(false);
+  submitError = signal('');
+
+  onFileSelected(file: File): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file, nome: file.name },
+    }));
+  }
+
+  onFileRemoved(): void {
+    this.model.update(m => ({
+      ...m,
+      anexo: { file: null, nome: '' },
+    }));
+  }
+
+  addAtivo(): void {
+    this.model.update((m) => ({
+      ...m,
+      ativos: [...m.ativos, { tipo: null, ticker: '', quantidade: null, valorUnitario: '' }],
+    }));
+  }
+
+  removeAtivo(index: number): void {
+    if (this.model().ativos.length > 1) {
+      this.model.update((m) => ({
+        ...m,
+        ativos: m.ativos.filter((_, i) => i !== index),
+      }));
+      this.assetsByIndex.update(m => {
+        const next: Record<number, AssetDto[]> = {};
+        for (const [key, assets] of Object.entries(m)) {
+          const currentIndex = Number(key);
+          if (currentIndex < index) {
+            next[currentIndex] = assets;
+          } else if (currentIndex > index) {
+            next[currentIndex - 1] = assets;
+          }
+        }
+        return next;
+      });
+    }
+  }
+
+  onTipoChange(index: number, tipoValue: string): void {
+    const assetType = tipoValue as AssetTypeEnum;
+    if (!Object.values(AssetTypeEnum).includes(assetType)) {
+      this.assetsByIndex.update(m => ({ ...m, [index]: [] }));
+      return;
+    }
+    this.assetsService.list({ tipo: assetType }).subscribe({
+      next: (res) => {
+        const assets = res.data.data.map(a => ({ ...a, ticker: a.ticker.toUpperCase() }));
+        this.assetsByIndex.update(m => ({ ...m, [index]: assets }));
+      },
+    });
+  }
+
+  onSubmit(): void {
+    submit(this.compraForm, async () => {
+      if (this.isEditing()) {
+        const op = this.operation()!;
+        const raw = this.model();
+        const ativo = raw.ativos[0];
+        const [dia, mes, ano] = raw.dataOperacao.split('/');
+        const dataIso = `${ano}-${mes}-${dia}`;
+        const precoUn = parseCurrencyBRL(ativo.valorUnitario);
+        const qtd = ativo.quantidade ?? 0;
+        const taxas = parseCurrencyBRL(raw.taxasTotal);
+        const total = precoUn * qtd + taxas;
+        this.movimentacoesService.updateOperation(op.id, {
+          ticker: ativo.ticker.toUpperCase(),
+          tipo: OperationTypeEnum.Compra,
+          data: dataIso,
+          qtd,
+          precoUn,
+          taxas,
+          total,
+          observacoes: raw.observacoes || '',
+        }, raw.anexo.file ?? undefined).subscribe({
+          next: () => {
+            this.confirmed.emit();
+            this.close.emit();
+          },
+          error: () => {
+            this.toast.error({ title: 'Erro', message: 'Erro ao atualizar a operação.' });
+          },
+        });
+        return;
+      }
+      this.calculateRatesAndSummary();
+      this.showSubmodal.set(true);
+    });
+  }
+
+  calculateRatesAndSummary(): void {
+    const rawForm = this.model();
+    const totalTaxes = parseCurrencyBRL(rawForm.taxasTotal);
+    
+    // Calculate subtotal for each asset (Qtd * Price) and note cost total
+    let totalCustoNota = 0;
+    const parsedAssets = rawForm.ativos.map(a => {
+      const preco = parseCurrencyBRL(a.valorUnitario);
+      const sub = (a.quantidade ?? 0) * preco;
+      totalCustoNota += sub;
+      return {
+        ticker: a.ticker.toUpperCase(),
+        tipoLabel: a.tipo ? AssetTypeLabel[a.tipo] || '-' : '-',
+        quantidade: a.quantidade,
+        valorUnitario: preco,
+        subtotal: sub
+      };
+    });
+
+    if (totalCustoNota === 0) totalCustoNota = 1; // Avoid div by zero
+
+    // Proportional taxes: Taxa_Proporcional = (Subtotal / Custo_Total_Nota) * Taxa_Total_Nota
+    // Rounding to 3 decimal places
+    let sumProportionalTaxes = 0;
+    const confirmationList: ConfirmacionAsset[] = parsedAssets.map(pa => {
+      const rawProportionalTax = (pa.subtotal / totalCustoNota) * totalTaxes;
+      const roundedTax = parseFloat(rawProportionalTax.toFixed(3));
+      sumProportionalTaxes += roundedTax;
+
+      return {
+        ticker: pa.ticker,
+        tipoLabel: pa.tipoLabel,
+        quantidade: pa.quantidade,
+        valorUnitario: pa.valorUnitario,
+        taxa: roundedTax,
+        total: pa.subtotal + roundedTax
+      };
+    });
+
+    // Rounding correction to guarantee: sum taxas = total tax
+    const diff = totalTaxes - sumProportionalTaxes;
+    if (diff !== 0 && confirmationList.length > 0) {
+      // Add correction diff to the first asset
+      confirmationList[0].taxa = parseFloat((confirmationList[0].taxa + diff).toFixed(3));
+      confirmationList[0].total = parseFloat((confirmationList[0].total + diff).toFixed(3));
+    }
+
+    this.confirmationAtivos.set(confirmationList);
+    this.operationTotalTaxes.set(totalTaxes);
+    this.operationTotalCost.set(confirmationList.reduce((acc, c) => acc + c.total, 0));
+  }
+
+
+  confirmFinal(): void {
+    this.submitError.set('');
+    this.isSubmitting.set(true);
+    const raw = this.model();
+    const [dia, mes, ano] = raw.dataOperacao.split('/');
+    const dataIso = `${ano}-${mes}-${dia}`;
+    const ativos = this.confirmationAtivos();
+    const file = raw.anexo.file ?? undefined;
+
+    const operations = ativos.map(a => ({
+      ticker: a.ticker,
+      tipo: OperationTypeEnum.Compra as const,
+      data: dataIso,
+      qtd: a.quantidade,
+      precoUn: a.valorUnitario,
+      taxas: a.taxa,
+      total: a.total,
+      observacoes: raw.observacoes || '',
+    }));
+
+    this.movimentacoesService.createBatchWithFile(operations, file).subscribe({
+      next: () => {
+        this.confirmed.emit();
+        this.close.emit();
+      },
+      error: () => {
+        this.toast.error({ title: 'Erro', message: 'Erro ao salvar a operação. Tente novamente.' });
+        this.isSubmitting.set(false);
+      },
+      complete: () => {
+        this.isSubmitting.set(false);
+      },
+    });
+  }
+
+  private toIsoDate(ddmmyyyy: string, type = 'yyyy-MM-dd'): string {
+    return this.datePipe.transform(ddmmyyyy, type) as string;
+  }
+
+  onClose(): void {
+    this.close.emit();
+  }
+}

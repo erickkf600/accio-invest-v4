@@ -1,0 +1,230 @@
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+  <div class="w-full max-w-[700px] bg-[#1e222b] border border-[#2a2f3a] rounded-xl shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-6 pt-5 pb-3">
+      <h2 class="text-xl font-semibold text-white">{{ isEditing() ? 'Editar Compra' : 'Nova Compra' }}</h2>
+      <button (click)="onClose()" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form (submit)="onSubmit(); $event.preventDefault()" class="p-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-2 flex flex-col mb-4">
+          <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Taxas</label>
+          <div class="relative">
+            <input
+              type="text"
+              placeholder="R$ 0,00"
+              appCurrencyMask
+              [formField]="compraForm.taxasTotal"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+            />
+          </div>
+          @if (compraForm.taxasTotal().touched() && compraForm.taxasTotal().errors().length) {
+            <span class="text-xs text-red-400 mt-1 block">{{ compraForm.taxasTotal().errors()[0].message }}</span>
+          }
+        </div>
+
+        <div class="space-y-2 flex flex-col mb-4">
+          <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Data da Operação</label>
+          <div class="relative flex items-center">
+            <input
+              type="text"
+              placeholder="DD/MM/AAAA"
+              appDateMask
+              [formField]="compraForm.dataOperacao"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+            />
+            <span class="absolute right-4 pointer-events-none text-slate-400">
+              <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+            </span>
+          </div>
+          @if (compraForm.dataOperacao().touched() && compraForm.dataOperacao().errors().length) {
+            <span class="text-xs text-red-400 mt-1 block">{{ compraForm.dataOperacao().errors()[0].message }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <h3 class="text-sm font-semibold text-slate-400">Linha de Ativos</h3>
+
+        <div class="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+          @for (item of compraForm.ativos; track $index) {
+            <div class="bg-[#242933] border border-[#2c313c] rounded-xl p-4 flex flex-col sm:flex-row items-center gap-3">
+              <div class="relative w-full sm:w-1/4">
+                <select
+                  [formField]="$any(item.tipo)"
+                  (change)="onTipoChange($index, ($any($event.target).value))"
+                  class="w-full appearance-none bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
+                >
+                  <option disabled selected [value]="null">Tipo</option>
+                  <option [value]="1">Ações</option>
+                  <option [value]="2">FII</option>
+                  <option [value]="3">BDR</option>
+                  <option [value]="4">ETF</option>
+                  <option [value]="5">Cripto</option>
+                </select>
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
+              </div>
+
+              <div class="w-full sm:w-1/4">
+                <app-autocomplete
+                  [options]="tickerOptions($index)"
+                  placeholder="Ex: PETR4"
+                  [formField]="item.ticker"
+                  inputClass="!bg-[#1E222D] uppercase"
+                  [allowCustomValue]="true"
+                />
+              </div>
+
+              <div class="w-full sm:w-1/6">
+                <input
+                  type="number"
+                  [formField]="item.quantidade"
+                  placeholder="QTD"
+                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+
+              <div class="w-full sm:flex-1">
+                <input
+                  type="text"
+                  placeholder="R$ 0,00"
+                  appCurrencyMask
+                  [formField]="item.valorUnitario"
+                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none"
+                />
+              </div>
+
+              <button
+                type="button"
+                (click)="removeAtivo($index)"
+                [disabled]="compraForm.ativos.length === 1"
+                class="text-slate-400 hover:text-red-400 p-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Remover linha"
+              >
+                <span class="material-symbols-outlined text-[20px]">delete</span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <button
+          type="button"
+          (click)="addAtivo()"
+          class="flex items-center gap-1 border border-primary-success/30 hover:border-primary-success/60 bg-primary-success/5 text-primary-success px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+        >
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          Adicionar
+        </button>
+      </div>  
+
+      <div class="space-y-2 flex flex-col mb-4">
+        <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Observações</label>
+        <textarea
+          rows="3"
+          placeholder="Detalhes adicionais sobre a transação..."
+          [formField]="compraForm.observacoes"
+          class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none resize-none transition-colors"
+        ></textarea>
+      </div>
+
+      <app-file-upload
+        label="Nota de Corretagem (PDF - opcional)"
+        [existingFileName]="operation()?.notaNome ?? ''"
+        (fileSelected)="onFileSelected($event)"
+        (fileRemoved)="onFileRemoved()"
+      />
+
+      <div class="pt-4">
+        <button
+          type="submit"
+          [disabled]="compraForm().invalid()"
+          class="w-full bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-emerald-950/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {{ isEditing() ? 'Atualizar Compra' : 'Adicionar Compra' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@if (showSubmodal()) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+    <div class="w-full max-w-2xl bg-[#1e222b] border border-[#2a2f3a] rounded-xl shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-6 pt-5 pb-3">
+        <h2 class="text-xl font-semibold text-white">Resumo e Rateio de Taxas</h2>
+        <button (click)="showSubmodal.set(false)" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <p class="text-sm text-slate-400">Abaixo está o resumo da compra com as taxas distribuídas proporcionalmente pelo custo de cada ativo:</p>
+
+        <div class="border border-[#2c313c] rounded-xl overflow-hidden">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-[#242933] border-b border-[#2c313c] text-slate-400">
+                <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider">Ticker</th>
+                <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider">Tipo</th>
+                <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Qtd</th>
+                <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Val. U</th>
+                <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Taxa (Rateio)</th>
+                <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#2c313c] text-white">
+              @for (row of confirmationAtivos(); track $index) {
+                <tr class="hover:bg-[#2c313c]/30">
+                  <td class="px-4 py-3 font-medium">{{ row.ticker }}</td>
+                  <td class="px-4 py-3">{{ row.tipoLabel }}</td>
+                  <td class="px-4 py-3 text-right">{{ row.quantidade }}</td>
+                  <td class="px-4 py-3 text-right">R$ {{ row.valorUnitario | abbreviateNumber }}</td>
+                  <td class="px-4 py-3 text-right text-tertiary">R$ {{ row.taxa | abbreviateNumber }}</td>
+                  <td class="px-4 py-3 text-right font-semibold">R$ {{ row.total | abbreviateNumber }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-[#242933] p-4 rounded-xl border border-[#2c313c]">
+            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Taxas Totais</span>
+            <p class="text-lg font-bold text-white mt-1">R$ {{ operationTotalTaxes() | abbreviateNumber }}</p>
+          </div>
+          <div class="bg-[#242933] p-4 rounded-xl border border-primary/30">
+            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Valor Total Operação</span>
+            <p class="text-lg font-bold text-primary mt-1">R$ {{ operationTotalCost() | abbreviateNumber }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-[#2c313c] flex justify-end gap-3">
+        <button
+          type="button"
+          (click)="showSubmodal.set(false)"
+          class="px-5 py-2.5 rounded-lg border border-[#2c313c] text-slate-400 font-medium hover:bg-[#2c313c]/60 transition-all cursor-pointer text-sm"
+        >
+          Voltar e Editar
+        </button>
+        @if (submitError()) {
+          <p class="text-xs text-red-400 col-span-full">{{ submitError() }}</p>
+        }
+        <button
+          type="button"
+          (click)="confirmFinal()"
+          [disabled]="isSubmitting()"
+          class="px-6 py-2.5 bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        >
+          @if (isSubmitting()) {
+            Salvando...
+          } @else {
+            Confirmar Compra
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

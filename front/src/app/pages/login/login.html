@@ -1,0 +1,108 @@
+<main class="min-h-screen w-full flex flex-col md:flex-row">
+  <section class="hidden md:grid md:w-1/2 lg:w-3/5 fintech-gradient overflow-hidden p-12">
+    <div class="col-start-1 row-start-1 pattern-overlay opacity-50"></div>
+    <div class="col-start-1 row-start-1 place-self-start justify-self-start mt-24 ml-24 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full animate-pulse"></div>
+    <div class="col-start-1 row-start-1 place-self-end justify-self-end mb-24 mr-24 w-96 h-96 bg-secondary-container/10 blur-[120px] rounded-full"></div>
+    <div class="col-start-1 row-start-1 z-10 w-full max-w-2xl flex items-center">
+      <div class="space-y-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/10 border border-primary/20 text-primary-fixed text-sm font-medium">
+          <span class="material-symbols-outlined text-sm">auto_graph</span>
+          Precisão em cada movimento
+        </div>
+        <h1 class="text-5xl lg:text-7xl font-headline font-extrabold tracking-tighter text-on-surface leading-tight">
+          O futuro da <span class="text-primary-fixed">riqueza</span> digital.
+        </h1>
+        <p class="text-on-surface-variant text-lg lg:text-xl max-w-lg leading-relaxed">
+          Gerencie seus investimentos em uma plataforma única projetada para a nova economia.
+        </p>
+      </div>
+    </div>
+    <div class="col-start-1 row-start-1 place-self-end justify-self-end mb-[-80px] mr-[-80px] w-80 h-80 opacity-20 rotate-12">
+      <img
+        alt="Financial Abstract"
+        class="w-full h-full object-cover rounded-3xl"
+        src="login-illustration.png"
+      >
+    </div>
+  </section>
+
+  <section class="w-full md:w-1/2 lg:w-2/5 min-h-screen bg-surface flex flex-col items-center justify-center p-6 md:p-12 lg:p-24">
+    <div class="w-full max-w-md flex flex-col space-y-10">
+      <div class="flex flex-col items-center md:items-start text-center md:text-left space-y-6">
+        <img alt="Accio Logo" class="h-12 w-auto mb-2" src="accio-logo.svg">
+        <div class="space-y-2">
+          <h2 class="text-3xl font-headline font-bold text-on-surface">Bem-vindo de volta</h2>
+          <p class="text-on-surface-variant font-body">Acesse sua conta para gerenciar seu portfólio.</p>
+        </div>
+      </div>
+
+      <form class="flex flex-col space-y-6" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="flex flex-col space-y-4">
+          <div class="flex flex-col space-y-1">
+            <label class="block text-sm font-medium text-on-surface-variant" for="email">E-mail</label>
+            <div class="flex items-center bg-surface-variant rounded-lg group focus-within:ring-2 focus-within:ring-primary-container/50 transition-all" [class.ring-2]="f.email.touched && f.email.invalid" [class.ring-error/50]="f.email.touched && f.email.invalid">
+              <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary-fixed transition-colors pl-4">mail</span>
+              <input
+                class="flex-1 bg-transparent border-none rounded-lg py-4 px-3 text-on-surface outline-none placeholder:text-on-surface-variant/50"
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                formControlName="email"
+              >
+            </div>
+            @if (f.email.touched && f.email.invalid) {
+              <p class="text-xs text-error mt-1">E-mail inválido.</p>
+            }
+          </div>
+          <div class="flex flex-col space-y-1">
+            <div class="flex justify-between items-center">
+              <label class="block text-sm font-medium text-on-surface-variant" for="password">Senha</label>
+              <a class="text-xs text-primary-fixed hover:text-primary transition-colors font-medium" routerLink="/esqueci-senha">Esqueci minha senha</a>
+            </div>
+            <div class="flex items-center bg-surface-variant rounded-lg group focus-within:ring-2 focus-within:ring-primary-container/50 transition-all" [class.ring-2]="f.password.touched && f.password.invalid" [class.ring-error/50]="f.password.touched && f.password.invalid">
+              <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary-fixed transition-colors pl-4">lock</span>
+              <input
+                class="flex-1 bg-transparent border-none rounded-lg py-4 px-3 text-on-surface outline-none placeholder:text-on-surface-variant/50"
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                placeholder="••••••••"
+                formControlName="password"
+              >
+              <button type="button" class="px-4 text-on-surface-variant hover:text-on-surface transition-colors" (click)="showPassword.set(!showPassword())">
+                <span class="material-symbols-outlined">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            @if (f.password.touched && f.password.invalid) {
+              <p class="text-xs text-error mt-1">Insira a senha</p>
+            }
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="form.invalid || loading()"
+          class="w-full bg-primary-fixed hover:bg-primary-fixed-dim text-on-primary-fixed font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] shadow-lg shadow-primary-fixed/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          @if (loading()) {
+            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            Entrando...
+          } @else {
+            Entrar
+            <span class="material-symbols-outlined relative top-[1px]">arrow_forward</span>
+          }
+        </button>
+      </form>
+
+      <div class="pt-6 border-t border-outline-variant text-center md:text-left">
+        <p class="text-on-surface-variant">
+          Não tem uma conta?
+          <a class="text-primary-fixed font-bold hover:underline decoration-2 underline-offset-4 ml-1" routerLink="/cadastro">Criar uma conta</a>
+        </p>
+      </div>
+    </div>
+
+    <footer class="w-full max-w-md mt-10 flex justify-between text-[10px] text-on-surface-variant/40 font-medium uppercase tracking-widest hidden md:flex">
+      <span>© 2026 ACCIO Inc.</span>
+    </footer>
+  </section>
+</main>

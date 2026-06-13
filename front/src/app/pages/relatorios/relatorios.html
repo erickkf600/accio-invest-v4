@@ -1,0 +1,59 @@
+<main class="pt-24 pb-20 md:pb-12 max-w-[1600px] mx-auto px-4 md:px-10 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-text-light mb-2">Relatórios</h1>
+      <p class="text-text-muted text-sm">Gere e exporte relatórios detalhados da sua carteira.</p>
+    </div>
+
+  </div>
+
+    <!-- Tabs -->
+  <div class="mb-8">
+    <app-tabs
+      [options]="tabOptions()"
+      [activeTab]="activeTabId()"
+      (tabChange)="onTabChange($event)"
+    ></app-tabs>
+  </div>
+
+  <!-- Content Section -->
+  <div class="pt-2">
+    @switch (activeTabId()) {
+      @case ('aportes') {
+        <app-aporte-tab (viewDetails)="selectedAporte.set($event)" />
+      }
+      @case ('alugueis') {
+        <app-alugueis-tab />
+      }
+      @case ('vendas') {
+        <app-vendas-tab />
+      }
+      @case ('reposicionamento') {
+        <app-reposicionamento-tab />
+      }
+      @case ('notas') {
+        <app-notas-tab (adicionarNota)="openNotaModal()" />
+      }
+      @case ('preco-medio') {
+        <app-preco-medio-tab />
+      }
+      @case ('renda-fixa') {
+        <app-renda-fixa-tab />
+      }
+    }
+  </div>
+</main>
+
+@if (selectedAporte(); as aporte) {
+  <app-detalhes-aporte
+    [aporte]="aporte"
+    (close)="closeDetailsModal()"
+  ></app-detalhes-aporte>
+}
+
+@if (showAdicionarNota()) {
+  <app-adicionar-nota
+    (close)="closeNotaModal()"
+  ></app-adicionar-nota>
+}

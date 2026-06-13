@@ -1,0 +1,51 @@
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5">
+  <div class="max-w-[1600px] mx-auto px-10 h-16 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <a routerLink="/dashboard">
+        <img alt="Accio logo" class="h-8 w-full object-contain" src="accio-logo.svg">
+      </a>
+    </div>
+    <nav class="hidden md:flex items-center gap-2">
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/dashboard" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Dashboard</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/movimentacoes" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Movimentações</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/portfolio" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Portfólio</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/relatorios" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Relatórios</a>
+      <a class="text-text-muted hover:text-primary-success px-4 py-1.5 text-xs transition-colors duration-200" routerLink="/ferramentas" routerLinkActive="!text-primary-success !font-bold bg-white/9 rounded-full">Ferramentas</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <a class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-success/20 cursor-pointer hover:border-primary-success transition-all block" routerLink="/meu-perfil" [title]="auth.user()?.name ?? 'Perfil'">
+        @if (auth.user(); as user) {
+          @if (user.avatar) {
+            <img [src]="'https://api.dicebear.com/9.x/bottts/svg?seed=' + user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+          } @else {
+            <div class="w-full h-full bg-primary-success/20 flex items-center justify-center text-primary-success font-bold text-lg">
+              {{ user.name.charAt(0).toUpperCase() }}
+            </div>
+          }
+        } @else {
+          <div class="w-full h-full bg-primary-success/20 flex items-center justify-center text-primary-success font-bold text-lg">U</div>
+        }
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#121620]/95 backdrop-blur-xl border-t border-white/5 md:hidden px-4 py-2 flex justify-around items-center">
+  <a class="bg-primary-success/10 text-primary-success rounded-xl p-2 flex flex-col items-center gap-1" href="#">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+    <span class="text-xs">Dashboard</span>
+  </a>
+  <a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
+    <span class="material-symbols-outlined">swap_horiz</span>
+    <span class="text-xs">Aportes</span>
+  </a>
+  <a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
+    <span class="material-symbols-outlined">payments</span>
+    <span class="text-xs">Pagamentos</span>
+  </a>
+  <a class="text-text-muted p-2 flex flex-col items-center gap-1 active:bg-white/5 rounded-xl transition-all" href="#">
+    <span class="material-symbols-outlined">description</span>
+    <span class="text-xs">Relatórios</span>
+  </a>
+</nav>

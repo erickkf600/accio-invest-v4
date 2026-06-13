@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum AssetType {
+  ACOES
+  FII
+  BDR
+  ETF
+  CRIPTO
+}
+
+enum OperationType {
+  Compra
+  Venda
+  Proventos
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  avatar    String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assets              Asset[]
+  operations          Operation[]
+  fixedIncomePos      FixedIncomePosition[]
+  repositionings      Repositioning[]
+  refreshTokens       RefreshToken[]
+  fixedIncomeHistories FixedIncomeHistory[]
+  fixedIncomeYields    FixedIncomeYield[]
+
+  @@map("users")
+}
+
+model Asset {
+  id        Int      @id @default(autoincrement())
+  ticker    String   @db.VarChar(20)
+  tipo      AssetType
+  quantidade Int?
+  createdBy   Int?     @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  positions          PortfolioPosition[]
+  operations         Operation[]
+  fixedIncomePos     FixedIncomePosition[]
+
+  user User? @relation(fields: [createdBy], references: [id])
+
+  @@unique([ticker, createdBy])
+  @@index([createdBy])
+  @@map("assets")
+}
+
+model PortfolioPosition {
+  id         Int      @id @default(autoincrement())
+  assetId    Int      @unique @map("asset_id")
+  ticker     String   @db.VarChar(20)
+  qtd        Int
+  precoMedio Float    @map("preco_medio")
+  custoTotal Float    @map("custo_total")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  asset Asset @relation(fields: [assetId], references: [id])
+
+  @@map("portfolio_positions")
+}
+
+model Operation {
+  id             Int           @id @default(autoincrement())
+  assetId        Int           @map("asset_id")
+  ticker         String        @db.VarChar(20)
+  tipo           OperationType
+  data           DateTime
+  qtd            Int?
+  precoUn        Float         @map("preco_unitario")
+  taxas          Float?        @default(0)
+  total          Float
+  lucroRealizado Float?        @map("lucro_realizado")
+  notaPath       String?       @db.VarChar(500) @map("nota_path")
+  notaNome       String?       @db.VarChar(255) @map("nota_nome")
+  observacoes    String?       @db.VarChar(150)
+  createdBy      Int?          @map("created_by")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  asset Asset @relation(fields: [assetId], references: [id])
+  user  User?  @relation(fields: [createdBy], references: [id])
+
+  @@index([assetId])
+  @@index([ticker])
+  @@index([createdBy])
+  @@index([data])
+  @@map("operations")
+}
+
+model Repositioning {
+  id           Int      @id @default(autoincrement())
+  ticker       String   @db.VarChar(20)
+  dataOperacao DateTime @map("data_operacao")
+  tipo         String   @db.VarChar(20)
+  fator        String   @db.VarChar(20)
+  ratioDe      String   @db.VarChar(10) @map("ratio_de")
+  ratioPara    String   @db.VarChar(10) @map("ratio_para")
+  observacoes  String?  @db.VarChar(150)
+  createdBy    Int?     @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@map("repositionings")
+}
+
+model FixedIncomePosition {
+  id             Int      @id @default(autoincrement())
+  emissor        String   @db.VarChar(200)
+  tipo           String   @db.VarChar(20)
+  indexador      String   @db.VarChar(10)
+  taxaJuros      Float    @map("taxa_juros")
+  liquidezDiaria Boolean  @map("liquidez_diaria")
+  possuiImposto  Boolean  @map("possui_imposto")
+  valorAplicado  Float    @map("valor_aplicado")
+  dataCompra     DateTime @map("data_compra")
+  vencimento     DateTime?
+  notaPath       String?  @db.VarChar(500) @map("nota_path")
+  notaNome       String?  @db.VarChar(255) @map("nota_nome")
+  observacoes    String?  @db.VarChar(150)
+  assetId        Int?     @map("asset_id")
+  createdBy      Int?     @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  fixedIncomeYields FixedIncomeYield[]
+  asset             Asset?                   @relation(fields: [assetId], references: [id])
+  user              User?                    @relation(fields: [createdBy], references: [id])
+
+  @@index([assetId])
+  @@index([createdBy])
+  @@map("fixed_income_positions")
+}
+
+model FixedIncomeHistory {
+  id              Int      @id @default(autoincrement())
+  emissor         String   @db.VarChar(200)
+  tipo            String   @db.VarChar(20)
+  indexador       String   @db.VarChar(10)
+  taxaJuros       Float    @map("taxa_juros")
+  valorAplicado   Float    @map("valor_aplicado")
+  valorResgate    Float    @map("valor_resgate")
+  rendimentoBruto Float    @map("rendimento_bruto")
+  impostoRetido   Float?   @map("imposto_retido")
+  dataVencimento  DateTime @map("data_vencimento")
+  dataResgate     DateTime @map("data_resgate")
+  createdBy       Int?     @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@map("fixed_income_history")
+}
+
+model FixedIncomeYield {
+  id              Int      @id @default(autoincrement())
+  fixedIncomeId   Int      @map("fixed_income_id")
+  emissor         String   @db.VarChar(200)
+  dataOperacao    DateTime @map("data_operacao")
+  valor           Float
+  observacoes     String?  @db.VarChar(150)
+  createdBy       Int?     @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  fixedIncomePosition FixedIncomePosition @relation(fields: [fixedIncomeId], references: [id])
+  user                User?               @relation(fields: [createdBy], references: [id])
+
+  @@index([fixedIncomeId])
+  @@index([createdBy])
+  @@map("fixed_income_yields")
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  token     String    @unique @db.VarChar(500)
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}

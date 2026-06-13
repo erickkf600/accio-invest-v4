@@ -1,0 +1,270 @@
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+  <div class="w-full max-w-[600px] bg-[#1e222b] border border-[#2a2f3a] rounded-xl shadow-2xl overflow-hidden">
+
+    <div class="flex items-center justify-between px-6 pt-5 pb-3">
+      <h2 class="text-xl font-semibold text-white">{{ isEditing() ? 'Editar Renda Fixa' : 'Nova Renda Fixa' }}</h2>
+      <button (click)="onClose()" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    @if (showTabs()) {
+      <div class="px-6 mt-4">
+        <app-tabs
+          [options]="[{id: 'compra', label: 'Compra'}, {id: 'rendimento', label: 'Rendimento'}]"
+          [activeTab]="activeTab()"
+          (tabChange)="setTab($event)"
+        />
+      </div>
+    }
+
+    <form (submit)="onSubmit(); $event.preventDefault()" class="p-6 space-y-4">
+
+      @if (activeTab() === 'compra') {
+        <div class="space-y-4">
+          <div class="space-y-2 flex flex-col mb-4">
+            <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Emissor</label>
+            <input
+              type="text"
+              placeholder="Ex: CDB BANCO ITAÚ 115% CDI"
+              [formField]="compraForm.emissor"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+            />
+            @if (compraForm.emissor().touched() && compraForm.emissor().errors().length) {
+              <span class="text-xs text-red-400 mt-1 block">{{ compraForm.emissor().errors()[0].message }}</span>
+            }
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2 flex flex-col mb-4">
+              <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Indexador</label>
+              <div class="relative">
+                <select
+                  [formField]="compraForm.indexador"
+                  class="w-full appearance-none bg-[#2c313c]/60 border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
+                >
+                  <option value="" disabled>Selecione</option>
+                  <option value="CDI">CDI</option>
+                  <option value="IPCA">IPCA</option>
+                  <option value="SELIC">SELIC</option>
+                </select>
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
+
+              </div>
+            </div>
+
+            <div class="space-y-2 flex flex-col mb-4">
+              <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Tipo</label>
+              <div class="relative">
+                <select
+                  [formField]="compraForm.tipo"
+                  class="w-full appearance-none bg-[#2c313c]/60 border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
+                >
+                  <option value="" disabled>Selecione</option>
+                  <option value="Pós-fixado">Pós-fixado</option>
+                  <option value="Pré-fixado">Pré-fixado</option>
+                </select>
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2 flex flex-col mb-4">
+              <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Taxa de Juros (%)</label>
+              <div class="relative">
+                <input
+                  type="text"
+                  placeholder="0,00"
+                  [formField]="compraForm.taxaJuros"
+                  class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+                />
+                <span class="absolute right-4 top-[9px] text-sm text-slate-500 font-medium pointer-events-none">%</span>
+              </div>
+              @if (compraForm.taxaJuros().touched() && compraForm.taxaJuros().errors().length) {
+                <span class="text-xs text-red-400 mt-1 block">{{ compraForm.taxaJuros().errors()[0].message }}</span>
+              }
+            </div>
+
+            <div class="space-y-2 flex flex-col mb-4">
+              <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Valor Aplicado</label>
+              <input
+                type="text"
+                placeholder="R$ 0,00"
+                appCurrencyMask
+                [formField]="compraForm.valorAplicado"
+                class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+              />
+              @if (compraForm.valorAplicado().touched() && compraForm.valorAplicado().errors().length) {
+                <span class="text-xs text-red-400 mt-1 block">{{ compraForm.valorAplicado().errors()[0].message }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4">
+            <div class="space-y-2 flex flex-col mb-4">
+              <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Data da Compra</label>
+              <div class="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  appDateMask
+                  [formField]="compraForm.dataCompra"
+                  class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+                />
+                <span class="absolute right-4 pointer-events-none text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+                </span> 
+              </div>
+              @if (compraForm.dataCompra().touched() && compraForm.dataCompra().errors().length) {
+                <span class="text-xs text-red-400 mt-1 block">{{ compraForm.dataCompra().errors()[0].message }}</span>
+              }
+            </div>
+
+            <div class="flex items-center justify-between py-1">
+            <span class="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Liquidez Diária</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                [checked]="model().liquidezDiaria"
+                (change)="model.update(m => ({ ...m, liquidezDiaria: !m.liquidezDiaria }))"
+                class="sr-only peer"
+              />
+              <div class="w-9 h-5 bg-[#2c313c] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#72d339]"></div>
+            </label>
+          </div>
+          <hr class="border-white/10">
+
+            @if (!model().liquidezDiaria) {
+              <div class="space-y-2 flex flex-col mb-4">
+                <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Data de Vencimento</label>
+                <div class="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="DD/MM/AAAA"
+                    appDateMask
+                    [formField]="compraForm.vencimento"
+                    class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+                  />
+                  <span class="absolute right-4 pointer-events-none text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+                  </span>
+                </div>
+                @if (compraForm.vencimento().touched() && compraForm.vencimento().errors().length) {
+                  <span class="text-xs text-red-400 mt-1 block">{{ compraForm.vencimento().errors()[0].message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+
+          <div class="bg-[#242933] border border-[#2c313c] rounded-xl p-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary-success text-lg">account_balance_wallet</span>
+
+              <span class="text-sm font-medium text-slate-200">Possui Imposto de Renda?</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                [checked]="model().possuiImposto"
+                (change)="model.update(m => ({ ...m, possuiImposto: !m.possuiImposto }))"
+                class="sr-only peer"
+              />
+              <div class="w-9 h-5 bg-[#1e222b] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#72d339]"></div>
+            </label>
+          </div>
+
+          <div class="space-y-2 flex flex-col mb-4">
+            <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Observações</label>
+            <textarea
+              rows="3"
+              placeholder="Notas sobre este investimento..."
+              [formField]="compraForm.observacoes"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none resize-none transition-colors"
+            ></textarea>
+          </div>
+
+          <app-file-upload
+            label="Comprovante ou Prospecto (PDF - opcional)"
+            (fileSelected)="onFileSelected($event)"
+            (fileRemoved)="onFileRemoved()"
+          />
+        </div>
+      }
+
+      @if (activeTab() === 'rendimento') {
+        <div class="space-y-4">
+          <div class="space-y-2 flex flex-col mb-4">
+            <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Emissor</label>
+            <app-autocomplete
+              [options]="emissores()"
+              placeholder="Ex: CDB Banco Master 115% CDI"
+              [formField]="rendimentoForm.emissor"
+            />
+            @if (rendimentoForm.emissor().touched() && rendimentoForm.emissor().errors().length) {
+              <span class="text-xs text-red-400 mt-1 block">{{ rendimentoForm.emissor().errors()[0].message }}</span>
+            }
+          </div>
+
+          <div class="space-y-2 flex flex-col mb-4">
+            <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Data Operação</label>
+            <input
+              type="text"
+              placeholder="DD/MM/AAAA"
+              appDateMask
+              [formField]="rendimentoForm.dataRendimento"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+            />
+            @if (rendimentoForm.dataRendimento().touched() && rendimentoForm.dataRendimento().errors().length) {
+              <span class="text-xs text-red-400 mt-1 block">{{ rendimentoForm.dataRendimento().errors()[0].message }}</span>
+            }
+          </div>
+
+          <div class="space-y-2 flex flex-col mb-4">
+            <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Valor Rendimento</label>
+            <input
+              type="text"
+              placeholder="R$ 0,00"
+              appCurrencyMask
+              [formField]="rendimentoForm.valorRendimento"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+            />
+            @if (rendimentoForm.valorRendimento().touched() && rendimentoForm.valorRendimento().errors().length) {
+              <span class="text-xs text-red-400 mt-1 block">{{ rendimentoForm.valorRendimento().errors()[0].message }}</span>
+            }
+          </div>
+
+          <div class="space-y-2 flex flex-col mb-4">
+            <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Observações</label>
+            <textarea
+              rows="4"
+              placeholder="Notas sobre este investimento..."
+              [formField]="rendimentoForm.observacoes"
+              class="w-full bg-[#2c313c]/60 border border-[#2c313c] focus:border-emerald-500 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none resize-none transition-colors"
+            ></textarea>
+          </div>
+        </div>
+      }
+
+      <div class="pt-4">
+        @if (submitError()) {
+          <p class="text-xs text-red-400 mb-3">{{ submitError() }}</p>
+        }
+
+        <button
+          type="submit"
+          [disabled]="(activeTab() === 'compra' ? compraForm().invalid() : rendimentoForm().invalid()) || isSubmitting()"
+          class="w-full bg-[#72d339] hover:bg-[#62b930] text-[#11161d] font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-emerald-950/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          @if (isSubmitting()) {
+            Salvando...
+          } @else {
+            {{ isEditing() ? 'Atualizar Renda Fixa' : 'Adicionar Renda Fixa' }}
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

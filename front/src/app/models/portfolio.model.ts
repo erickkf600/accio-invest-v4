@@ -1,0 +1,41 @@
+export interface PortfolioProduct {
+  ticker: string;
+  tipo: string;
+  qtd: number;
+  precoMedio: number;
+  custoTotal: number;
+  precoAtual: number;
+  valorAtual: number;
+  lucroPrejuizo: number;
+  lucroPrejuizoPct: number;
+  participacao: number;
+  rent30d: number;
+  rent12m: number;
+}
+
+export interface PortfolioDividend {
+  id: string;
+  data: string;
+  ticker: string;
+  tipo: string;
+  qtd: number;
+  valorUn: number;
+  total: number;
+  status: 'Pago' | 'Pendente';
+}
+
+export interface PortfolioYield {
+  id: string;
+  data: string;
+  emissor: string;
+  tipo: string;
+  valorUn: number;
+  total: number;
+  tipoInvestimento: string;
+  tipoTitulo: string;
+  dataCompra: string;
+  dataVencimento: string;
+  indexador: string;
+  grossUp: string;
+  txJuros: string;
+}

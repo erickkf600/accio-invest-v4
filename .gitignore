@@ -46,3 +46,10 @@ Thumbs.db
 .angular
 
 .nx/polygraph
+
+opencode.json
+
+# Python - api-ticker
+api-ticker/.venv/
+api-ticker/__pycache__/
+api-ticker/**/*.pyc

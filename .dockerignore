@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+.angular
+.cache
+.angular/cache
+.DS_Store
+*.md
+.gitignore
+.prettierrc
+.prettierignore
+.editorconfig
+.eslintcache

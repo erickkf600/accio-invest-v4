@@ -1,0 +1,65 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="w-full max-w-2xl bg-[#1e222b] border border-[#2a2f3a] rounded-xl shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-6 pt-5 pb-3">
+      <div>
+        <h2 class="text-lg font-semibold text-white">Detalhes do Aporte</h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ aporte().mes }} / {{ aporte().ano }} — {{ aporte().data }}</p>
+      </div>
+      <button (click)="onClose()" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <div class="px-6 pb-4">
+      <div class="border border-[#2c313c] rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-[#242933] border-b border-[#2c313c] text-slate-400">
+              <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider">Ticker</th>
+              <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider">Tipo</th>
+              <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Qtd</th>
+              <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Val. U</th>
+              <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Taxa (Rateio)</th>
+              <th class="px-4 py-3 font-semibold uppercase text-xs tracking-wider text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#2c313c] text-white">
+            @for (ativo of aporte().ativos; track $index) {
+              <tr class="hover:bg-[#2c313c]/30">
+                <td class="px-4 py-3 font-medium">{{ ativo.ticker }}</td>
+                <td class="px-4 py-3">{{ ativo.tipo }}</td>
+                <td class="px-4 py-3 text-right">{{ ativo.quantidade }}</td>
+                <td class="px-4 py-3 text-right">R$ {{ ativo.valorUnitario | abbreviateNumber }}</td>
+                <td class="px-4 py-3 text-right text-tertiary">R$ {{ ativo.taxa | abbreviateNumber }}</td>
+                <td class="px-4 py-3 text-right font-semibold">R$ {{ ativo.total | abbreviateNumber }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="px-6 pb-6">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-[#242933] p-4 rounded-xl border border-[#2c313c]">
+          <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Taxas Totais</span>
+          <p class="text-lg font-bold text-white mt-1">R$ {{ aporte().taxas | abbreviateNumber }}</p>
+        </div>
+        <div class="bg-[#242933] p-4 rounded-xl border border-[#75d33b]/30">
+          <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Valor Total do Aporte</span>
+          <p class="text-lg font-bold text-[#75d33b] mt-1">R$ {{ formatCurrency(aporte().valor) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-[#2c313c] flex justify-end">
+      <button
+        type="button"
+        (click)="onClose()"
+        class="px-5 py-2.5 rounded-lg border border-[#2c313c] text-slate-400 font-medium hover:bg-[#2c313c]/60 transition-all cursor-pointer text-sm"
+      >
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>

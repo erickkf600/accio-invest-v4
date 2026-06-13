@@ -1,0 +1,88 @@
+<div class="overflow-x-auto">
+  <table class="w-full text-left border-collapse">
+    <thead>
+      <tr class="bg-white/[0.02]">
+        @for (col of columns(); track col.key) {
+          <th
+            class="px-6 py-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider font-semibold"
+            [class.text-right]="col.align === 'right'"
+            [class.text-center]="col.align === 'center'"
+            [class.text-left]="col.align === 'left' || !col.align"
+          >
+            {{ col.label }}
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-white/5">
+      @for (row of paginatedData(); track $index) {
+        <tr class="table-row-hover transition-colors group">
+          @for (col of columns(); track col.key) {
+            <td
+              class="px-6 py-5 font-body-md text-sm text-on-surface"
+              [class.text-right]="col.align === 'right'"
+              [class.text-center]="col.align === 'center'"
+              [class.text-left]="col.align === 'left' || !col.align"
+            >
+              @if (getTemplate(col.key); as template) {
+                <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ row: row, value: row[col.key] }"></ng-container>
+              } @else {
+                {{ row[col.key] }}
+              }
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="columns().length" class="px-6 py-8 text-center text-text-muted text-sm">
+            Nenhuma movimentação encontrada.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination Footer (only visible if totalItems > 0) -->
+@if (totalItems() > 0 && !hidePagination()) {
+  <div class="p-6 bg-white/[0.01] border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+    <p class="font-body-md text-sm text-on-surface-variant">
+      Mostrando <span class="text-on-surface font-semibold">{{ (currentPage() - 1) * pageSize() + 1 }} - {{ (currentPage() * pageSize()) > totalItems() ? totalItems() : (currentPage() * pageSize()) }}</span> de <span class="text-on-surface font-semibold">{{ totalItems() }}</span> operações
+    </p>
+    @if (pageSize() <= totalItems()) {
+      <div class="flex items-center gap-2">
+        <button
+          class="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+          [disabled]="currentPage() === 1"
+          (click)="onPageClick(currentPage() - 1)"
+        >
+          <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+        </button>
+        
+        @for (p of pages(); track p) {
+          <button
+            class="w-10 h-10 rounded-lg text-sm transition-colors cursor-pointer"
+            [class.bg-primary-success]="currentPage() === p"
+            [class.text-bg-main]="currentPage() === p"
+            [class.font-bold]="currentPage() === p"
+            [class.border]="currentPage() !== p"
+            [class.border-white/10]="currentPage() !== p"
+            [class.text-on-surface-variant]="currentPage() !== p"
+            [class.hover:bg-white/5]="currentPage() !== p"
+            (click)="onPageClick(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        
+        <button
+          class="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+          [disabled]="currentPage() === totalPages()"
+          (click)="onPageClick(currentPage() + 1)"
+        >
+          <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+        </button>
+      </div>
+    }
+  </div>
+}

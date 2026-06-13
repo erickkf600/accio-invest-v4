@@ -1,0 +1,20 @@
+<div class="overflow-x-auto max-w-full">
+<div class="flex items-center gap-8 border-b border-white/10">
+  @for (tab of options(); track tab.id) {
+    <button
+      type="button"
+      (click)="selectTab(tab.id)"
+      class="pb-3 text-[14px] transition-all duration-200 cursor-pointer whitespace-nowrap border-b-2 -mb-[1px]"
+      [class.text-primary-success]="activeTab() === tab.id"
+      [class.font-bold]="activeTab() === tab.id"
+      [class.border-primary-success]="activeTab() === tab.id"
+      [class.text-text-muted]="activeTab() !== tab.id"
+      [class.font-medium]="activeTab() !== tab.id"
+      [class.border-transparent]="activeTab() !== tab.id"
+      [class.hover:text-text-light]="activeTab() !== tab.id"
+    >
+      {{ tab.label }}
+    </button>
+  }
+</div>
+</div>

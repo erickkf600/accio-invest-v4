@@ -1,0 +1,9 @@
+# $ docker-compose up
+version: '3'
+services:
+  accio-ticker-api:
+    build: .
+    ports:
+      - "4444:4444"
+    environment:
+      - FLASK_DEBUG=False

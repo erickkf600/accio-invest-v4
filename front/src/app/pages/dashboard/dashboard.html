@@ -1,0 +1,195 @@
+<main class="pt-24 pb-20 md:pb-8 max-w-[1600px] mx-auto px-4 md:px-10 space-y-6">
+  
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-text-light mb-2">Olá, Investidor</h1>
+    <p class="text-text-muted">Bem-vindo ao seu novo centro de comando.</p>
+  </div>
+  @if (!hasData) {
+    <app-dashboard-empty-state />
+  } @else {
+    <!-- Main Chart Section -->
+    <section class="glass-card rounded-xl p-6 relative overflow-hidden transition-all duration-300 hover:border-primary-success/20">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <div class="flex items-center gap-3">
+            <h2 class="text-xl font-bold text-text-light">Rendimento da Carteira</h2>
+            <div class="relative bg-[#18191b] border border-gray-800 rounded-lg px-3 py-1 flex items-center gap-2">
+              <select
+                [value]="selectedYear()"
+                (change)="onYearChange($event)"
+                class="appearance-none bg-transparent text-[11px] font-medium text-gray-400 pr-4 focus:outline-none cursor-pointer"
+              >
+                @for (y of availableYears(); track y) {
+                  <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
+                }
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-[-10px] flex items-center pr-3 text-gray-400">
+                <span class="material-symbols-outlined !text-[20px] text-slate-400 pointer-events-none">keyboard_arrow_down</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-text-muted text-sm mt-1">Comparação histórica contra o benchmark CDI</p>
+        </div>
+        <div class="flex items-center gap-4 bg-white/5 p-1.5 rounded-lg border border-white/5">
+          <div class="flex items-center gap-2 px-3">
+            <span class="w-3 h-3 rounded-full bg-primary-success"></span>
+            <span class="text-xs text-text-light">Minha Carteira</span>
+          </div>
+          <div class="flex items-center gap-2 px-3">
+            <span class="w-3 h-3 rounded-full bg-blue-400"></span>
+            <span class="text-xs text-text-light">CDI</span>
+          </div>
+          <div class="flex items-center gap-2 px-3">
+            <span class="w-3 h-3 rounded-full bg-violet-400"></span>
+            <span class="text-xs text-text-light">Preço Médio</span>
+          </div>
+        </div>
+      </div>
+      <div class="h-[300px] w-full relative chart-grid border-l border-b border-white/10">
+        @if (chartOptions()) {
+        <apx-chart
+          [series]="chartOptions().series"
+          [chart]="chartOptions().chart"
+          [xaxis]="chartOptions().xaxis"
+          [yaxis]="chartOptions().yaxis"
+          [stroke]="chartOptions().stroke"
+          [tooltip]="chartOptions().tooltip"
+          [dataLabels]="chartOptions().dataLabels"
+          [colors]="chartOptions().colors"
+          [fill]="chartOptions().fill"
+          [grid]="chartOptions().grid"
+          [legend]="chartOptions().legend">
+        </apx-chart>
+        }
+      </div>
+    </section>
+
+    <!-- Bento Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Patrimônio (Left Column) -->
+      <div class="lg:col-span-4 space-y-6 flex flex-col">
+        <div class="glass-card rounded-xl p-6 h-full flex flex-col justify-between transition-all duration-300 hover:border-primary-success/20">
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <p class="text-xs text-text-muted uppercase tracking-wider">Patrimônio Total</p>
+              <h2 class="text-3xl font-bold text-text-light mt-1">{{ patrimonioTotal() }}</h2>
+            </div>
+          </div>
+          @if (distribuicao().length > 0) {
+          <div class="space-y-4">
+            <div class="flex h-3 w-full rounded-full overflow-hidden bg-white/5">
+              @for (item of distribuicao(); track item.tipo) {
+                <div class="h-full" [style.width.%]="item.percentual" [style.background-color]="item.cor"></div>
+              }
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              @for (item of distribuicao(); track item.tipo) {
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" [style.background-color]="item.cor"></span>
+                  <span class="text-xs text-text-muted">{{ item.tipo }} ({{ item.percentual }}%)</span>
+                </div>
+              }
+            </div>
+          </div>
+          }
+          <div class="mt-auto w-full">
+            <button class="w-full bg-primary-success text-bg-main py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all cursor-pointer">
+              Gerenciar
+            </button>
+          </div>
+        </div>
+        <div class="glass-card rounded-xl p-4 transition-all duration-300 hover:border-primary-success/20">
+          <p class="text-xs text-text-muted mb-2">Proventos Totais</p>
+          <p class="text-xl font-bold text-text-light">{{ totalProventos() }}</p>
+        </div>
+      </div>
+
+      <!-- Meus Aportes (Central Column) -->
+      <div class="lg:col-span-4">
+        <div class="glass-card rounded-xl p-6 h-full flex flex-col transition-all duration-300 hover:border-primary-success/20">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-text-light">Meus Aportes</h3>
+            <button class="text-text-muted hover:text-text-light transition-colors cursor-pointer">
+              <span class="material-symbols-outlined">filter_list</span>
+            </button>
+          </div>
+          <div class="flex-grow space-y-2">
+            <div class="grid grid-cols-4 px-4 py-2 text-text-muted text-xs border-b border-white/5">
+              <span class="">Mês</span>
+              <span class="text-center">Taxas</span>
+              <span class="text-center">Total</span>
+              <span class="text-right">Ações</span>
+            </div>
+            @for (aporte of aportes(); track aporte.mes) {
+              <div class="grid grid-cols-4 px-4 py-4 items-center hover:bg-white/5 rounded-xl transition-colors cursor-default">
+                <span class="text-sm text-text-light">{{ aporte.mes }}</span>
+                <span class="text-center text-sm text-text-muted">{{ aporte.taxas }}</span>
+                <span class="text-center text-sm font-bold text-text-light">{{ aporte.total }}</span>
+                <div class="text-right">
+                  <span class="material-symbols-outlined text-text-muted hover:text-primary-success cursor-pointer text-[20px]">visibility</span>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="mt-6 pt-6 border-t border-white/10">
+            <button class="w-full text-center text-text-muted text-xs hover:text-primary-success transition-colors cursor-pointer">Visualizar todos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Próximos pagamentos (Right Column) -->
+      <div class="lg:col-span-4">
+        <div class="glass-card rounded-xl p-6 h-full flex flex-col transition-all duration-300 hover:border-primary-success/20">
+          <div class="flex justify-between items-center mb-6 gap-2">
+            <h3 class="text-xl font-bold text-text-light whitespace-nowrap">Próximos pagamentos</h3>
+          </div>
+          @if (pagamentos().length > 0) {
+          <div class="flex-grow flex flex-col min-h-0">
+            <div class="grid grid-cols-3 px-4 py-2 text-text-muted text-xs border-b border-white/5 shrink-0">
+              <span class="">Ticker</span>
+              <span class="text-center">Tipo</span>
+              <span class="text-right">Valor</span>
+            </div>
+            <div class="overflow-y-auto flex-1 min-h-0 max-h-[280px] space-y-1 py-2 pr-2">
+              @for (pag of pagamentos(); track pag.ticker) {
+                <div class="grid grid-cols-3 px-4 py-3 items-center rounded-xl transition-all cursor-default group"
+                     [ngClass]="pag.pago ? 'bg-primary-success/10 border border-primary-success/20' : 'hover:bg-white/5'">
+                  <div class="flex items-center gap-3">
+                    <div class="flex flex-col items-center justify-center w-10 h-10 rounded-lg shrink-0 transition-colors"
+                         [ngClass]="pag.pago ? 'bg-primary-success text-bg-main' : 'bg-white/5 border border-white/10 group-hover:border-primary-success/30'">
+                      <span class="text-[8px] font-bold uppercase leading-none" [ngClass]="pag.pago ? 'text-bg-main' : 'text-text-muted'">{{ pag.dataMes }}</span>
+                      <span class="text-sm font-bold leading-none" [ngClass]="pag.pago ? 'text-bg-main' : 'text-text-light'">{{ pag.dataDia }}</span>
+                    </div>
+                    <span class="text-sm font-bold" [ngClass]="pag.pago ? 'text-primary-success' : 'text-text-light'">{{ pag.ticker }}</span>
+                  </div>
+                  <span class="text-center text-sm" [ngClass]="pag.pago ? 'text-primary-success' : 'text-text-muted'">{{ pag.tipo }}</span>
+                  <div class="text-right flex flex-col">
+                    <span class="text-sm font-bold" [ngClass]="pag.pago ? 'text-primary-success' : 'text-text-light'">{{ pag.valor }}</span>
+                    @if (pag.pago) {
+                      <span class="text-[10px] font-bold text-primary-success uppercase">PAGO</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10 shrink-0">
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-text-muted">Total Estimado</span>
+                <span class="text-sm font-bold text-primary-success">R$ 0,00</span>
+              </div>
+            </div>
+          </div>
+          } @else {
+          <div class="flex-grow flex flex-col items-center justify-center text-center py-8">
+            <span class="material-symbols-outlined text-5xl text-text-muted/20 mb-4">payments</span>
+            <p class="text-sm text-text-muted max-w-xs">Não há dividendos provisionados para o período selecionado.</p>
+          </div>
+          }
+          <div class="mt-6 pt-6 border-t border-white/10">
+            <button class="w-full text-center text-text-muted text-xs hover:text-primary-success transition-colors cursor-pointer">Visualizar todos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</main>

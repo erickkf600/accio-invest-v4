@@ -1,0 +1,111 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="relative w-full max-w-[540px] bg-[#1a1d26] border border-[#262b3a] rounded-2xl p-8 shadow-2xl z-10">
+
+    <button (click)="onClose()" class="absolute top-6 right-6 text-[#626c85] hover:text-white transition-colors cursor-pointer" aria-label="Fechar modal">
+      <span class="material-symbols-outlined text-[20px]">close</span>
+    </button>
+
+    <div class="mb-6">
+      <h2 class="text-white text-[22px] font-bold tracking-tight mb-2">Adicionar Nota</h2>
+      <p class="text-[#8c94a8] text-sm leading-relaxed font-normal">
+        Insira os dados da opera&ccedil;&atilde;o e anexe o arquivo PDF oficial fornecido pela sua corretora.
+      </p>
+    </div>
+
+    <form (submit)="onSubmit(); $event.preventDefault()" class="space-y-5">
+
+      <div class="space-y-2">
+        <label class="block text-[#8c94a8] text-xs font-semibold tracking-wider uppercase">Nome do Arquivo</label>
+        <input
+          type="text"
+          placeholder="Ex: XP_Nota_Janeiro_2024"
+          [formField]="notaForm.nomeArquivo"
+          class="w-full bg-[#222735] text-white text-sm rounded-lg border border-[#31384c] px-4 py-3 placeholder-[#525b73] focus:outline-none focus:border-[#75d33b] focus:ring-1 focus:ring-[#75d33b] transition-all"
+        />
+        @if (notaForm.nomeArquivo().touched() && notaForm.nomeArquivo().errors().length) {
+          <span class="text-xs text-error mt-1 block">{{ notaForm.nomeArquivo().errors()[0].message }}</span>
+        }
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="block text-[#8c94a8] text-xs font-semibold tracking-wider uppercase">Data</label>
+          <input
+            type="text"
+            placeholder="dd/mm/yyyy"
+            appDateMask
+            [formField]="notaForm.data"
+            class="w-full bg-[#222735] text-white text-sm rounded-lg border border-[#31384c] px-4 py-3 placeholder-[#525b73] focus:outline-none focus:border-[#75d33b] focus:ring-1 focus:ring-[#75d33b] transition-all"
+          />
+          @if (notaForm.data().touched() && notaForm.data().errors().length) {
+            <span class="text-xs text-error mt-1 block">{{ notaForm.data().errors()[0].message }}</span>
+          }
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-[#8c94a8] text-xs font-semibold tracking-wider uppercase">Tipo</label>
+          <div class="relative">
+            <select
+              [formField]="notaForm.tipo"
+              class="w-full bg-[#222735] text-white text-sm rounded-lg border border-[#31384c] px-4 py-3 appearance-none focus:outline-none focus:border-[#75d33b] focus:ring-1 focus:ring-[#75d33b] transition-all cursor-pointer"
+            >
+              <option value="" disabled selected>Selecione um tipo</option>
+              <option value="Compra - Renda vari&aacute;vel">Compra - Renda vari&aacute;vel</option>
+              <option value="Venda - Renda vari&aacute;vel">Venda - Renda vari&aacute;vel</option>
+              <option value="Renda Fixa">Renda Fixa</option>
+            </select>
+            <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#626c85]">
+              <span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
+            </div>
+          </div>
+          @if (notaForm.tipo().touched() && notaForm.tipo().errors().length) {
+            <span class="text-xs text-error mt-1 block">{{ notaForm.tipo().errors()[0].message }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-[#8c94a8] text-xs font-semibold tracking-wider uppercase">Documento</label>
+        <div
+          appDragDrop
+          (fileDropped)="onFileDropped($event)"
+          (click)="fileInput.click()"
+          class="w-full bg-[#1c202c]/50 border-2 border-dashed border-[#343c52] hover:border-[#8eff43]/50 rounded-xl py-8 px-4 flex flex-col items-center justify-center transition-all cursor-pointer group"
+        >
+          <input
+            type="file"
+            #fileInput
+            accept=".pdf"
+            (change)="onFileSelected($event)"
+            class="hidden"
+          />
+          @if (model().documento) {
+            <span class="material-symbols-outlined text-[#8eff43] text-[28px] mb-2">description</span>
+            <p class="text-sm font-semibold text-[#8eff43] text-center truncate max-w-full px-4">
+              {{ model().documento }}
+            </p>
+          } @else {
+            <span class="material-symbols-outlined text-white group-hover:text-[#8eff43] transition-colors text-[28px] mb-3">upload_file</span>
+            <p class="text-gray-300 text-xs text-center leading-relaxed">
+              Arraste e solte o PDF aqui ou <span class="text-[#8eff43] font-medium hover:underline">busque nos arquivos</span>
+            </p>
+          }
+        </div>
+        @if (notaForm.documento().touched() && notaForm.documento().errors().length) {
+          <span class="text-xs text-error mt-1 block">{{ notaForm.documento().errors()[0].message }}</span>
+        }
+      </div>
+
+      <div class="pt-2">
+        <button
+          type="submit"
+          [disabled]="notaForm().invalid()"
+          class="w-full bg-[#8eff43] hover:bg-[#7ce23a] text-[#0b0d13] font-bold text-sm py-3.5 px-4 rounded-lg transition-all transform active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#8eff43]/5"
+        >
+          Cadastrar Nota
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

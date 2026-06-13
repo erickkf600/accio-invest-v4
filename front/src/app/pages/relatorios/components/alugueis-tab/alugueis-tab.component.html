@@ -1,0 +1,40 @@
+<div class="space-y-6">
+  <div class="mb-6">
+  <app-filter-card
+    (filterApplied)="onFilterApplied($event)"
+    (filtersCleared)="onFiltersCleared()"
+  ></app-filter-card>
+  </div>
+
+  <div class="glass-card rounded-2xl space-y-4">
+    <div class="flex justify-between items-center pt-6 px-6">
+      <h4 class="text-sm font-bold text-text-light">Recebidos de Aluguéis (FIIs)</h4>
+      <app-pdf-button
+        title="Relatório - Recebidos de Aluguéis (FIIs)"
+        [columns]="alugueisColumns"
+        [data]="filteredAlugueis()"
+        filename="recebidos_alugueis.pdf"
+      ></app-pdf-button>
+    </div>
+
+    <app-table
+      [data]="filteredAlugueis()"
+      [columns]="alugueisColumns"
+      [totalItems]="filteredAlugueis().length"
+      [pageSize]="10"
+      [currentPage]="1"
+    >
+      <ng-template appCellTemplate="ticker" let-row="row">
+        <span class="font-bold text-text-light">{{ row.ticker }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="precoUn" let-row="row">
+        <span>R$ {{ row.precoUn | abbreviateNumber }}</span>
+      </ng-template>
+
+      <ng-template appCellTemplate="total" let-row="row">
+        <span class="font-bold text-[#75d33b]">+ R$ {{ row.total | abbreviateNumber }}</span>
+      </ng-template>
+    </app-table>
+  </div>
+</div>

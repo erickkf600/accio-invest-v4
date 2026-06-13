@@ -1,0 +1,31 @@
+{
+  "name": "api-ticker",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "api-ticker",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "venv": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "python3 -m venv .venv",
+        "cwd": "api-ticker"
+      }
+    },
+    "install": {
+      "dependsOn": ["venv"],
+      "executor": "nx:run-commands",
+      "options": {
+        "command": ".venv/bin/pip install -r requirements.txt",
+        "cwd": "api-ticker"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": ".venv/bin/python main.py",
+        "cwd": "api-ticker"
+      }
+    }
+  }
+}

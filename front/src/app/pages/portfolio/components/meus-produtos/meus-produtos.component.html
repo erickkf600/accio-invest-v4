@@ -1,0 +1,140 @@
+<div class="space-y-6">
+  <!-- Chart and breakdown -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-3 glass-card p-6 rounded-2xl flex flex-col">
+      <h4 class="text-sm font-bold text-text-light">Distribuição de Carteira</h4>
+      @if (allocationChartOptions()) {
+        <div class="mt-auto">
+        <apx-chart
+          [series]="allocationChartOptions().series"
+          [chart]="allocationChartOptions().chart"
+          [labels]="allocationChartOptions().labels"
+          [colors]="allocationChartOptions().colors"
+          [stroke]="allocationChartOptions().stroke"
+          [legend]="allocationChartOptions().legend"
+          [dataLabels]="allocationChartOptions().dataLabels"
+          [plotOptions]="allocationChartOptions().plotOptions"
+        ></apx-chart>
+
+        </div>
+      }
+      <div class="mt-auto space-y-2">
+        @for (item of allocationByType(); track item.tipo) {
+          <div class="flex items-center justify-between py-1.5">
+            <div class="flex items-center gap-2">
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                [style.background]="allocationColors[item.tipo] || '#8a947f'"
+              ></span>
+              <span class="text-xs text-text-muted">{{ item.tipo === AssetTypeEnum.FII ? 'FIIs' : item.tipo }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-text-light">R$ {{ item.valor | abbreviateNumber }}</span>
+              <span class="text-xs font-semibold text-right w-10 text-primary">{{ item.pct }}%</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="text-xs text-text-muted text-center py-4">Nenhum produto disponível.</div>
+        }
+      </div>
+    </div>
+
+        <!-- Table of holdings -->
+    <div class="lg:col-span-9 glass-card rounded-2xl space-y-4">
+      <div class="flex justify-between items-center px-6 pt-4">
+        <h4 class="text-sm font-bold text-text-light">Meus Ativos</h4>
+        <app-pdf-button
+          title="Relatório de Ativos em Carteira"
+          [columns]="columns"
+          [data]="products()"
+          filename="meus_ativos.pdf"
+        ></app-pdf-button>
+      </div>
+
+      <app-table
+        [data]="products()"
+        [columns]="columns"
+        [totalItems]="products().length"
+        [pageSize]="6"
+        [currentPage]="currentPage()"
+        (pageChange)="currentPage.set($event)"
+      >
+        <ng-template appCellTemplate="ticker" let-row="row">
+          <span class="font-bold text-text-light">{{ row.ticker }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="precoMedio" let-row="row">
+          <span>R$ {{ row.precoMedio | abbreviateNumber }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="custoTotal" let-row="row">
+          <span>R$ {{ row.custoTotal | abbreviateNumber }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="precoAtual" let-row="row">
+          <span>R$ {{ row.precoAtual | abbreviateNumber }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="valorAtual" let-row="row">
+          <span class="font-semibold text-text-light">R$ {{ row.valorAtual | abbreviateNumber }}</span>
+        </ng-template>
+
+        <ng-template appCellTemplate="lucroPrejuizo" let-row="row">
+          <span class="font-semibold" [class.text-[#75d33b]]="row.lucroPrejuizo >= 0" [class.text-error]="row.lucroPrejuizo < 0">
+            {{ row.lucroPrejuizo >= 0 ? '+' : '' }}R$ {{ row.lucroPrejuizo | abbreviateNumber }}
+            <span class="text-xs font-normal">({{ row.lucroPrejuizo >= 0 ? '+' : '' }}{{ row.lucroPrejuizoPct | number:'1.2-2' }}%)</span>
+          </span>
+        </ng-template>
+
+        <ng-template appCellTemplate="participacao" let-row="row">
+          <span class="font-bold text-[#deffc4]">{{ row.participacao | number:'1.1-1' }}%</span>
+        </ng-template>
+      </app-table>
+    </div>
+
+    <!-- Class Summary Table -->
+    <div class="lg:col-span-12 glass-card  rounded-2xl">
+      <div class=" px-6 pt-4">
+        <h3 class="text-sm font-semibold text-white tracking-wide mb-6">Meus ativos por classe</h3>
+      </div>
+      <app-table
+        [data]="classSummary()"
+        [columns]="columnsClassSummary"
+        [totalItems]="classSummary().length"
+        [pageSize]="classSummary().length"
+        [currentPage]="1"
+        [hidePagination]="true"
+      >
+        <ng-template appCellTemplate="tipo" let-row="row">
+          <div class="flex items-center gap-3">
+            <span class="w-1.5 h-6 rounded-full flex-shrink-0"
+              [style.background]="allocationColors[row.tipo] || '#64748b'"
+            ></span>
+            <span class="text-sm font-bold text-white">{{ row.tipo === AssetTypeEnum.FII ? 'FIIs' : row.tipo }}</span>
+          </div>
+        </ng-template>
+        <ng-template appCellTemplate="saldoPM" let-row="row">
+          <span class="text-[#64748b]">R$ {{ row.saldoPM | abbreviateNumber }}</span>
+        </ng-template>
+        <ng-template appCellTemplate="saldoCotacao" let-row="row">
+          <span class="font-bold text-white">R$ {{ row.saldoCotacao | abbreviateNumber }}</span>
+        </ng-template>
+        <ng-template appCellTemplate="rent30d" let-row="row">
+          <span class="font-semibold"
+            [class.text-[#22c55e]]="row.rent30d >= 0"
+            [class.text-[#ef4444]]="row.rent30d < 0"
+          >{{ row.rent30d >= 0 ? '+' : '' }}{{ row.rent30d | number:'1.1-1' }}%</span>
+        </ng-template>
+        <ng-template appCellTemplate="rent12m" let-row="row">
+          <span class="font-semibold"
+            [class.text-[#22c55e]]="row.rent12m >= 0"
+            [class.text-[#ef4444]]="row.rent12m < 0"
+          >{{ row.rent12m >= 0 ? '+' : '' }}{{ row.rent12m | number:'1.1-1' }}%</span>
+        </ng-template>
+        <ng-template appCellTemplate="rentHistorica" let-row="row">
+          <span class="font-bold text-[#22c55e]">{{ row.rentHistorica >= 0 ? '+' : '' }}{{ row.rentHistorica | number:'1.2-2' }}%</span>
+        </ng-template>
+      </app-table>
+    </div>
+  </div>
+</div>
