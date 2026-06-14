@@ -55,6 +55,7 @@ export interface RelatorioNotaCorretagem {
   data: string;
   tipo: string;
   tamanho?: string;
+  path: string;
 }
 
 export interface RelatorioPrecoMedio {

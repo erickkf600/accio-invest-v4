@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
-import { OperationType } from '../generated/prisma/client';
+import { MinioService } from '../integrations/minio/minio.service';
+import { OperationType, NotaTipo } from '../generated/prisma/client';
+import { buildFileName, generateObjectKey } from '../common/utils/file-generator.utils';
 import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
@@ -11,12 +13,55 @@ import { CreateFixedIncomeYieldDto } from './dto/create-fixed-income-yield.dto';
 import { FixedIncomeYieldResponseDto } from './dto/fixed-income-yield-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pagination.utils';
-import { generateRandomString } from '../common/utils/file-generator.utils';
 import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
 
 @Injectable()
 export class PortfolioService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private minioService: MinioService,
+  ) {}
+
+  private async uploadAndCreateNota(
+    arquivo: Express.Multer.File,
+    userId: number,
+    tipo: NotaTipo,
+    nome?: string,
+  ): Promise<number> {
+    const objectName = generateObjectKey(userId, arquivo.originalname, nome);
+    const url = await this.minioService.uploadFile(objectName, arquivo.buffer, arquivo.mimetype);
+
+    const nota = await this.prisma.nota.create({
+      data: {
+        nome: buildFileName(arquivo.originalname, nome),
+        data: new Date(),
+        tipo,
+        path: url,
+        createdBy: userId,
+      },
+    });
+
+    return nota.id;
+  }
+
+  private async updateNotaForEntity(
+    arquivo: Express.Multer.File,
+    userId: number,
+    entity: { fileId?: number | null },
+    tipo: NotaTipo,
+    nome?: string,
+  ): Promise<number> {
+    if (entity.fileId) {
+      const oldNota = await this.prisma.nota.findUnique({
+        where: { id: entity.fileId },
+      });
+      if (oldNota) {
+        const objectName = this.minioService.extractObjectName(oldNota.path);
+        await this.minioService.deleteFile(objectName);
+      }
+    }
+    return this.uploadAndCreateNota(arquivo, userId, tipo, nome);
+  }
 
   async getPositions(
     userId: number,
@@ -98,7 +143,7 @@ export class PortfolioService {
       id: op.id,
       data: op.data,
       ticker: op.ticker,
-      tipo: op.tipo,
+      tipo: op.tipoOperacao,
       qtd: op.qtd || 0,
       valorUn: op.precoUn,
       total: op.total,
@@ -142,12 +187,15 @@ export class PortfolioService {
     userId: number,
     arquivo?: Express.Multer.File,
   ): Promise<YieldResponseDto> {
-    let notaPath: string | undefined;
-    let notaNome: string | undefined;
+    let fileId: number | undefined;
 
     if (arquivo) {
-      notaPath = generateRandomString();
-      notaNome = arquivo.originalname;
+      fileId = await this.uploadAndCreateNota(
+        arquivo,
+        userId,
+        NotaTipo.RF,
+        dto.nota,
+      );
     }
 
     return this.prisma.fixedIncomePosition.create({
@@ -161,8 +209,7 @@ export class PortfolioService {
         valorAplicado: dto.valorAplicado,
         dataCompra: new Date(dto.dataCompra),
         vencimento: dto.vencimento ? new Date(dto.vencimento) : null,
-        notaPath,
-        notaNome,
+        fileId,
         observacoes: dto.observacoes ?? null,
         createdBy: userId,
       },
@@ -217,8 +264,13 @@ export class PortfolioService {
     if (dto.vencimento) updateData['vencimento'] = new Date(dto.vencimento);
 
     if (arquivo) {
-      updateData['notaPath'] = generateRandomString();
-      updateData['notaNome'] = arquivo.originalname;
+      updateData['fileId'] = await this.updateNotaForEntity(
+        arquivo,
+        userId,
+        existing,
+        NotaTipo.RF,
+        dto.nota,
+      );
     }
 
     if (dto.observacoes !== undefined) {

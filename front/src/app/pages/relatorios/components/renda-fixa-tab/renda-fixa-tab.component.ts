@@ -1,7 +1,9 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
-import { RelatoriosService } from '../../service/relatorios.service';
+import { RelatoriosService, toDmy } from '../../service/relatorios.service';
+import { RelatorioRendaFixa } from '../../../../models/relatorios.model';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
@@ -16,12 +18,38 @@ import { TooltipDirective } from '../../../../components/Tooltip/tooltip.directi
 })
 export class RendaFixaTabComponent {
   private relatoriosService = inject(RelatoriosService);
+  private destroyRef = inject(DestroyRef);
 
-  rendaFixa = computed(() => this.relatoriosService.state$().rendaFixa);
+  rendaFixa = signal<RelatorioRendaFixa[]>([]);
 
   searchTerm = signal<string>('');
   currentPage = signal<number>(1);
   pageSize = 10;
+
+  constructor() {
+    this.relatoriosService.getRendaFixa().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const list: RelatorioRendaFixa[] = (res.data.data || []).map((r) => ({
+          id: String(r.id),
+          emissor: r.emissor,
+          tipo: r.tipo as RelatorioRendaFixa['tipo'],
+          indexador: r.indexador,
+          taxaJuros: r.taxaJuros,
+          liquidezDiaria: r.liquidezDiaria,
+          possuiImposto: r.possuiImposto,
+          valorAplicado: r.valorAplicado,
+          tipoInvestimento: 'Renda Fixa',
+          tipoTitulo: r.tipo,
+          dataCompra: toDmy(r.dataCompra),
+          vencimento: r.vencimento ? toDmy(r.vencimento) : undefined,
+          grossUp: r.liquidezDiaria ? 'DI' : 'Pré',
+          rentabilidade: 0,
+          expirado: r.vencimento ? new Date(r.vencimento) < new Date() : false,
+        }));
+        this.rendaFixa.set(list);
+      },
+    });
+  }
 
   filteredRendaFixa = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();

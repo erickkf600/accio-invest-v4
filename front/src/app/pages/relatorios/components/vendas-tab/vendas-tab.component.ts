@@ -1,6 +1,8 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
-import { RelatoriosService } from '../../service/relatorios.service';
+import { RelatoriosService, toDmy } from '../../service/relatorios.service';
+import { RelatorioVenda } from '../../../../models/relatorios.model';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
@@ -14,11 +16,30 @@ import { FiltroRelatorioComponent } from '../filtroRelatorio/filtro-relatorio.co
 })
 export class VendasTabComponent {
   private relatoriosService = inject(RelatoriosService);
+  private destroyRef = inject(DestroyRef);
   private abbreviatePipe = new AbbreviateNumberPipe();
 
-  vendas = computed(() => this.relatoriosService.state$().vendas);
+  vendas = signal<RelatorioVenda[]>([]);
 
   searchTerm = signal<string>('');
+
+  constructor() {
+    this.relatoriosService.getVendas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const list: RelatorioVenda[] = (res.data.data || []).map((v) => ({
+          id: String(v.id),
+          ticker: v.ticker,
+          data: toDmy(v.data),
+          qtd: v.qtd,
+          precoUn: v.precoUn,
+          total: v.total,
+          taxas: v.taxas ?? 0,
+          resultado: v.resultado ?? 0,
+        }));
+        this.vendas.set(list);
+      },
+    });
+  }
 
   filteredVendas = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();

@@ -19,16 +19,15 @@ interface OperationResponseDto {
   id: number;
   assetId: number;
   ticker: string;
-  tipo: string;
+  tipoOperacao: string;
+  tipo?: string;
   data: string;
   qtd?: number;
   precoUn: number;
   taxas?: number;
   total: number;
-  lucroRealizado?: number;
   observacoes?: string;
-  notaNome?: string;
-  notaPath?: string;
+  fileId?: number;
   vencimento?: string;
 }
 
@@ -82,13 +81,14 @@ export class MovimentacoesService {
           data: formatDate(op.data),
           dataIso: op.data,
           ativo: op.ticker,
-          tipo: op.tipo as Operation['tipo'],
+          tipoOperacao: op.tipoOperacao as Operation['tipoOperacao'],
+          tipo: op.tipo,
           qtd: op.qtd ?? null,
           precoUn: op.precoUn,
           taxas: op.taxas ?? null,
           total: op.total,
           observacoes: op.observacoes ?? '',
-          notaNome: op.notaNome ?? '',
+          fileId: op.fileId ?? undefined,
           vencimento: op.vencimento ?? undefined,
         }));
         this.state.set({

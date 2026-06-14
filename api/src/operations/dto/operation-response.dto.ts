@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TipoValor } from '../../generated/prisma/client';
 
 export class OperationResponseDto {
   @ApiProperty()
@@ -11,7 +12,7 @@ export class OperationResponseDto {
   ticker: string;
 
   @ApiProperty()
-  tipo: string;
+  tipoOperacao: string;
 
   @ApiProperty()
   data: Date;
@@ -28,14 +29,11 @@ export class OperationResponseDto {
   @ApiProperty()
   total: number;
 
-  @ApiProperty({ required: false })
-  lucroRealizado?: number;
+  @ApiProperty({ required: false, enum: TipoValor })
+  tipo?: TipoValor;
 
   @ApiProperty({ required: false })
-  notaPath?: string;
-
-  @ApiProperty({ required: false })
-  notaNome?: string;
+  fileId?: number;
 
   @ApiProperty({ required: false })
   observacoes?: string;

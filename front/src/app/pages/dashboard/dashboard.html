@@ -5,7 +5,7 @@
     <p class="text-text-muted">Bem-vindo ao seu novo centro de comando.</p>
   </div>
   @if (!hasData) {
-    <app-dashboard-empty-state />
+    <app-dashboard-empty-state (operationTypeChange)="onOperationTypeChange($event)" />
   } @else {
     <!-- Main Chart Section -->
     <section class="glass-card rounded-xl p-6 relative overflow-hidden transition-all duration-300 hover:border-primary-success/20">

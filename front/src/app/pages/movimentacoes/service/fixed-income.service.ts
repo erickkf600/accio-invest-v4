@@ -16,7 +16,7 @@ export interface FixedIncomeDetails {
   dataCompra: string;
   vencimento?: string;
   observacoes?: string;
-  notaNome?: string;
+  fileId?: number;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -30,4 +30,7 @@ export class YieldResponseDto {
 
   @ApiProperty()
   possuiImposto: boolean;
+
+  @ApiProperty({ required: false })
+  fileId?: number;
 }

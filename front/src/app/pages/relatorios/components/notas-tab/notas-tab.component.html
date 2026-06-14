@@ -23,20 +23,30 @@
       [currentPage]="1"
     >
       <ng-template appCellTemplate="documento" let-row="row">
-        <div class="flex items-center gap-2 text-text-light hover:text-[#75d33b] cursor-pointer">
+        <a
+          [href]="row.path"
+          target="_blank"
+          class="flex items-center gap-2 text-text-light hover:text-[#75d33b] cursor-pointer no-underline"
+        >
           <span class="material-symbols-outlined text-[18px]">description</span>
           <span class="font-medium text-xs">{{ row.documento }}</span>
-        </div>
+        </a>
       </ng-template>
 
       <ng-template appCellTemplate="tipo" let-row="row">
         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-text-muted uppercase">
-          {{ row.tipo }}
+          {{ tipoLabels[row.tipo] || row.tipo }}
         </span>
       </ng-template>
 
-      <ng-template appCellTemplate="tamanho" let-row="row">
-        <span class="text-xs text-text-muted">{{ row.tamanho }}</span>
+      <ng-template appCellTemplate="acoes" let-row="row">
+        <button
+          (click)="removeNota.emit(row)"
+          class="text-[#626c85] hover:text-red-400 transition-colors cursor-pointer"
+          title="Remover nota"
+        >
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
       </ng-template>
     </app-table>
   </div>

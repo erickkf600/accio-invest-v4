@@ -23,5 +23,5 @@ export class RelatorioVendaDto {
   taxas?: number;
 
   @ApiPropertyOptional()
-  resultado?: number;
+  tipo?: string;
 }

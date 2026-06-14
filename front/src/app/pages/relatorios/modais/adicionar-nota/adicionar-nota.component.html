@@ -50,9 +50,9 @@
               class="w-full bg-[#222735] text-white text-sm rounded-lg border border-[#31384c] px-4 py-3 appearance-none focus:outline-none focus:border-[#75d33b] focus:ring-1 focus:ring-[#75d33b] transition-all cursor-pointer"
             >
               <option value="" disabled selected>Selecione um tipo</option>
-              <option value="Compra - Renda vari&aacute;vel">Compra - Renda vari&aacute;vel</option>
-              <option value="Venda - Renda vari&aacute;vel">Venda - Renda vari&aacute;vel</option>
-              <option value="Renda Fixa">Renda Fixa</option>
+              <option value="C_RV">Compra - Renda variável</option>
+              <option value="V_RV">Venda - Renda variável</option>
+              <option value="RF">Renda Fixa</option>
             </select>
             <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#626c85]">
               <span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
@@ -99,10 +99,17 @@
       <div class="pt-2">
         <button
           type="submit"
-          [disabled]="notaForm().invalid()"
+          [disabled]="notaForm().invalid() || saving()"
           class="w-full bg-[#8eff43] hover:bg-[#7ce23a] text-[#0b0d13] font-bold text-sm py-3.5 px-4 rounded-lg transition-all transform active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#8eff43]/5"
         >
-          Cadastrar Nota
+          @if (saving()) {
+            <span class="flex items-center justify-center gap-2">
+              <span class="inline-block w-4 h-4 border-2 border-[#0b0d13] border-t-transparent rounded-full animate-spin"></span>
+              Enviando...
+            </span>
+          } @else {
+            Cadastrar Nota
+          }
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { Router } from '@angular/router';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DashboardService, DistribuicaoItem, RendimentoMensal } from './service/dashboard.service';
 import DashboardEmptyState from './component/dashboard-empty-state/dashboard-empty-state';
@@ -15,6 +16,7 @@ export default class Dashboard implements OnInit {
   protected readonly title = 'Dashboard';
 
   private dashboardService = inject(DashboardService);
+  private router = inject(Router);
 
   protected patrimonioTotal = signal('');
   protected totalProventos = signal('');
@@ -35,6 +37,10 @@ export default class Dashboard implements OnInit {
 
   get hasData(): boolean {
     return this.totalInvestido() > 0 || this.aportes().length > 0;
+  }
+
+  onOperationTypeChange(value: string) {
+    this.router.navigate(['/movimentacoes'], { queryParams: { openModal: value } });
   }
 
   onYearChange(event: Event): void {

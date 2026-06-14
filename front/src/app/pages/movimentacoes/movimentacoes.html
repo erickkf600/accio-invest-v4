@@ -87,27 +87,27 @@
         </ng-template>
 
         <ng-template appCellTemplate="tipo" let-row="row">
-          @if (row.tipo === OperationTypeEnum.Compra) {
+          @if (row.tipoOperacao === OperationTypeEnum.Compra) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase">
               Compra
             </span>
-          } @else if (row.tipo === OperationTypeEnum.Venda) {
+          } @else if (row.tipoOperacao === OperationTypeEnum.Venda) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-error/10 text-error border border-error/20 uppercase">
               Venda
             </span>
-          } @else if (row.tipo === OperationTypeEnum.Proventos) {
+          } @else if (row.tipoOperacao === OperationTypeEnum.Proventos) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
               Proventos
             </span>
-          } @else if (row.tipo === OperationTypeEnum.RendaFixa) {
+          } @else if (row.tipoOperacao === OperationTypeEnum.RendaFixa) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">
               Renda Fixa
             </span>
-          } @else if (row.tipo === OperationTypeEnum.RendaFixaRendimento) {
+          } @else if (row.tipoOperacao === OperationTypeEnum.RendaFixaRendimento) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
             RF - Rendimento
             </span>
-          } @else if (row.tipo === OperationTypeEnum.Reposicionamento) {
+          } @else if (row.tipoOperacao === OperationTypeEnum.Reposicionamento) {
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase">
               Reposicionamento
             </span>
@@ -127,7 +127,7 @@
         </ng-template>
 
         <ng-template appCellTemplate="total" let-row="row">
-          @if (row.tipo === OperationTypeEnum.Proventos || row.tipo === OperationTypeEnum.RendaFixaRendimento) {
+          @if (row.tipoOperacao === OperationTypeEnum.Proventos || row.tipoOperacao === OperationTypeEnum.RendaFixaRendimento) {
             <span class="font-bold text-primary-success">+ R$ {{ row.total | abbreviateNumber }}</span>
           } @else {
             <span class="font-bold text-text-light">R$ {{ row.total | abbreviateNumber }}</span>

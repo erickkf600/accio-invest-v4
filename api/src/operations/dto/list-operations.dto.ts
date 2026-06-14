@@ -11,7 +11,7 @@ export class ListOperationsDto extends PaginationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  tipo?: string;
+  tipoOperacao?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

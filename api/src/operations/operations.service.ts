@@ -4,15 +4,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
+import { MinioService } from '../integrations/minio/minio.service';
 import { PositionSyncService } from '../portfolio/position-sync.service';
-import { AssetType, OperationType } from '../generated/prisma/client';
+import { AssetType, OperationType, NotaTipo, TipoValor } from '../generated/prisma/client';
+import { buildFileName, generateObjectKey } from '../common/utils/file-generator.utils';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { UpdateOperationDto } from './dto/update-operation.dto';
 import { ListOperationsDto } from './dto/list-operations.dto';
 import { OperationResponseDto } from './dto/operation-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pagination.utils';
-import { generateRandomString } from '../common/utils/file-generator.utils';
 import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
 
 function isFIPrefixedId(id: number): boolean {
@@ -28,15 +29,14 @@ function toFiDto(fi: Record<string, any>): OperationResponseDto {
     id: fi.id + FI_ID_PREFIX,
     assetId: fi.assetId ?? 0,
     ticker: fi.emissor,
-    tipo: 'Renda Fixa',
+    tipoOperacao: 'Renda Fixa',
     data: fi.dataCompra,
     qtd: null,
     precoUn: fi.valorAplicado,
     taxas: 0,
     total: fi.valorAplicado,
-    lucroRealizado: undefined,
-    notaPath: fi.notaPath,
-    notaNome: fi.notaNome,
+    tipo: undefined,
+    fileId: fi.fileId,
     observacoes: fi.observacoes,
     vencimento: fi.vencimento ?? undefined,
     createdAt: fi.createdAt,
@@ -49,15 +49,14 @@ function toYieldDto(y: Record<string, any>): OperationResponseDto {
     id: y.id + FI_YIELD_PREFIX,
     assetId: 0,
     ticker: y.emissor,
-    tipo: 'Renda Fixa - Rendimento',
+    tipoOperacao: 'Renda Fixa - Rendimento',
     data: y.dataOperacao,
     qtd: null,
     precoUn: y.valor,
     taxas: 0,
     total: y.valor,
-    lucroRealizado: undefined,
-    notaPath: undefined,
-    notaNome: undefined,
+    tipo: undefined,
+    fileId: undefined,
     observacoes: y.observacoes,
     vencimento: undefined,
     createdAt: y.createdAt,
@@ -70,22 +69,64 @@ export class OperationsService {
   constructor(
     private prisma: PrismaService,
     private positionSync: PositionSyncService,
+    private minioService: MinioService,
   ) {}
+
+  private async uploadAndCreateNota(
+    arquivo: Express.Multer.File,
+    userId: number,
+    tipo: NotaTipo,
+    nome?: string,
+  ): Promise<number> {
+    const objectName = generateObjectKey(userId, arquivo.originalname, nome);
+    const url = await this.minioService.uploadFile(objectName, arquivo.buffer, arquivo.mimetype);
+
+    const nota = await this.prisma.nota.create({
+      data: {
+        nome: buildFileName(arquivo.originalname, nome),
+        data: new Date(),
+        tipo,
+        path: url,
+        createdBy: userId,
+      },
+    });
+
+    return nota.id;
+  }
+
+  private async updateNotaForEntity(
+    arquivo: Express.Multer.File,
+    userId: number,
+    entity: { fileId?: number | null },
+    tipo: NotaTipo,
+    nome?: string,
+  ): Promise<number> {
+    if (entity.fileId) {
+      const oldNota = await this.prisma.nota.findUnique({
+        where: { id: entity.fileId },
+      });
+      if (oldNota) {
+        const objectName = this.minioService.extractObjectName(oldNota.path);
+        await this.minioService.deleteFile(objectName);
+      }
+    }
+    return this.uploadAndCreateNota(arquivo, userId, tipo, nome);
+  }
 
   async list(
     dto: ListOperationsDto,
     userId?: number,
   ): Promise<PaginatedResult<OperationResponseDto>> {
-    const { page = 1, limit = 20, ticker, tipo, dataInicio, dataFim } = dto;
+    const { page = 1, limit = 20, ticker, tipoOperacao, dataInicio, dataFim } = dto;
     const { skip, take } = getPaginationParams(page, limit);
 
-    const includeFi = !tipo || tipo === 'Renda Fixa' || tipo === 'Renda Fixa - Rendimento';
-    const includeOp = !tipo || (tipo !== 'Renda Fixa' && tipo !== 'Rendimento');
+    const includeFi = !tipoOperacao || tipoOperacao === 'Renda Fixa' || tipoOperacao === 'Renda Fixa - Rendimento';
+    const includeOp = !tipoOperacao || (tipoOperacao !== 'Renda Fixa' && tipoOperacao !== 'Rendimento');
 
     const opWhere: Record<string, unknown> = {};
     if (userId) opWhere['createdBy'] = userId;
     if (ticker) opWhere['ticker'] = { contains: ticker };
-    if (tipo && includeOp) opWhere['tipo'] = tipo;
+    if (tipoOperacao && includeOp) opWhere['tipoOperacao'] = tipoOperacao;
     if (dataInicio || dataFim) {
       opWhere['data'] = {};
       if (dataInicio) opWhere['data']['gte'] = new Date(dataInicio);
@@ -175,7 +216,7 @@ export class OperationsService {
     });
 
     if (!asset) {
-      if (dto.tipo === OperationType.Compra) {
+          if (dto.tipoOperacao === OperationType.Compra) {
         const tipo = this.inferAssetType(dto.ticker);
         asset = await this.prisma.asset.create({
           data: { ticker: dto.ticker, tipo, createdBy: userId },
@@ -187,33 +228,35 @@ export class OperationsService {
       }
     }
 
-    let notaPath: string | undefined;
-    let notaNome: string | undefined;
+    let fileId: number | undefined;
 
     if (arquivo) {
-      notaPath = generateRandomString();
-      notaNome = arquivo.originalname;
+      fileId = await this.uploadAndCreateNota(
+        arquivo,
+        userId,
+        NotaTipo.V_RV,
+        dto.nota,
+      );
     }
 
     const operation = await this.prisma.operation.create({
       data: {
         assetId: asset.id,
         ticker: dto.ticker,
-        tipo: dto.tipo as any,
+        tipoOperacao: dto.tipoOperacao as any,
         data: new Date(dto.data),
         qtd: dto.qtd,
         precoUn: dto.precoUn,
         taxas: dto.taxas ?? 0,
         total: dto.total,
-        lucroRealizado: dto.lucroRealizado,
-        notaPath,
-        notaNome,
+        tipo: dto.tipo,
+        fileId,
         observacoes: dto.observacoes ?? null,
         createdBy: userId,
       },
     });
 
-    if (dto.tipo === OperationType.Compra || dto.tipo === OperationType.Venda) {
+    if (dto.tipoOperacao === OperationType.Compra || dto.tipoOperacao === OperationType.Venda) {
       await this.positionSync.syncPosition(dto.ticker, userId);
     }
 
@@ -225,12 +268,14 @@ export class OperationsService {
     userId: number,
     arquivo?: Express.Multer.File,
   ): Promise<OperationResponseDto[]> {
-    let notaPath: string | undefined;
-    let notaNome: string | undefined;
+    let fileId: number | undefined;
 
     if (arquivo) {
-      notaPath = generateRandomString();
-      notaNome = arquivo.originalname;
+      fileId = await this.uploadAndCreateNota(
+        arquivo,
+        userId,
+        NotaTipo.V_RV,
+      );
     }
 
     const results = await this.prisma.$transaction(async (tx) => {
@@ -242,7 +287,7 @@ export class OperationsService {
         });
 
         if (!asset) {
-          if (dto.tipo === OperationType.Compra) {
+      if (dto.tipoOperacao === OperationType.Compra) {
             const tipo = this.inferAssetType(dto.ticker);
             asset = await tx.asset.create({
               data: { ticker: dto.ticker, tipo, createdBy: userId },
@@ -258,15 +303,14 @@ export class OperationsService {
           data: {
             assetId: asset.id,
             ticker: dto.ticker,
-            tipo: dto.tipo as any,
+            tipoOperacao: dto.tipoOperacao as any,
             data: new Date(dto.data),
             qtd: dto.qtd,
             precoUn: dto.precoUn,
             taxas: dto.taxas ?? 0,
             total: dto.total,
-            lucroRealizado: dto.lucroRealizado,
-            notaPath,
-            notaNome,
+            tipo: dto.tipo,
+            fileId,
             observacoes: dto.observacoes ?? null,
             createdBy: userId,
           },
@@ -280,7 +324,7 @@ export class OperationsService {
 
     const tickersToSync = new Set<string>();
     for (const dto of dtoList) {
-      if (dto.tipo === OperationType.Compra || dto.tipo === OperationType.Venda) {
+      if (dto.tipoOperacao === OperationType.Compra || dto.tipoOperacao === OperationType.Venda) {
         tickersToSync.add(dto.ticker);
       }
     }
@@ -359,8 +403,13 @@ export class OperationsService {
       if (dto.observacoes !== undefined) updateData['observacoes'] = dto.observacoes;
 
       if (arquivo) {
-        updateData['notaPath'] = generateRandomString();
-        updateData['notaNome'] = arquivo.originalname;
+        updateData['fileId'] = await this.updateNotaForEntity(
+          arquivo,
+          userId,
+          existing,
+          NotaTipo.RF,
+          dto.nota,
+        );
       }
 
       const updated = await this.prisma.fixedIncomePosition.update({
@@ -401,8 +450,16 @@ export class OperationsService {
     if (dto.data) updateData['data'] = new Date(dto.data);
 
     if (arquivo) {
-      updateData['notaPath'] = generateRandomString();
-      updateData['notaNome'] = arquivo.originalname;
+      const oldOpFull = await this.prisma.operation.findFirst({
+        where: { id },
+      });
+      updateData['fileId'] = await this.updateNotaForEntity(
+        arquivo,
+        userId,
+        { fileId: oldOpFull?.fileId },
+        NotaTipo.V_RV,
+        dto.nota,
+      );
     }
 
     if (dto.observacoes !== undefined) {
@@ -429,7 +486,7 @@ export class OperationsService {
       data: updateData,
     }) as unknown as OperationResponseDto;
 
-    const tipo = dto.tipo ?? oldOp.tipo;
+    const tipo = dto.tipoOperacao ?? oldOp.tipoOperacao;
     if (tipo === OperationType.Compra || tipo === OperationType.Venda) {
       const tickersToSync = new Set<string>([oldTicker, newTicker]);
       await Promise.all(
@@ -473,7 +530,17 @@ export class OperationsService {
 
     const operation = await this.findById(id, userId);
     const ticker = operation.ticker;
-    const tipo = operation.tipo;
+    const tipo = operation.tipoOperacao;
+    const fileId = operation.fileId;
+
+    if (fileId) {
+      const nota = await this.prisma.nota.findUnique({ where: { id: fileId } });
+      if (nota) {
+        await this.minioService.deleteFile(this.minioService.extractObjectName(nota.path));
+        await this.prisma.nota.delete({ where: { id: fileId } });
+      }
+    }
+
     await this.prisma.operation.delete({ where: { id } });
 
     if (tipo === OperationType.Compra || tipo === OperationType.Venda) {

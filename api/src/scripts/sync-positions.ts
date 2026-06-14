@@ -10,7 +10,7 @@ async function bootstrap() {
 
   const tickerUsers = await prisma.operation.findMany({
     where: {
-      OR: [{ tipo: 'Compra' }, { tipo: 'Venda' }],
+      OR: [{ tipoOperacao: 'Compra' }, { tipoOperacao: 'Venda' }],
     },
     select: {
       ticker: true,

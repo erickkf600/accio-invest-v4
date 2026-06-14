@@ -33,7 +33,11 @@
         <app-reposicionamento-tab />
       }
       @case ('notas') {
-        <app-notas-tab (adicionarNota)="openNotaModal()" />
+        <app-notas-tab
+          [refreshKey]="notasRefreshKey()"
+          (adicionarNota)="openNotaModal()"
+          (removeNota)="onRemoverNota($event)"
+        />
       }
       @case ('preco-medio') {
         <app-preco-medio-tab />
@@ -54,6 +58,16 @@
 
 @if (showAdicionarNota()) {
   <app-adicionar-nota
-    (close)="closeNotaModal()"
+    (fechar)="closeNotaModal()"
+    (notaAdicionada)="onNotaAdicionada()"
   ></app-adicionar-nota>
+}
+
+@if (notaParaRemover(); as nota) {
+  <app-remover-nota
+    [nota]="nota"
+    [hasLinks]="notaHasLinks()"
+    (saving)="onDeleteNota($event)"
+    (fechar)="notaParaRemover.set(null)"
+  ></app-remover-nota>
 }

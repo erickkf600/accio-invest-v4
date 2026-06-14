@@ -1,5 +1,5 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { lastValueFrom } from 'rxjs';
 import { FormField, form, submit, required, min, disabled } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
@@ -10,7 +10,7 @@ import { AutocompleteComponent } from '../../../../components/autocomplete/autoc
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
-import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
+import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum, TipoValorEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
@@ -33,7 +33,7 @@ interface VendaAsset {
 @Component({
   selector: 'app-nova-venda',
   standalone: true,
-  imports: [DecimalPipe, FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent, AutocompleteComponent],
+  imports: [FormField, CurrencyMaskDirective, DateMaskDirective, AbbreviateNumberPipe, FileUploadComponent, AutocompleteComponent],
   providers: [DatePipe],
   templateUrl: './nova-venda.component.html',
 })
@@ -173,9 +173,18 @@ export class NovaVendaComponent {
     const total = precoUn * qtd - taxas;
 
     try {
+      const TIPO_VALOR_MAP: Record<string, string> = {
+        '1': TipoValorEnum.ACOES,
+        '2': TipoValorEnum.FII,
+        '3': TipoValorEnum.BDR,
+        '4': TipoValorEnum.ETF,
+        '5': TipoValorEnum.CRIPTO,
+      };
+
       await lastValueFrom(this.movimentacoesService.createBatchWithFile([{
         ticker: m.ticker,
-        tipo: OperationTypeEnum.Venda,
+        tipoOperacao: OperationTypeEnum.Venda,
+        tipo: m.tipo ? TIPO_VALOR_MAP[String(m.tipo)] : undefined,
         data: this.toIsoDate(m.data),
         qtd,
         precoUn,

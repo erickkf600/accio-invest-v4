@@ -58,11 +58,11 @@
                   class="w-full appearance-none bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
                 >
                   <option disabled selected [value]="null">Tipo</option>
-                  <option [value]="1">Ações</option>
-                  <option [value]="2">FII</option>
-                  <option [value]="3">BDR</option>
-                  <option [value]="4">ETF</option>
-                  <option [value]="5">Cripto</option>
+                  <option value="ACOES">Ações</option>
+                  <option value="FII">FII</option>
+                  <option value="BDR">BDR</option>
+                  <option value="ETF">ETF</option>
+                  <option value="CRIPTO">Cripto</option>
                 </select>
                 <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
               </div>
@@ -82,7 +82,7 @@
                   type="number"
                   [formField]="item.quantidade"
                   placeholder="QTD"
-                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
@@ -92,7 +92,7 @@
                   placeholder="R$ 0,00"
                   appCurrencyMask
                   [formField]="item.valorUnitario"
-                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none"
+                  class="w-full bg-[#1E222D] border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
@@ -131,7 +131,7 @@
 
       <app-file-upload
         label="Nota de Corretagem (PDF - opcional)"
-        [existingFileName]="operation()?.notaNome ?? ''"
+        [existingFileName]="''"
         (fileSelected)="onFileSelected($event)"
         (fileRemoved)="onFileRemoved()"
       />

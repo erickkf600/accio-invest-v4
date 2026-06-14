@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed, linkedSignal, effect, OnInit } from '@angular/core';
 import { DecimalPipe, UpperCasePipe } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TableComponent, TableColumn } from '../../components/Table/table.component';
 import { CellTemplateDirective } from '../../components/Table/cell-template.directive';
 import { FilterCardComponent } from '../../components/FilterCard/filter-card.component';
@@ -20,14 +21,15 @@ export interface Operation {
   data: string;
   dataIso: string;
   ativo: string;
-  tipo: OperationTypeEnum;
+  tipoOperacao: OperationTypeEnum;
+  tipo?: string;
   qtd: number | null;
   precoUn: number;
   taxas: number | null;
   total: number;
   observacoes?: string;
-  notaNome?: string;
   vencimento?: string;
+  fileId?: number;
 }
 
 export interface OperationTypeOption {
@@ -48,6 +50,8 @@ export default class Movimentacoes implements OnInit {
 
   protected movimentacoesService = inject(MovimentacoesService);
   protected toastService = inject(ToastService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   protected hasData = signal(false);
 
   protected activeModalType = signal<number | null>(null);
@@ -101,6 +105,12 @@ export default class Movimentacoes implements OnInit {
 
   ngOnInit(): void {
     this.movimentacoesService.loadOperations();
+
+    const openModal = this.route.snapshot.queryParamMap.get('openModal');
+    if (openModal) {
+      this.activeModalType.set(Number(openModal));
+      this.router.navigate([], { queryParams: { openModal: null }, queryParamsHandling: 'merge' });
+    }
   }
 
   // Filtered operations based on applied search and type
@@ -110,7 +120,7 @@ export default class Movimentacoes implements OnInit {
 
     return this.operations().filter((op) => {
       const matchesSearch = term === '' || op.ativo.toLowerCase().includes(term);
-      const matchesType = type === 'Todos' || op.tipo === type;
+      const matchesType = type === 'Todos' || op.tipoOperacao === type;
       return matchesSearch && matchesType;
     });
   });
@@ -170,7 +180,7 @@ export default class Movimentacoes implements OnInit {
       [OperationTypeEnum.Venda]: 4,
       [OperationTypeEnum.Reposicionamento]: 5,
     };
-    const modalType = tipoMap[row.tipo];
+    const modalType = tipoMap[row.tipoOperacao];
     if (modalType !== undefined) {
       this.editingOperation.set(row);
       this.activeModalType.set(modalType);

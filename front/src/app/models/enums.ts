@@ -30,12 +30,20 @@ export enum OperationTypeEnum {
   RendaFixaRendimento = 'Renda Fixa - Rendimento',
 }
 
-export const AssetTypeLabel: Record<AssetTypeEnum, string> = {
-  [AssetTypeEnum.ACOES]: 'Ações',
-  [AssetTypeEnum.FII]: 'FII',
-  [AssetTypeEnum.BDR]: 'BDR',
-  [AssetTypeEnum.ETF]: 'ETF',
-  [AssetTypeEnum.CRIPTO]: 'Cripto',
+export enum TipoValorEnum {
+  ACOES = 'ACOES',
+  FII = 'FII',
+  BDR = 'BDR',
+  ETF = 'ETF',
+  CRIPTO = 'CRIPTO',
+}
+
+export const AssetTypeLabel: Record<string, string> = {
+  '1': 'Ações',
+  '2': 'FII',
+  '3': 'BDR',
+  '4': 'ETF',
+  '5': 'Cripto',
 };
 
 export enum IndexerEnum {

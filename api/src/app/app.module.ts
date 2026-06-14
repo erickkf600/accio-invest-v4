@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,6 +14,8 @@ import { ReportsModule } from '../reports/reports.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { RepositioningModule } from '../repositioning/repositioning.module';
 import { PythonApiModule } from '../integrations/python-api/python-api.module';
+import { MinioModule } from '../integrations/minio/minio.module';
+import { FILE_CONSTANTS } from '../config/constants';
 import { AllExceptionsFilter } from '../common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../common/interceptors/response.interceptor';
 import { LoggingInterceptor } from '../common/interceptors/logging.interceptor';
@@ -20,6 +24,10 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @Module({
   imports: [
+    MulterModule.register({
+      storage: memoryStorage(),
+      limits: { fileSize: FILE_CONSTANTS.maxFileSize },
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -30,6 +38,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
     DashboardModule,
     RepositioningModule,
     PythonApiModule,
+    MinioModule,
   ],
   controllers: [AppController],
   providers: [

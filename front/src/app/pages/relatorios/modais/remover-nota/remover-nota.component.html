@@ -1,0 +1,70 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+  <div class="relative w-full max-w-md bg-[#1a1d26] border border-[#262b3a] rounded-2xl p-8 shadow-2xl z-10">
+
+    <button (click)="onClose()" class="absolute top-6 right-6 text-[#626c85] hover:text-white transition-colors cursor-pointer" aria-label="Fechar modal">
+      <span class="material-symbols-outlined text-[20px]">close</span>
+    </button>
+
+    <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-5 mx-auto">
+      <span class="material-symbols-outlined text-red-400 text-[24px]">warning</span>
+    </div>
+
+    <h2 class="text-white text-[22px] font-bold tracking-tight text-center mb-2">Remover Nota</h2>
+    <p class="text-[#8c94a8] text-sm text-center leading-relaxed mb-2">
+      Deseja realmente remover a nota
+      <span class="text-white font-semibold">{{ nota().documento }}</span>?
+    </p>
+
+    @if (hasLinks()) {
+      <div class="bg-[#222735] rounded-xl px-5 py-4 space-y-1.5 mt-5 mb-7">
+        <p class="text-xs text-[#8c94a8]">
+          <span class="font-semibold text-white">Desvincular:</span> remove o vínculo com operações e posições e apaga o arquivo do servidor. As operações permanecem no sistema.
+        </p>
+        <p class="text-xs text-[#8c94a8]">
+          <span class="font-semibold text-white">Deletar assim mesmo:</span> remove a nota, o arquivo e todas as operações e posições de renda fixa vinculadas a ela.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <button
+          (click)="onClose()"
+          class="w-full bg-[#222735] hover:bg-[#2a2f3f] text-[#8c94a8] text-sm font-bold py-3 rounded-lg transition-all cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="onUnlink()"
+          class="w-full bg-[#e68a2e]/15 hover:bg-[#e68a2e]/25 text-[#e68a2e] text-sm font-bold py-3 rounded-lg transition-all cursor-pointer"
+        >
+          Desvincular
+        </button>
+        <button
+          (click)="onCascade()"
+          class="w-full bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-bold py-3 rounded-lg transition-all cursor-pointer"
+        >
+          Deletar assim mesmo
+        </button>
+      </div>
+    } @else {
+      <div class="mt-6 mb-7 text-center">
+        <p class="text-xs text-[#8c94a8]">Esta nota não possui vínculos com operações. O arquivo será removido permanentemente.</p>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <button
+          (click)="onClose()"
+          class="w-full bg-[#222735] hover:bg-[#2a2f3f] text-[#8c94a8] text-sm font-bold py-3 rounded-lg transition-all cursor-pointer"
+        >
+          Não
+        </button>
+        <button
+          (click)="onConfirm()"
+          class="w-full bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-bold py-3 rounded-lg transition-all cursor-pointer"
+        >
+          Sim, remover
+        </button>
+      </div>
+    }
+
+  </div>
+</div>

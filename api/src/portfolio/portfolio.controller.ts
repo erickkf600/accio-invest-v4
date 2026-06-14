@@ -11,6 +11,9 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
+  ParseFilePipe,
+  FileTypeValidator,
+  MaxFileSizeValidator,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -22,6 +25,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { FILE_CONSTANTS } from '../config/constants';
 import { PortfolioService } from './portfolio.service';
 import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { CreateFixedIncomeDto } from './dto/create-fixed-income.dto';
@@ -148,7 +152,15 @@ export class PortfolioController {
   @ApiOperation({ summary: 'Criar posição de renda fixa' })
   async createFixedIncome(
     @Body() dto: CreateFixedIncomeDto,
-    @UploadedFile() arquivo: Express.Multer.File | undefined,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: FILE_CONSTANTS.maxFileSize }),
+        ],
+        fileIsRequired: false,
+      }),
+    ) arquivo: Express.Multer.File | undefined,
     @CurrentUser() user: JwtPayload,
   ): Promise<YieldResponseDto> {
     return this.portfolioService.createFixedIncome(dto, user.sub, arquivo);
@@ -180,7 +192,15 @@ export class PortfolioController {
   async updateFixedIncome(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateFixedIncomeDto,
-    @UploadedFile() arquivo: Express.Multer.File | undefined,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: FILE_CONSTANTS.maxFileSize }),
+        ],
+        fileIsRequired: false,
+      }),
+    ) arquivo: Express.Multer.File | undefined,
     @CurrentUser() user: JwtPayload,
   ): Promise<YieldResponseDto> {
     return this.portfolioService.updateFixedIncome(id, dto, user.sub, arquivo);

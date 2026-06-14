@@ -1,6 +1,8 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
-import { RelatoriosService } from '../../service/relatorios.service';
+import { RelatoriosService, toDmy } from '../../service/relatorios.service';
+import { RelatorioAluguel } from '../../../../models/relatorios.model';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
@@ -16,11 +18,28 @@ type FilterModel = { searchTerm: string; selectedType: string };
 })
 export class AlugueisTabComponent {
   private relatoriosService = inject(RelatoriosService);
+  private destroyRef = inject(DestroyRef);
 
-  alugueis = computed(() => this.relatoriosService.state$().alugueis);
+  alugueis = signal<RelatorioAluguel[]>([]);
 
   searchTerm = signal<string>('');
   selectedType = signal<string>('Todos');
+
+  constructor() {
+    this.relatoriosService.getAlugueis().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const list: RelatorioAluguel[] = (res.data.data || []).map((a) => ({
+          id: String(a.id),
+          ticker: a.ticker,
+          data: toDmy(a.data),
+          qtd: a.qtd,
+          precoUn: a.precoUn,
+          total: a.total,
+        }));
+        this.alugueis.set(list);
+      },
+    });
+  }
 
   filteredAlugueis = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();

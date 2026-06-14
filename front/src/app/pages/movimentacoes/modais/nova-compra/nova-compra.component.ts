@@ -10,7 +10,7 @@ import { AutocompleteComponent } from '../../../../components/autocomplete/autoc
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
-import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum } from '../../../../models/enums';
+import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum, TipoValorEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
@@ -23,6 +23,7 @@ interface CompraAsset {
 
 interface ConfirmacionAsset {
   ticker: string;
+  tipo: AssetTypeEnum | null;
   tipoLabel: string;
   quantidade: number | null;
   valorUnitario: number;
@@ -100,6 +101,7 @@ export class NovaCompraComponent {
   constructor() {
     effect(() => {
       const op = this.operation();
+      console.log(op)
       if (op) {
         this.model.set({
           taxasTotal: formatCurrencyBRL(op.taxas ?? 0),
@@ -107,7 +109,7 @@ export class NovaCompraComponent {
           observacoes: op.observacoes ?? '',
           anexo: { file: null, nome: '' },
           ativos: [{
-            tipo: AssetTypeEnum.ACOES,
+            tipo: op.tipo as AssetTypeEnum,
             ticker: op.ativo,
             quantidade: op.qtd ?? 1,
             valorUnitario: formatCurrencyBRL(op.precoUn),
@@ -196,7 +198,7 @@ export class NovaCompraComponent {
         const total = precoUn * qtd + taxas;
         this.movimentacoesService.updateOperation(op.id, {
           ticker: ativo.ticker.toUpperCase(),
-          tipo: OperationTypeEnum.Compra,
+          tipoOperacao: OperationTypeEnum.Compra,
           data: dataIso,
           qtd,
           precoUn,
@@ -222,7 +224,6 @@ export class NovaCompraComponent {
   calculateRatesAndSummary(): void {
     const rawForm = this.model();
     const totalTaxes = parseCurrencyBRL(rawForm.taxasTotal);
-    
     // Calculate subtotal for each asset (Qtd * Price) and note cost total
     let totalCustoNota = 0;
     const parsedAssets = rawForm.ativos.map(a => {
@@ -231,6 +232,7 @@ export class NovaCompraComponent {
       totalCustoNota += sub;
       return {
         ticker: a.ticker.toUpperCase(),
+        tipo: a.tipo,
         tipoLabel: a.tipo ? AssetTypeLabel[a.tipo] || '-' : '-',
         quantidade: a.quantidade,
         valorUnitario: preco,
@@ -250,6 +252,7 @@ export class NovaCompraComponent {
 
       return {
         ticker: pa.ticker,
+        tipo: pa.tipo,
         tipoLabel: pa.tipoLabel,
         quantidade: pa.quantidade,
         valorUnitario: pa.valorUnitario,
@@ -265,6 +268,7 @@ export class NovaCompraComponent {
       confirmationList[0].taxa = parseFloat((confirmationList[0].taxa + diff).toFixed(3));
       confirmationList[0].total = parseFloat((confirmationList[0].total + diff).toFixed(3));
     }
+   
 
     this.confirmationAtivos.set(confirmationList);
     this.operationTotalTaxes.set(totalTaxes);
@@ -281,9 +285,18 @@ export class NovaCompraComponent {
     const ativos = this.confirmationAtivos();
     const file = raw.anexo.file ?? undefined;
 
+    const TIPO_VALOR_MAP: Record<string, string> = {
+      '1': TipoValorEnum.ACOES,
+      '2': TipoValorEnum.FII,
+      '3': TipoValorEnum.BDR,
+      '4': TipoValorEnum.ETF,
+      '5': TipoValorEnum.CRIPTO,
+    };
+
     const operations = ativos.map(a => ({
       ticker: a.ticker,
-      tipo: OperationTypeEnum.Compra as const,
+      tipoOperacao: OperationTypeEnum.Compra as const,
+      tipo: a.tipo ? TIPO_VALOR_MAP[String(a.tipo)] : undefined,
       data: dataIso,
       qtd: a.quantidade,
       precoUn: a.valorUnitario,

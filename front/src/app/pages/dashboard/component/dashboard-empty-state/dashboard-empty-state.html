@@ -6,9 +6,32 @@
       Sua carteira está pronta para crescer. Realize seu primeiro aporte e veja a tecnologia transformar seus ativos em uma estratégia de riqueza sólida e automatizada.
     </p>
     <div>
-      <button class="px-8 py-3 bg-primary-success text-bg-main font-bold rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer">
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-8 py-3 bg-primary-success text-bg-main font-bold rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        (click)="emptyMenu.toggle()"
+      >
+        <span class="material-symbols-outlined">add</span>
         Fazer Primeiro Aporte
       </button>
+      <app-menu #emptyMenu>
+        <div class="flex flex-col">
+          <button
+            class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+            (click)="onOperationTypeChange('1'); emptyMenu.close()"
+          >
+            <span class="material-symbols-outlined text-[20px] text-primary">shopping_cart</span>
+            <span class="font-semibold">Nova compra</span>
+          </button>
+          <button
+            class="flex items-center gap-3 px-4 py-3 text-sm text-[#e1e2eb] hover:bg-white/5 hover:text-primary transition-all text-left w-full"
+            (click)="onOperationTypeChange('3'); emptyMenu.close()"
+          >
+            <span class="material-symbols-outlined text-[20px] text-[#f59e0b]">account_balance</span>
+            <span class="font-semibold">Renda fixa</span>
+          </button>
+        </div>
+      </app-menu>
     </div>
   </div>
   <div class="md:w-1/2 relative min-h-[260px] md:min-h-[300px] bg-bg-card-dark/50 overflow-hidden">

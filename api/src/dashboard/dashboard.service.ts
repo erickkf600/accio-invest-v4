@@ -26,15 +26,15 @@ export class DashboardService {
     });
 
     const totalCompras = operations
-      .filter((op) => op.tipo === OperationType.Compra)
+      .filter((op) => op.tipoOperacao === OperationType.Compra)
       .reduce((acc, op) => acc + op.total, 0);
 
     const totalVendas = operations
-      .filter((op) => op.tipo === OperationType.Venda)
+      .filter((op) => op.tipoOperacao === OperationType.Venda)
       .reduce((acc, op) => acc + op.total, 0);
 
     const totalProventos = operations
-      .filter((op) => op.tipo === OperationType.Proventos)
+      .filter((op) => op.tipoOperacao === OperationType.Proventos)
       .reduce((acc, op) => acc + op.total, 0);
 
     const patrimonioTotal = totalCompras - totalVendas + totalProventos;
@@ -61,12 +61,12 @@ export class DashboardService {
   }
 
   private agruparAportes(
-    operations: { data: Date; tipo: string; total: number; taxas: number | null }[],
+    operations: { data: Date; tipoOperacao: string; total: number; taxas: number | null }[],
   ): AporteInfoDto[] {
     const grouped = new Map<string, AporteInfoDto>();
 
     for (const op of operations) {
-      if (op.tipo !== OperationType.Compra) continue;
+      if (op.tipoOperacao !== OperationType.Compra) continue;
       const d = new Date(op.data);
       const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
       const existing = grouped.get(key) || {
@@ -154,8 +154,8 @@ export class DashboardService {
       orderBy: { data: 'asc' },
     });
 
-    const proventos = operations.filter((op) => op.tipo === OperationType.Proventos);
-    const compras = operations.filter((op) => op.tipo === OperationType.Compra);
+    const proventos = operations.filter((op) => op.tipoOperacao === OperationType.Proventos);
+    const compras = operations.filter((op) => op.tipoOperacao === OperationType.Compra);
 
     const fixedIncomeHistories = await this.prisma.fixedIncomeHistory.findMany({
       where: {
@@ -289,7 +289,7 @@ export class DashboardService {
 
   private async calcularAvailableYears(userId: number): Promise<number[]> {
     const operations = await this.prisma.operation.findMany({
-      where: { createdBy: userId, tipo: OperationType.Compra },
+      where: { createdBy: userId, tipoOperacao: OperationType.Compra },
       select: { data: true },
     });
 

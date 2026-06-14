@@ -21,10 +21,10 @@ export class PositionSyncService {
     let custoTotal = 0;
 
     for (const op of operations) {
-      if (op.tipo === OperationType.Compra) {
+      if (op.tipoOperacao === OperationType.Compra) {
         qtd += op.qtd ?? 0;
         custoTotal += op.total;
-      } else if (op.tipo === OperationType.Venda) {
+      } else if (op.tipoOperacao === OperationType.Venda) {
         qtd -= op.qtd ?? 0;
         custoTotal -= op.total;
       }
@@ -36,6 +36,10 @@ export class PositionSyncService {
       } catch {
         // position already deleted
       }
+      await this.prisma.asset.update({
+        where: { id: asset.id },
+        data: { quantidade: 0 },
+      });
       return;
     }
 
@@ -56,6 +60,11 @@ export class PositionSyncService {
         precoMedio,
         custoTotal,
       },
+    });
+
+    await this.prisma.asset.update({
+      where: { id: asset.id },
+      data: { quantidade: qtd },
     });
   }
 }

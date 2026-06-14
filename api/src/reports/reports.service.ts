@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
-import { OperationType } from '../generated/prisma/client';
+import { MinioService } from '../integrations/minio/minio.service';
+import { NotaTipo, OperationType } from '../generated/prisma/client';
+import { buildFileName, generateObjectKey } from '../common/utils/file-generator.utils';
 import { ReportFiltersDto } from './dto/report-filters.dto';
+import { NotaListDto } from './dto/nota-list.dto';
 import { RelatorioAporteDto } from './dto/report-aporte.dto';
 import { RelatorioVendaDto } from './dto/report-venda.dto';
 import { RelatorioAluguelDto } from './dto/report-aluguel.dto';
@@ -11,7 +14,101 @@ import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pa
 
 @Injectable()
 export class ReportsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private minioService: MinioService,
+  ) {}
+
+  async uploadFile(
+    arquivo: Express.Multer.File,
+    userId: number,
+    nota?: string,
+  ): Promise<{ fileId: number; nome: string; path: string }> {
+    const objectName = generateObjectKey(userId, arquivo.originalname, nota);
+    const url = await this.minioService.uploadFile(objectName, arquivo.buffer, arquivo.mimetype);
+    const nome = buildFileName(arquivo.originalname, nota);
+
+    const record = await this.prisma.nota.create({
+      data: {
+        nome,
+        data: new Date(),
+        tipo: NotaTipo.PATH,
+        path: url,
+        createdBy: userId,
+      },
+    });
+
+    return { fileId: record.id, nome: record.nome, path: record.path };
+  }
+
+  async removeNota(id: number, userId: number, mode: 'unlink' | 'cascade'): Promise<void> {
+    const nota = await this.prisma.nota.findFirst({
+      where: { id, createdBy: userId },
+    });
+
+    if (!nota) {
+      throw new NotFoundException('Nota não encontrada');
+    }
+
+    const objectName = this.minioService.extractObjectName(nota.path);
+
+    if (mode === 'cascade') {
+      await this.prisma.operation.deleteMany({ where: { fileId: id } });
+      const fipIds = await this.prisma.fixedIncomePosition.findMany({
+        where: { fileId: id },
+        select: { id: true },
+      });
+      if (fipIds.length > 0) {
+        await this.prisma.fixedIncomeYield.deleteMany({
+          where: { fixedIncomeId: { in: fipIds.map(f => f.id) } },
+        });
+      }
+      await this.prisma.fixedIncomePosition.deleteMany({ where: { fileId: id } });
+    } else {
+      await this.prisma.operation.updateMany({ where: { fileId: id }, data: { fileId: null } });
+      await this.prisma.fixedIncomePosition.updateMany({ where: { fileId: id }, data: { fileId: null } });
+    }
+
+    await this.prisma.nota.delete({ where: { id } });
+    await this.minioService.deleteFile(objectName);
+  }
+
+  async getNotaLinks(id: number, userId: number): Promise<{ hasLinks: boolean }> {
+    const nota = await this.prisma.nota.findFirst({
+      where: { id, createdBy: userId },
+    });
+
+    if (!nota) {
+      throw new NotFoundException('Nota não encontrada');
+    }
+
+    const [operationCount, fixedIncomeCount] = await Promise.all([
+      this.prisma.operation.count({ where: { fileId: id } }),
+      this.prisma.fixedIncomePosition.count({ where: { fileId: id } }),
+    ]);
+
+    return { hasLinks: operationCount + fixedIncomeCount > 0 };
+  }
+
+  async getNotas(userId: number): Promise<{ data: NotaListDto[] }> {
+    const notas = await this.prisma.nota.findMany({
+      where: { createdBy: userId },
+      orderBy: { data: 'desc' },
+    });
+
+    const baseUrl = (process.env['MINIO_BASE_URL'] || 'http://localhost:9000').replace(/\/$/, '');
+
+    return {
+      data: notas.map((n) => ({
+        id: n.id,
+        nome: n.nome,
+        data: n.data,
+        tipo: n.tipo,
+        path: `${baseUrl}${n.path}`,
+        createdAt: n.createdAt,
+      })),
+    };
+  }
 
   async getAportes(
     userId: number,
@@ -25,7 +122,7 @@ export class ReportsService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: OperationType.Proventos,
+      tipoOperacao: OperationType.Proventos,
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {
@@ -74,7 +171,7 @@ export class ReportsService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: OperationType.Venda,
+      tipoOperacao: OperationType.Venda,
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {
@@ -96,7 +193,7 @@ export class ReportsService {
       precoUn: op.precoUn,
       total: op.total,
       taxas: op.taxas ?? undefined,
-      resultado: op.lucroRealizado ?? undefined,
+      tipo: op.tipo ?? undefined,
     }));
 
     return { data: vendas, meta: calculatePaginationMeta(total, page, limit) };
@@ -114,7 +211,7 @@ export class ReportsService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: 'Proventos',
+      tipoOperacao: 'Proventos',
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {
@@ -152,7 +249,7 @@ export class ReportsService {
 
     const where: Record<string, unknown> = {
       createdBy: userId,
-      tipo: 'Proventos',
+      tipoOperacao: 'Proventos',
     };
     if (ticker) where['ticker'] = { contains: ticker };
     if (dataInicio || dataFim) {
@@ -170,7 +267,7 @@ export class ReportsService {
       id: op.id,
       ticker: op.ticker,
       data: op.data,
-      tipo: op.tipo,
+      tipo: op.tipoOperacao,
       qtd: op.qtd || 0,
       valorUn: op.precoUn,
       total: op.total,

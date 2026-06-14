@@ -13,6 +13,9 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  ParseFilePipe,
+  FileTypeValidator,
+  MaxFileSizeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +25,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { FILE_CONSTANTS } from '../config/constants';
 import { OperationsService } from './operations.service';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { UpdateOperationDto } from './dto/update-operation.dto';
@@ -77,7 +81,15 @@ export class OperationsController {
   @ApiOperation({ summary: 'Criar operação (suporta upload PDF)' })
   async create(
     @Body() dto: CreateOperationDto,
-    @UploadedFile() arquivo: Express.Multer.File | undefined,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: FILE_CONSTANTS.maxFileSize }),
+        ],
+        fileIsRequired: false,
+      }),
+    ) arquivo: Express.Multer.File | undefined,
     @CurrentUser() user: JwtPayload,
   ): Promise<OperationResponseDto> {
     return this.operationsService.create(dto, user.sub, arquivo);
@@ -107,7 +119,15 @@ export class OperationsController {
   @ApiOperation({ summary: 'Criar múltiplas operações em lote' })
   async createBatch(
     @Body('operations', new ParseJsonPipe()) operations: CreateOperationDto[],
-    @UploadedFile() arquivo: Express.Multer.File | undefined,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: FILE_CONSTANTS.maxFileSize }),
+        ],
+        fileIsRequired: false,
+      }),
+    ) arquivo: Express.Multer.File | undefined,
     @CurrentUser() user: JwtPayload,
   ): Promise<OperationResponseDto[]> {
     return this.operationsService.createBatch(operations, user.sub, arquivo);
@@ -126,27 +146,36 @@ export class OperationsController {
   @UseInterceptors(FileInterceptor('arquivo'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        ticker: { type: 'string' },
-        tipo: { type: 'string', enum: ['Compra', 'Venda', 'Proventos'] },
-        data: { type: 'string' },
-        qtd: { type: 'integer' },
-        precoUn: { type: 'number' },
-        taxas: { type: 'number' },
-        total: { type: 'number' },
-        nota: { type: 'string', description: 'Nome opcional para nota fiscal' },
-        observacoes: { type: 'string', description: 'Observações (até 150 caracteres)' },
-        arquivo: { type: 'string', format: 'binary' },
-      },
-    },
+      schema: {
+          type: 'object',
+          properties: {
+            ticker: { type: 'string' },
+            tipoOperacao: { type: 'string', enum: ['Compra', 'Venda', 'Proventos'] },
+            tipo: { type: 'string', enum: ['ACOES', 'FII', 'BDR', 'ETF', 'CRIPTO'] },
+            data: { type: 'string' },
+            qtd: { type: 'integer' },
+            precoUn: { type: 'number' },
+            taxas: { type: 'number' },
+            total: { type: 'number' },
+            nota: { type: 'string', description: 'Nome opcional para nota fiscal' },
+            observacoes: { type: 'string', description: 'Observações (até 150 caracteres)' },
+            arquivo: { type: 'string', format: 'binary' },
+          },
+        },
   })
   @ApiOperation({ summary: 'Atualizar operação (suporta upload PDF)' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOperationDto,
-    @UploadedFile() arquivo: Express.Multer.File | undefined,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: FILE_CONSTANTS.maxFileSize }),
+        ],
+        fileIsRequired: false,
+      }),
+    ) arquivo: Express.Multer.File | undefined,
     @CurrentUser() user: JwtPayload,
   ): Promise<OperationResponseDto> {
     return this.operationsService.update(id, dto, user.sub, arquivo);

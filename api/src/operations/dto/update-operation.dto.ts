@@ -10,7 +10,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OperationType } from '../../generated/prisma/client';
+import { OperationType, TipoValor } from '../../generated/prisma/client';
 
 export class UpdateOperationDto {
   @ApiPropertyOptional({ example: 'PETR4' })
@@ -22,7 +22,7 @@ export class UpdateOperationDto {
   @ApiPropertyOptional({ enum: OperationType })
   @IsOptional()
   @IsEnum(OperationType)
-  tipo?: OperationType;
+  tipoOperacao?: OperationType;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -57,11 +57,10 @@ export class UpdateOperationDto {
   @Min(0.01)
   total?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: TipoValor })
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  lucroRealizado?: number;
+  @IsEnum(TipoValor)
+  tipo?: TipoValor;
 
   @ApiPropertyOptional({ description: 'Observação opcional' })
   @IsOptional()

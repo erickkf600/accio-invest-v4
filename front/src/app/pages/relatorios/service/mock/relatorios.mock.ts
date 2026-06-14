@@ -122,9 +122,9 @@ export const MOCK_REPOSICIONAMENTOS: RelatorioReposicionamento[] = [
 ];
 
 export const MOCK_NOTAS: RelatorioNotaCorretagem[] = [
-  { id: 'no1', nomeArquivo: 'XP_Nota_Janeiro_2024', documento: 'Nota_Corretagem_12052024.pdf', data: '12/05/2024', tipo: 'Compra - Renda variável', tamanho: '142 KB' },
-  { id: 'no2', nomeArquivo: 'XP_Nota_Fevereiro_2024', documento: 'Nota_Corretagem_18042024.pdf', data: '18/04/2024', tipo: 'Compra - Renda variável', tamanho: '138 KB' },
-  { id: 'no3', nomeArquivo: 'XP_Venda_Marco_2024', documento: 'Nota_Corretagem_10022024.pdf', data: '10/02/2024', tipo: 'Venda - Renda variável', tamanho: '145 KB' }
+  { id: 'no1', nomeArquivo: 'XP_Nota_Janeiro_2024', documento: 'Nota_Corretagem_12052024.pdf', data: '12/05/2024', tipo: 'Compra - Renda variável', tamanho: '142 KB', path: '' },
+  { id: 'no2', nomeArquivo: 'XP_Nota_Fevereiro_2024', documento: 'Nota_Corretagem_18042024.pdf', data: '18/04/2024', tipo: 'Compra - Renda variável', tamanho: '138 KB', path: '' },
+  { id: 'no3', nomeArquivo: 'XP_Venda_Marco_2024', documento: 'Nota_Corretagem_10022024.pdf', data: '10/02/2024', tipo: 'Venda - Renda variável', tamanho: '145 KB', path: '' }
 ];
 
 export const MOCK_PRECO_MEDIO: RelatorioPrecoMedio[] = [

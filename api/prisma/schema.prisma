@@ -7,6 +7,13 @@ datasource db {
   provider = "mysql"
 }
 
+enum NotaTipo {
+  C_RF
+  V_RV
+  RF
+  PATH
+}
+
 enum AssetType {
   ACOES
   FII
@@ -19,6 +26,14 @@ enum OperationType {
   Compra
   Venda
   Proventos
+}
+
+enum TipoValor {
+  ACOES
+  FII
+  BDR
+  ETF
+  CRIPTO
 }
 
 model User {
@@ -37,6 +52,7 @@ model User {
   refreshTokens       RefreshToken[]
   fixedIncomeHistories FixedIncomeHistory[]
   fixedIncomeYields    FixedIncomeYield[]
+  notas                Nota[]
 
   @@map("users")
 }
@@ -80,15 +96,14 @@ model Operation {
   id             Int           @id @default(autoincrement())
   assetId        Int           @map("asset_id")
   ticker         String        @db.VarChar(20)
-  tipo           OperationType
+  tipoOperacao   OperationType @map("tipo_operacao")
   data           DateTime
   qtd            Int?
   precoUn        Float         @map("preco_unitario")
   taxas          Float?        @default(0)
   total          Float
-  lucroRealizado Float?        @map("lucro_realizado")
-  notaPath       String?       @db.VarChar(500) @map("nota_path")
-  notaNome       String?       @db.VarChar(255) @map("nota_nome")
+  tipo           TipoValor?    @map("tipo")
+  fileId        Int?           @map("file_id")
   observacoes    String?       @db.VarChar(150)
   createdBy      Int?          @map("created_by")
   createdAt      DateTime      @default(now()) @map("created_at")
@@ -96,11 +111,13 @@ model Operation {
 
   asset Asset @relation(fields: [assetId], references: [id])
   user  User?  @relation(fields: [createdBy], references: [id])
+  nota  Nota?  @relation(fields: [fileId], references: [id])
 
   @@index([assetId])
   @@index([ticker])
   @@index([createdBy])
   @@index([data])
+  @@index([fileId])
   @@map("operations")
 }
 
@@ -133,20 +150,21 @@ model FixedIncomePosition {
   valorAplicado  Float    @map("valor_aplicado")
   dataCompra     DateTime @map("data_compra")
   vencimento     DateTime?
-  notaPath       String?  @db.VarChar(500) @map("nota_path")
-  notaNome       String?  @db.VarChar(255) @map("nota_nome")
-  observacoes    String?  @db.VarChar(150)
-  assetId        Int?     @map("asset_id")
-  createdBy      Int?     @map("created_by")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  fileId        Int?      @map("file_id")
+  observacoes    String?   @db.VarChar(150)
+  assetId        Int?      @map("asset_id")
+  createdBy      Int?      @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   fixedIncomeYields FixedIncomeYield[]
-  asset             Asset?                   @relation(fields: [assetId], references: [id])
-  user              User?                    @relation(fields: [createdBy], references: [id])
+  asset             Asset?              @relation(fields: [assetId], references: [id])
+  user              User?               @relation(fields: [createdBy], references: [id])
+  nota              Nota?               @relation(fields: [fileId], references: [id])
 
   @@index([assetId])
   @@index([createdBy])
+  @@index([fileId])
   @@map("fixed_income_positions")
 }
 
@@ -202,4 +220,22 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model Nota {
+  id        Int      @id @default(autoincrement())
+  nome      String   @db.VarChar(255)
+  data      DateTime
+  tipo      NotaTipo
+  path      String   @db.VarChar(1000)
+  createdBy Int?     @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  operations          Operation[]
+  fixedIncomePos      FixedIncomePosition[]
+
+  user User? @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@map("notas")
 }

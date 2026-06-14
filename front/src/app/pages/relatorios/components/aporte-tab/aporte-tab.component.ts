@@ -1,13 +1,15 @@
-import { Component, inject, signal, computed, output } from '@angular/core';
+import { Component, inject, signal, computed, output, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { RelatoriosService } from '../../service/relatorios.service';
+import { RelatoriosService, MESES_FULL, toDmy } from '../../service/relatorios.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { FiltroRelatorioComponent } from '../filtroRelatorio/filtro-relatorio.component';
 import { RelatorioAporte } from '../../../../models/relatorios.model';
+import { CHART_DATA_APORTES } from '../../service/mock/relatorios.mock';
 
 @Component({
   selector: 'app-aporte-tab',
@@ -17,6 +19,10 @@ import { RelatorioAporte } from '../../../../models/relatorios.model';
 })
 export class AporteTabComponent {
   private relatoriosService = inject(RelatoriosService);
+  private destroyRef = inject(DestroyRef);
+
+  aportes = signal<RelatorioAporte[]>([]);
+  chartDataCollection = signal<Record<string, number[]>>(CHART_DATA_APORTES);
 
   selectedYear = signal<string>(new Date().getFullYear().toString());
   selectedMonthIndex = signal<number | null>(null);
@@ -26,14 +32,36 @@ export class AporteTabComponent {
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  aportes = computed(() => this.relatoriosService.state$().aportes);
-  chartDataCollection = computed(() => this.relatoriosService.state$().chartData);
-
   availableYears = computed(() => Object.keys(this.chartDataCollection()).sort());
 
   readonly viewDetails = output<RelatorioAporte>();
 
   searchTerm = signal<string>('');
+
+  constructor() {
+    this.relatoriosService.getAportes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        const list: RelatorioAporte[] = (res.data.data || []).map((a) => ({
+          id: String(a.id),
+          data: toDmy(a.data),
+          mes: MESES_FULL[a.mes] || String(a.mes),
+          ano: a.ano,
+          valor: a.valor,
+          taxas: a.taxas ?? 0,
+          detalhes: a.ativos.map((av) => `${av.qtd}x ${av.ticker}`).join(', '),
+          ativos: a.ativos.map((av) => ({
+            ticker: av.ticker,
+            tipo: '',
+            quantidade: av.qtd,
+            valorUnitario: av.precoUn,
+            total: av.total,
+            taxa: 0,
+          })),
+        }));
+        this.aportes.set(list);
+      },
+    });
+  }
 
   onFilterApplied(term: string): void {
     this.searchTerm.set(term);

@@ -13,13 +13,19 @@ import { RelatoriosService } from '../../service/relatorios.service';
 export class AdicionarNotaComponent {
   private relatoriosService = inject(RelatoriosService);
 
-  close = output<void>();
+  fechar = output<void>();
+  notaAdicionada = output<void>();
+
+  saving = signal(false);
+
+  arquivo = signal<File | null>(null);
 
   model = signal({
     nomeArquivo: '',
     documento: '',
     data: '',
     tipo: '',
+    path: '',
   });
 
   notaForm = form(this.model, (s) => {
@@ -31,6 +37,7 @@ export class AdicionarNotaComponent {
 
   onFileDropped(files: FileList): void {
     if (files.length > 0) {
+      this.arquivo.set(files[0]);
       this.model.update((m) => ({
         ...m,
         documento: files[0].name,
@@ -40,10 +47,12 @@ export class AdicionarNotaComponent {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
+    const file = input.files?.[0];
+    if (file) {
+      this.arquivo.set(file);
       this.model.update((m) => ({
         ...m,
-        documento: input.files![0].name,
+        documento: file.name,
       }));
     }
   }
@@ -51,18 +60,23 @@ export class AdicionarNotaComponent {
   onSubmit(): void {
     submit(this.notaForm, async () => {
       const data = this.model();
-      this.relatoriosService.adicionarNota({
-        nomeArquivo: data.nomeArquivo,
-        documento: data.documento,
-        data: data.data,
-        tipo: data.tipo as any,
-        tamanho: '150 KB',
+      const file = this.arquivo();
+      if (!file) return;
+
+      this.saving.set(true);
+      this.relatoriosService.uploadNota(file, data.nomeArquivo).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.notaAdicionada.emit();
+        },
+        error: () => {
+          this.saving.set(false);
+        },
       });
-      this.close.emit();
     });
   }
 
   onClose(): void {
-    this.close.emit();
+    this.fechar.emit();
   }
 }

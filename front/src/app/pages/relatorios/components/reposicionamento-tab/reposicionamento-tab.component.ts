@@ -1,9 +1,10 @@
-import { Component, inject, signal, computed } from '@angular/core';
-import { RelatoriosService } from '../../service/relatorios.service';
+import { Component, signal, computed } from '@angular/core';
+import { RelatorioReposicionamento } from '../../../../models/relatorios.model';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { FiltroRelatorioComponent } from '../filtroRelatorio/filtro-relatorio.component';
+import { MOCK_REPOSICIONAMENTOS } from '../../service/mock/relatorios.mock';
 
 @Component({
   selector: 'app-reposicionamento-tab',
@@ -12,9 +13,7 @@ import { FiltroRelatorioComponent } from '../filtroRelatorio/filtro-relatorio.co
   templateUrl: './reposicionamento-tab.component.html',
 })
 export class ReposicionamentoTabComponent {
-  private relatoriosService = inject(RelatoriosService);
-
-  reposicionamentos = computed(() => this.relatoriosService.state$().reposicionamentos);
+  reposicionamentos = signal<RelatorioReposicionamento[]>(MOCK_REPOSICIONAMENTOS);
 
   searchTerm = signal<string>('');
 

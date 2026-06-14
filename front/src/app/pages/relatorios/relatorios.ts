@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { TabsComponent, TabOption } from '../../components/tabs/tabs.component';
 import { AporteTabComponent } from './components/aporte-tab/aporte-tab.component';
 import { AlugueisTabComponent } from './components/alugueis-tab/alugueis-tab.component';
@@ -9,7 +9,9 @@ import { PrecoMedioTabComponent } from './components/preco-medio-tab/preco-medio
 import { RendaFixaTabComponent } from './components/renda-fixa-tab/renda-fixa-tab.component';
 import { DetalhesAporteComponent } from './modais/detalhes-aporte/detalhes-aporte.component';
 import { AdicionarNotaComponent } from './modais/adicionar-nota/adicionar-nota.component';
-import { RelatorioAporte } from '../../models/relatorios.model';
+import { RemoverNotaComponent } from './modais/remover-nota/remover-nota.component';
+import { RelatoriosService } from './service/relatorios.service';
+import { RelatorioAporte, RelatorioNotaCorretagem } from '../../models/relatorios.model';
 
 @Component({
   selector: 'app-relatorios',
@@ -25,11 +27,14 @@ import { RelatorioAporte } from '../../models/relatorios.model';
     RendaFixaTabComponent,
     DetalhesAporteComponent,
     AdicionarNotaComponent,
+    RemoverNotaComponent,
   ],
   templateUrl: './relatorios.html',
   styleUrl: './relatorios.scss',
 })
 export default class Relatorios {
+  private relatoriosService = inject(RelatoriosService);
+
   protected readonly title = 'Relatórios';
 
   tabOptions = signal<TabOption[]>([
@@ -43,9 +48,13 @@ export default class Relatorios {
   ]);
 
   activeTabId = signal<string>('aportes');
+  notasRefreshKey = signal(0);
 
   selectedAporte = signal<RelatorioAporte | null>(null);
   showAdicionarNota = signal<boolean>(false);
+  notaParaRemover = signal<RelatorioNotaCorretagem | null>(null);
+  notaHasLinks = signal(false);
+  removing = signal(false);
 
   onTabChange(tabId: string): void {
     this.activeTabId.set(tabId);
@@ -61,5 +70,39 @@ export default class Relatorios {
 
   closeNotaModal(): void {
     this.showAdicionarNota.set(false);
+  }
+
+  onNotaRemovida(): void {
+    this.notaParaRemover.set(null);
+    this.notasRefreshKey.update(v => v + 1);
+  }
+
+  onNotaAdicionada(): void {
+    this.showAdicionarNota.set(false);
+    this.notasRefreshKey.update(v => v + 1);
+  }
+
+  onRemoverNota(nota: RelatorioNotaCorretagem): void {
+    this.relatoriosService.checkNotaLinks(Number(nota.id)).subscribe({
+      next: (res) => {
+        this.notaHasLinks.set(res.data.hasLinks);
+        this.notaParaRemover.set(nota);
+      },
+    });
+  }
+
+  onDeleteNota(mode: 'unlink' | 'cascade'): void {
+    const nota = this.notaParaRemover();
+    if (!nota || this.removing()) return;
+    this.removing.set(true);
+    this.relatoriosService.deleteNota(Number(nota.id), mode).subscribe({
+      next: () => {
+        this.removing.set(false);
+        this.onNotaRemovida();
+      },
+      error: () => {
+        this.removing.set(false);
+      },
+    });
   }
 }
