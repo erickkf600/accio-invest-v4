@@ -11,11 +11,14 @@ import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pa
 export class AssetsService {
   constructor(private prisma: PrismaService) {}
 
-  async list(dto: ListAssetsDto): Promise<PaginatedResult<AssetResponseDto>> {
+  async list(dto: ListAssetsDto, userId: number): Promise<PaginatedResult<AssetResponseDto>> {
     const { page = 1, limit = 20, tipo, search } = dto;
     const { skip, take } = getPaginationParams(page, limit);
 
     const where: Record<string, unknown> = {};
+    if (userId) {
+      where['createdBy'] = userId;
+    }
     if (tipo) where['tipo'] = tipo;
     if (search) {
       where['OR'] = [

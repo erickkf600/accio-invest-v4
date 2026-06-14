@@ -31,8 +31,9 @@ export class AssetsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar ativos (paginado)' })
-  async list(@Query() dto: ListAssetsDto): Promise<PaginatedResult<AssetResponseDto>> {
-    return this.assetsService.list(dto);
+  async list(@Query() dto: ListAssetsDto, @CurrentUser() user: JwtPayload,
+): Promise<PaginatedResult<AssetResponseDto>> {
+    return this.assetsService.list(dto, user.sub);
   }
 
   @Post()
