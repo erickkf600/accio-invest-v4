@@ -10,14 +10,14 @@ import { AutocompleteComponent } from '../../../../components/autocomplete/autoc
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
-import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum, TipoValorEnum } from '../../../../models/enums';
+import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
 interface VendaAsset {
   tipo: AssetTypeEnum | null;
   ticker: string;
-  quantidade: number;
+  quantidade: number | null;
   precoUnitario: string;
   taxas: string;
   data: string;
@@ -58,7 +58,7 @@ export class NovaVendaComponent {
   model = signal<VendaAsset>({
     tipo: null,
     ticker: '',
-    quantidade: 1,
+    quantidade: null,
     precoUnitario: '',
     taxas: '',
     data: '',
@@ -107,7 +107,7 @@ export class NovaVendaComponent {
         this.model.set({
           tipo: null,
           ticker: op.ativo,
-          quantidade: op.qtd ?? 1,
+          quantidade: op.qtd,
           precoUnitario: formatCurrencyBRL(op.precoUn),
           taxas: op.taxas !== null ? formatCurrencyBRL(op.taxas) : '',
           data: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
@@ -131,7 +131,7 @@ export class NovaVendaComponent {
   totalValor = computed(() => {
     const m = this.model();
     const preco = parseCurrencyBRL(m.precoUnitario);
-    const qtd = m.quantidade;
+    const qtd = m.quantidade ?? 0;
     const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
     return preco * qtd - taxas;
   });
@@ -169,22 +169,14 @@ export class NovaVendaComponent {
     const m = this.model();
     const precoUn = parseCurrencyBRL(m.precoUnitario);
     const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
-    const qtd = m.quantidade;
+    const qtd = m.quantidade ?? 0;
     const total = precoUn * qtd - taxas;
 
     try {
-      const TIPO_VALOR_MAP: Record<string, string> = {
-        '1': TipoValorEnum.ACOES,
-        '2': TipoValorEnum.FII,
-        '3': TipoValorEnum.BDR,
-        '4': TipoValorEnum.ETF,
-        '5': TipoValorEnum.CRIPTO,
-      };
-
       await lastValueFrom(this.movimentacoesService.createBatchWithFile([{
         ticker: m.ticker,
         tipoOperacao: OperationTypeEnum.Venda,
-        tipo: m.tipo ? TIPO_VALOR_MAP[String(m.tipo)] : undefined,
+        tipo: m.tipo ?? undefined,
         data: this.toIsoDate(m.data),
         qtd,
         precoUn,

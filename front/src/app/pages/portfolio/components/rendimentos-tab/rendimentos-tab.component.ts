@@ -1,14 +1,26 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { PortfolioService } from '../../service/portfolio.service';
+import { Subscription } from 'rxjs';
+import { PortfolioService, type YieldDto } from '../../service/portfolio.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { TooltipDirective } from '../../../../components/Tooltip/tooltip.directive';
+import { CHART_DATA_PORTFOLIO } from '../../service/mock/portfolio.mock';
+import type { PortfolioYield } from '../../../../models/portfolio.model';
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MESES: Record<number, string> = {
+  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
+};
 const abbreviatePipe = new AbbreviateNumberPipe();
+
+function formatShortDate(d: string): string {
+  const date = new Date(d);
+  return `${date.getDate()} ${MESES[date.getMonth() + 1] || ''}, ${date.getFullYear()}`;
+}
 
 @Component({
   selector: 'app-rendimentos-tab',
@@ -16,11 +28,41 @@ const abbreviatePipe = new AbbreviateNumberPipe();
   imports: [NgApexchartsModule, TableComponent, CellTemplateDirective, PdfButtonComponent, TooltipDirective],
   templateUrl: './rendimentos-tab.component.html',
 })
-export class RendimentosTabComponent {
+export class RendimentosTabComponent implements OnInit, OnDestroy {
   private portfolioService = inject(PortfolioService);
 
-  yields = computed(() => this.portfolioService.state$().yields);
-  chartDataCollection = computed(() => this.portfolioService.state$().chartData);
+  yields = signal<PortfolioYield[]>([]);
+  chartDataCollection = signal(CHART_DATA_PORTFOLIO);
+
+  private loadSub: Subscription | null = null;
+
+  ngOnInit(): void {
+    this.loadSub = this.portfolioService.loadYields().subscribe({
+      next: (res) => {
+        this.yields.set(
+          res.data.data.map((y: YieldDto) => ({
+            id: String(y.id),
+            data: formatShortDate(y.dataCompra),
+            emissor: y.emissor,
+            tipo: y.tipo,
+            valorUn: y.valorAplicado,
+            total: y.valorAplicado,
+            tipoInvestimento: 'Renda Fixa',
+            tipoTitulo: y.liquidezDiaria ? 'LCA/LCI' : 'CDB',
+            dataCompra: formatShortDate(y.dataCompra),
+            dataVencimento: y.vencimento ? formatShortDate(y.vencimento) : '-',
+            indexador: y.indexador,
+            grossUp: `${y.taxaJuros}%`,
+            txJuros: `${y.taxaJuros}%`,
+          })),
+        );
+      },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.loadSub?.unsubscribe();
+  }
 
   selectedYear = signal<string>(new Date().getFullYear().toString());
 

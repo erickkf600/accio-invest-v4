@@ -1,26 +1,57 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { PortfolioService } from '../../service/portfolio.service';
+import { Subscription } from 'rxjs';
+import { PortfolioService, type PositionDto } from '../../service/portfolio.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { AssetTypeEnum } from '../../../../models/enums';
+import type { PortfolioProduct } from '../../../../models/portfolio.model';
+
+function mapPosition(p: PositionDto): PortfolioProduct {
+  return {
+    ticker: p.ticker,
+    tipo: p.tipo,
+    qtd: p.qtd,
+    precoMedio: p.precoMedio,
+    custoTotal: p.custoTotal,
+    precoAtual: p.precoAtual,
+    valorAtual: p.valorAtual,
+    lucroPrejuizo: p.lucroPrejuizo,
+    lucroPrejuizoPct: p.lucroPrejuizoPct,
+    participacao: p.participacao,
+    rent30d: 0,
+    rent12m: 0,
+  };
+}
 
 @Component({
   selector: 'app-meus-produtos',
   standalone: true,
-  imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule,],
+  imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule],
   templateUrl: './meus-produtos.component.html',
 })
-export class MeusProdutosComponent {
+export class MeusProdutosComponent implements OnInit, OnDestroy {
   protected readonly AssetTypeEnum = AssetTypeEnum;
   private _abbreviate = new AbbreviateNumberPipe();
   private portfolioService = inject(PortfolioService);
 
-  products = computed(() => this.portfolioService.state$().products);
+  products = signal<PortfolioProduct[]>([]);
   currentPage = signal(1);
+
+  private loadSub: Subscription | null = null;
+
+  ngOnInit(): void {
+    this.loadSub = this.portfolioService.loadPositions().subscribe({
+      next: (res) => this.products.set(res.data.data.map(mapPosition)),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.loadSub?.unsubscribe();
+  }
 
   totalCost = computed(() =>
     this.products().reduce((acc, p) => acc + p.custoTotal, 0)
@@ -84,7 +115,6 @@ export class MeusProdutosComponent {
     }));
   });
 
-  // Class-level summary for the "Meus ativos por classe" table
   classSummary = computed(() => {
     const products = this.products();
     const map = new Map<string, {
@@ -118,7 +148,6 @@ export class MeusProdutosComponent {
     }));
   });
 
-  // Allocation donut chart options
   allocationChartOptions = computed(() => {
     const alloc = this.allocationByType();
     const total = alloc.reduce((acc, a) => acc + a.valor, 0) || 1;

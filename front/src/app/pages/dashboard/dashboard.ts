@@ -2,8 +2,44 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { Router } from '@angular/router';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { DashboardService, DistribuicaoItem, RendimentoMensal } from './service/dashboard.service';
+import {
+  DashboardService,
+  type DistribuicaoItemDto,
+  type RendimentoMensalDto,
+} from './service/dashboard.service';
 import DashboardEmptyState from './component/dashboard-empty-state/dashboard-empty-state';
+
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+const MESES_ABREV = [
+  'JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN',
+  'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ',
+];
+
+function fmtCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+}
+
+interface AporteView {
+  mes: string;
+  taxas: string;
+  total: string;
+}
+
+interface PagamentoView {
+  dataDia: string;
+  dataMes: string;
+  ticker: string;
+  tipo: string;
+  valor: string;
+  pago: boolean;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -24,12 +60,12 @@ export default class Dashboard implements OnInit {
 
   public chartOptions = signal<any>(null);
 
-  public aportes = signal<{ mes: string; taxas: string; total: string }[]>([]);
+  public aportes = signal<AporteView[]>([]);
 
-  public pagamentos = signal<{ dataDia: string; dataMes: string; ticker: string; tipo: string; valor: string; pago: boolean }[]>([]);
+  public pagamentos = signal<PagamentoView[]>([]);
 
-  protected distribuicao = signal<DistribuicaoItem[]>([]);
-  protected rendimentos = signal<RendimentoMensal[]>([]);
+  protected distribuicao = signal<DistribuicaoItemDto[]>([]);
+  protected rendimentos = signal<RendimentoMensalDto[]>([]);
   protected availableYears = signal<number[]>([]);
 
   public currentYear = new Date().getFullYear();
@@ -47,9 +83,9 @@ export default class Dashboard implements OnInit {
     const target = event.target as HTMLSelectElement;
     this.selectedYear.set(Number(target.value));
     this.dashboardService.getDashboardData(this.selectedYear()).subscribe({
-      next: (data) => {
-        this.rendimentos.set(data.rendimentos);
-        if (data.rendimentos.length > 0) {
+      next: (res) => {
+        this.rendimentos.set(res.data.rendimentos);
+        if (res.data.rendimentos.length > 0) {
           this.initChart();
         }
       },
@@ -58,22 +94,45 @@ export default class Dashboard implements OnInit {
 
   ngOnInit(): void {
     this.dashboardService.getDashboardData().subscribe({
-      next: (data) => {
-        this.patrimonioTotal.set(data.patrimonioTotal);
-        this.totalProventos.set(data.totalProventos);
-        this.totalInvestido.set(data.totalInvestido);
-        this.aportes.set(data.aportes);
-        this.distribuicao.set(data.distribuicao);
-        this.rendimentos.set(data.rendimentos);
-        this.availableYears.set(data.availableYears);
-        if (data.rendimentos.length > 0) {
+      next: (res) => {
+        const dto = res.data;
+        this.patrimonioTotal.set(fmtCurrency(dto.patrimonioTotal));
+        this.totalProventos.set(fmtCurrency(dto.totalProventos));
+        this.totalInvestido.set(dto.totalInvestido);
+        this.aportes.set(
+          dto.aportes.map((a) => ({
+            mes: MESES[a.mes - 1] || String(a.mes),
+            taxas: fmtCurrency(a.taxa),
+            total: fmtCurrency(a.valor),
+          })),
+        );
+        this.distribuicao.set(dto.distribuicao);
+        this.rendimentos.set(dto.rendimentos);
+        this.availableYears.set(dto.availableYears);
+        if (dto.rendimentos.length > 0) {
           this.initChart();
         }
       },
     });
 
     this.dashboardService.getProximosPagamentos().subscribe({
-      next: (data) => this.pagamentos.set(data),
+      next: (res) => {
+        const hoje = new Date();
+        this.pagamentos.set(
+          res.data.map((item) => {
+            const [dia, mes, ano] = item.dataPagamento.split('/');
+            const dataPagamento = new Date(+ano, +mes - 1, +dia);
+            return {
+              ticker: item.ticker,
+              tipo: item.tipo,
+              valor: fmtCurrency(item.valor),
+              dataDia: dia,
+              dataMes: MESES_ABREV[parseInt(mes) - 1],
+              pago: dataPagamento <= hoje,
+            };
+          }),
+        );
+      },
     });
   }
 
@@ -157,10 +216,6 @@ export default class Dashboard implements OnInit {
       tooltip: {
         theme: 'dark',
         custom: ({ series, seriesIndex, dataPointIndex, w }: any) => {
-          const months = [
-            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-          ];
           const cdiVal = series[0][dataPointIndex];
           const carteiraVal = series[1][dataPointIndex];
           const precoMedioVal = series[2][dataPointIndex];
@@ -168,7 +223,7 @@ export default class Dashboard implements OnInit {
             v !== null ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '--';
           return `
             <div class="bg-[#121620] border border-white/10 rounded-lg p-3 shadow-2xl text-xs font-sans">
-              <p class="text-[#94a3b8] mb-1 font-medium">${months[dataPointIndex]} ${this.selectedYear()}</p>
+              <p class="text-[#94a3b8] mb-1 font-medium">${MESES[dataPointIndex]} ${this.selectedYear()}</p>
               <div class="space-y-1">
                 <div class="flex items-center justify-between gap-4">
                   <span class="text-[#f8fafc]">Carteira</span>

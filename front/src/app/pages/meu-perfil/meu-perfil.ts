@@ -64,8 +64,8 @@ export default class MeuPerfil implements OnInit {
 
   private loadProfile(): void {
     this.userService.getProfile().subscribe({
-      next: (user) => {
-        this.user.set(user);
+      next: (res) => {
+        this.user.set(res.data);
       },
     });
   }
@@ -85,9 +85,9 @@ export default class MeuPerfil implements OnInit {
     if (!currentUser || !seed) return;
 
     this.userService.updateProfile(currentUser.name, seed).subscribe({
-      next: (user) => {
-        this.user.set(user);
-        this.auth.updateUser(user);
+      next: (res) => {
+        this.user.set(res.data);
+        this.auth.updateUser(res.data);
         this.showAvatarModal.set(false);
         this.toast.success({ message: 'Avatar atualizado!' });
       },
@@ -103,9 +103,9 @@ export default class MeuPerfil implements OnInit {
     this.saving.set(true);
 
     this.userService.updateProfile(currentUser.name, currentUser.avatar).subscribe({
-      next: (user) => {
-        this.user.set(user);
-        this.auth.updateUser(user);
+      next: (res) => {
+        this.user.set(res.data);
+        this.auth.updateUser(res.data);
         this.toast.success({ message: 'Perfil atualizado com sucesso!' });
       },
       error: () => {

@@ -1,11 +1,12 @@
-import { Component, inject, signal, computed, linkedSignal, effect, OnInit } from '@angular/core';
-import { DecimalPipe, UpperCasePipe } from '@angular/common';
+import { Component, inject, signal, computed, linkedSignal, OnInit, OnDestroy } from '@angular/core';
+import { UpperCasePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { TableComponent, TableColumn } from '../../components/Table/table.component';
 import { CellTemplateDirective } from '../../components/Table/cell-template.directive';
 import { FilterCardComponent } from '../../components/FilterCard/filter-card.component';
 import { MenuComponent } from '../../components/Menu/menu.component';
-import { MovimentacoesService } from './service/movimentacoes.service';
+import { MovimentacoesService, type OperationResponseDto } from './service/movimentacoes.service';
 import { ToastService } from '../../components/Toast/toast.service';
 import MovimentacoesEmptyState from './component/movimentacoes-empty-state/movimentacoes-empty-state';
 import { NovaCompraComponent } from './modais/nova-compra/nova-compra.component';
@@ -15,6 +16,37 @@ import { NovaVendaComponent } from './modais/nova-venda/nova-venda.component';
 import { NovaPosicaoComponent } from './modais/nova-posicao/nova-posicao.component';
 import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
 import { OperationTypeEnum } from '../../models/enums';
+
+const MESES_ABR: Record<number, string> = {
+  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
+};
+
+function formatDate(d: string): string {
+  const date = new Date(d);
+  const dia = date.getDate();
+  const mes = MESES_ABR[date.getMonth() + 1] || '';
+  const ano = date.getFullYear();
+  return `${dia} ${mes}, ${ano}`;
+}
+
+function mapOperation(op: OperationResponseDto): Operation {
+  return {
+    id: String(op.id),
+    data: formatDate(op.data),
+    dataIso: op.data,
+    ativo: op.ticker,
+    tipoOperacao: op.tipoOperacao as Operation['tipoOperacao'],
+    tipo: op.tipo,
+    qtd: op.qtd ?? null,
+    precoUn: op.precoUn,
+    taxas: op.taxas ?? null,
+    total: op.total,
+    observacoes: op.observacoes ?? '',
+    fileId: op.fileId ?? undefined,
+    vencimento: op.vencimento ?? undefined,
+  };
+}
 
 export interface Operation {
   id: string;
@@ -44,7 +76,7 @@ export interface OperationTypeOption {
   templateUrl: './movimentacoes.html',
   styleUrl: './movimentacoes.scss',
 })
-export default class Movimentacoes implements OnInit {
+export default class Movimentacoes implements OnInit, OnDestroy {
   protected readonly OperationTypeEnum = OperationTypeEnum;
   protected readonly title = 'Movimentações';
 
@@ -83,7 +115,8 @@ export default class Movimentacoes implements OnInit {
 
   public operations = signal<Operation[]>([]);
 
-  // Column headers matching standard/custom designs
+  private loadSub: Subscription | null = null;
+
   public columns: TableColumn[] = [
     { key: 'data', label: 'Data' },
     { key: 'ativo', label: 'Ativo' },
@@ -95,22 +128,18 @@ export default class Movimentacoes implements OnInit {
     { key: 'actions', label: '', align: 'right' }
   ];
 
-  constructor() {
-    effect(() => {
-      const state = this.movimentacoesService.state$();
-      this.hasData.set(state.data.temDados);
-      this.operations.set(state.data.operations);
-    });
-  }
-
   ngOnInit(): void {
-    this.movimentacoesService.loadOperations();
+    this.loadOperations();
 
     const openModal = this.route.snapshot.queryParamMap.get('openModal');
     if (openModal) {
       this.activeModalType.set(Number(openModal));
       this.router.navigate([], { queryParams: { openModal: null }, queryParamsHandling: 'merge' });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.loadSub?.unsubscribe();
   }
 
   // Filtered operations based on applied search and type
@@ -160,8 +189,23 @@ export default class Movimentacoes implements OnInit {
     this.editingOperation.set(null);
   }
 
+  private loadOperations(): void {
+    this.loadSub?.unsubscribe();
+    this.loadSub = this.movimentacoesService.loadOperations().subscribe({
+      next: (res) => {
+        const items = res.data.data;
+        const operations = items.map(mapOperation);
+        this.operations.set(operations);
+        this.hasData.set(operations.length > 0);
+      },
+      error: () => {
+        this.hasData.set(false);
+      },
+    });
+  }
+
   protected refreshOperations(): void {
-    this.movimentacoesService.loadOperations();
+    this.loadOperations();
   }
 
   protected onModalConfirmed(): void {
@@ -171,7 +215,6 @@ export default class Movimentacoes implements OnInit {
 
   // Action methods
   public onEdit(row: Operation) {
-    console.log('edit', row)
     const tipoMap: Record<string, number> = {
       [OperationTypeEnum.Compra]: 1,
       [OperationTypeEnum.Proventos]: 2,

@@ -39,11 +39,11 @@ export enum TipoValorEnum {
 }
 
 export const AssetTypeLabel: Record<string, string> = {
-  '1': 'Ações',
-  '2': 'FII',
-  '3': 'BDR',
-  '4': 'ETF',
-  '5': 'Cripto',
+  ACOES: 'Ações',
+  FII: 'FII',
+  BDR: 'BDR',
+  ETF: 'ETF',
+  CRIPTO: 'Cripto',
 };
 
 export enum IndexerEnum {

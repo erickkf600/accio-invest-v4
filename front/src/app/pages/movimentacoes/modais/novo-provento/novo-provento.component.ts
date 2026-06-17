@@ -10,7 +10,7 @@ import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
 import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
-import { AssetTypeEnum, OperationTypeEnum, TipoValorEnum } from '../../../../models/enums';
+import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
@@ -97,19 +97,20 @@ export class NovoProventoComponent {
     effect(() => {
       const op = this.operation();
       if (op) {
+        const tipo = (op.tipo as AssetTypeEnum) || AssetTypeEnum.ACOES;
         this.model.set({
           dataOperacao: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
           tipoProvento: 1,
           observacoes: '',
           ativos: [{
-            tipo: AssetTypeEnum.ACOES,
+            tipo,
             ticker: op.ativo,
             quantidade: op.qtd ?? 1,
             valorUnitario: formatCurrencyBRL(op.precoUn),
             data: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
           }],
         });
-        this.onTipoChange(0, '1');
+        this.onTipoChange(0, tipo);
       }
     });
   }
@@ -236,18 +237,10 @@ export class NovoProventoComponent {
   confirmFinal(): void {
     const ativos = this.confirmationAtivos();
 
-    const TIPO_VALOR_MAP: Record<string, string> = {
-      '1': TipoValorEnum.ACOES,
-      '2': TipoValorEnum.FII,
-      '3': TipoValorEnum.BDR,
-      '4': TipoValorEnum.ETF,
-      '5': TipoValorEnum.CRIPTO,
-    };
-
     const operations = ativos.map((a) => ({
       ticker: a.ticker,
       tipoOperacao: OperationTypeEnum.Proventos as const,
-      tipo: a.tipo ? TIPO_VALOR_MAP[String(a.tipo)] : undefined,
+      tipo: a.tipo ?? undefined,
       data: this.toDateIso(a.data || this.model().dataOperacao),
       qtd: a.quantidade,
       precoUn: a.valorUnitario,

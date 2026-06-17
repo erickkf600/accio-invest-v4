@@ -1,12 +1,23 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
-import { PortfolioService } from '../../service/portfolio.service';
+import { PortfolioService, type DividendDto } from '../../service/portfolio.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { PortfolioDividend } from '../../../../models/portfolio.model';
+import type { PortfolioDividend } from '../../../../models/portfolio.model';
+
+const MESES: Record<number, string> = {
+  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
+};
+
+function formatShortDate(d: string): string {
+  const date = new Date(d);
+  return `${date.getDate()} ${MESES[date.getMonth() + 1] || ''}, ${date.getFullYear()}`;
+}
 
 @Component({
   selector: 'app-proventos-tab',
@@ -14,21 +25,45 @@ import { PortfolioDividend } from '../../../../models/portfolio.model';
   imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule, CommonModule],
   templateUrl: './proventos-tab.component.html',
 })
-export class ProventosTabComponent {
+export class ProventosTabComponent implements OnInit, OnDestroy {
   private portfolioService = inject(PortfolioService);
 
   selectedYear = signal<string>(new Date().getFullYear().toString());
   selectedMonthIndex = signal<number | null>(null);
-  
-  // Month names for mapping and display
+
+  dividends = signal<PortfolioDividend[]>([]);
+
+  private loadSub: Subscription | null = null;
+
+  ngOnInit(): void {
+    this.loadSub = this.portfolioService.loadDividends().subscribe({
+      next: (res) => {
+        this.dividends.set(
+          res.data.data.map((d: DividendDto) => ({
+            id: String(d.id),
+            data: formatShortDate(d.data),
+            ticker: d.ticker,
+            tipo: d.tipo,
+            qtd: d.qtd,
+            valorUn: d.valorUn,
+            total: d.total,
+            status: d.status as PortfolioDividend['status'],
+          })),
+        );
+      },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.loadSub?.unsubscribe();
+  }
+
   months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   monthsFull = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
-  // Load state and raw data from service
-  dividends = computed(() => this.portfolioService.state$().dividends);
-  // Year filter options
+
   availableYears = ['2023', '2024', '2025', '2026'];
 
   onYearChange(year: string): void {
@@ -37,7 +72,6 @@ export class ProventosTabComponent {
     this.currentPage.set(1);
   }
 
-  // Filtered chart series data based on selected year (from actual dividends)
   chartSeries = computed(() => {
     const year = this.selectedYear();
     const monthlyTotals = this.months.map(month =>
@@ -52,7 +86,6 @@ export class ProventosTabComponent {
     }];
   });
 
-  // Table columns for monthly dividends
   columns: TableColumn[] = [
     { key: 'data', label: 'Data' },
     { key: 'ticker', label: 'Ticker' },
@@ -63,7 +96,6 @@ export class ProventosTabComponent {
     { key: 'status', label: 'Status', align: 'center' }
   ];
 
-  // Dividends filtered by both selected year and selected month
   filteredDividends = computed<PortfolioDividend[]>(() => {
     const idx = this.selectedMonthIndex();
     if (idx === null) return [];
@@ -72,7 +104,6 @@ export class ProventosTabComponent {
     const yearStr = this.selectedYear();
 
     return this.dividends().filter(d => {
-      // Date pattern in mock is like '15 Mai, 2024'
       return d.data.includes(monthAbbr) && d.data.includes(yearStr);
     });
   });
@@ -90,7 +121,6 @@ export class ProventosTabComponent {
     }
   }
 
-  // Donut chart data: class breakdown for selected year
   classBreakdown = computed(() => {
     const year = this.selectedYear();
     const dividendsInYear = this.dividends().filter(d => d.data.includes(year));
@@ -144,7 +174,6 @@ export class ProventosTabComponent {
     return { background: `conic-gradient(${gradient})` };
   });
 
-  // Pagination state for the table
   currentPage = signal<number>(1);
   pageSize = 9;
 
@@ -171,7 +200,6 @@ export class ProventosTabComponent {
     return this.pageSize > 0 ? Math.ceil(this.filteredDividends().length / this.pageSize) : 0;
   }
 
-  // ApexCharts Config options
   chartOptions = computed(() => {
     const seriesData = this.chartSeries();
 

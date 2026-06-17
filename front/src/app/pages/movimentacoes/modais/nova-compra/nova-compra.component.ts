@@ -10,7 +10,7 @@ import { AutocompleteComponent } from '../../../../components/autocomplete/autoc
 import { MovimentacoesService } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
-import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum, TipoValorEnum } from '../../../../models/enums';
+import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
@@ -101,7 +101,6 @@ export class NovaCompraComponent {
   constructor() {
     effect(() => {
       const op = this.operation();
-      console.log(op)
       if (op) {
         this.model.set({
           taxasTotal: formatCurrencyBRL(op.taxas ?? 0),
@@ -115,7 +114,7 @@ export class NovaCompraComponent {
             valorUnitario: formatCurrencyBRL(op.precoUn),
           }],
         });
-        this.onTipoChange(0, '1');
+        if (op.tipo) this.onTipoChange(0, op.tipo);
       }
     });
   }
@@ -285,18 +284,10 @@ export class NovaCompraComponent {
     const ativos = this.confirmationAtivos();
     const file = raw.anexo.file ?? undefined;
 
-    const TIPO_VALOR_MAP: Record<string, string> = {
-      '1': TipoValorEnum.ACOES,
-      '2': TipoValorEnum.FII,
-      '3': TipoValorEnum.BDR,
-      '4': TipoValorEnum.ETF,
-      '5': TipoValorEnum.CRIPTO,
-    };
-
     const operations = ativos.map(a => ({
       ticker: a.ticker,
       tipoOperacao: OperationTypeEnum.Compra as const,
-      tipo: a.tipo ? TIPO_VALOR_MAP[String(a.tipo)] : undefined,
+      tipo: a.tipo ?? undefined,
       data: dataIso,
       qtd: a.quantidade,
       precoUn: a.valorUnitario,
