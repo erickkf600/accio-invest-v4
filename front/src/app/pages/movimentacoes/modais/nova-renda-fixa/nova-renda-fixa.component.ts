@@ -86,7 +86,7 @@ export class NovaRendaFixaComponent implements OnInit {
 
       const dataIso = this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string;
 
-      if (op.tipo === 'Renda Fixa') {
+      if (op.tipoOperacao === 'Renda Fixa') {
         this.activeTab.set('compra');
         this.fixedIncomeService.getFixedIncomeById(op.id).subscribe({
           next: (res) => {
@@ -108,7 +108,7 @@ export class NovaRendaFixaComponent implements OnInit {
             });
           },
         });
-      } else if (op.tipo === 'Renda Fixa - Rendimento') {
+      } else if (op.tipoOperacao === 'Renda Fixa - Rendimento') {
         this.activeTab.set('rendimento');
         this.fixedIncomeService.getYieldById(op.id).subscribe({
           next: (res) => {

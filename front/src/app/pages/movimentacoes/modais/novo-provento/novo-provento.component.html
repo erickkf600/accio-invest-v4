@@ -8,13 +8,15 @@
     </div>
 
     <form (submit)="onSubmit(); $event.preventDefault()" class="p-6 space-y-4">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#242933] border border-primary/10 p-4 rounded-xl">
-        <div>
-          <span class="text-xs font-bold text-slate-200">Buscar Dividendos Automaticamente</span>
-          <p class="text-[10px] text-slate-400 mt-0.5">Selecione o período de busca na B3</p>
+      @if(!isEditing()) {
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#242933] border border-primary/10 p-4 rounded-xl">
+          <div>
+            <span class="text-xs font-bold text-slate-200">Buscar Dividendos Automaticamente</span>
+            <p class="text-[10px] text-slate-400 mt-0.5">Selecione o período de busca na B3</p>
+          </div>
+          <app-date-range-picker mode="monthYear" (rangeSelected)="onDateRangeSelected($event)"></app-date-range-picker>
         </div>
-        <app-date-range-picker mode="monthYear" (rangeSelected)="onDateRangeSelected($event)"></app-date-range-picker>
-      </div>
+      }
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-2 flex flex-col mb-4">
@@ -101,14 +103,16 @@
           }
         </div>
 
-        <button
-          type="button"
-          (click)="addAtivo()"
-          class="flex items-center gap-1 border border-primary-success/30 hover:border-primary-success/60 bg-primary-success/5 text-primary-success px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-        >
-          <span class="material-symbols-outlined text-[16px]">add</span>
-          Adicionar
-        </button>
+        @if(!isEditing()) {
+          <button
+            type="button"
+            (click)="addAtivo()"
+            class="flex items-center gap-1 border border-primary-success/30 hover:border-primary-success/60 bg-primary-success/5 text-primary-success px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Adicionar
+          </button>
+        }
       </div>
 
       <div class="space-y-2 flex flex-col mb-4">
