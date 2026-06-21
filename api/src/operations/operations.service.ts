@@ -6,12 +6,14 @@ import {
 import { PrismaService } from '../app/prisma/prisma.service';
 import { MinioService } from '../integrations/minio/minio.service';
 import { PositionSyncService } from '../portfolio/position-sync.service';
+import { PythonApiService } from '../integrations/python-api/python-api.service';
 import { AssetType, OperationType, NotaTipo, TipoValor } from '../generated/prisma/client';
 import { buildFileName, generateObjectKey } from '../common/utils/file-generator.utils';
 import { CreateOperationDto } from './dto/create-operation.dto';
 import { UpdateOperationDto } from './dto/update-operation.dto';
 import { ListOperationsDto } from './dto/list-operations.dto';
 import { OperationResponseDto } from './dto/operation-response.dto';
+import { DividendStatusResponseDto } from './dto/dividend-status-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pagination.utils';
 import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
@@ -70,6 +72,7 @@ export class OperationsService {
     private prisma: PrismaService,
     private positionSync: PositionSyncService,
     private minioService: MinioService,
+    private pythonApiService: PythonApiService,
   ) {}
 
   private async uploadAndCreateNota(
@@ -295,6 +298,28 @@ export class OperationsService {
           } else {
             throw new BadRequestException(
               `Asset with ticker ${dto.ticker} not found. Create the asset first.`,
+            );
+          }
+        }
+
+        if (dto.tipoOperacao === OperationType.Proventos) {
+          const inputDate = new Date(dto.data);
+          const startOfDay = new Date(Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth(), inputDate.getUTCDate(), 0, 0, 0));
+          const endOfDay = new Date(Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth(), inputDate.getUTCDate() + 1, 0, 0, 0));
+
+          const existing = await tx.operation.findFirst({
+            where: {
+              ticker: dto.ticker,
+              precoUn: dto.precoUn,
+              data: { gte: startOfDay, lt: endOfDay },
+              tipoOperacao: OperationType.Proventos,
+              createdBy: userId,
+            },
+          });
+
+          if (existing) {
+            throw new BadRequestException(
+              `Provento já cadastrado para ${dto.ticker} no dia ${dto.data} com valor unitário R$ ${dto.precoUn}.`,
             );
           }
         }
@@ -559,5 +584,202 @@ export class OperationsService {
         where: { ticker, createdBy: userId },
       });
     }
+  }
+
+  private parseStartMonthYear(dateStr: string): string {
+    const parts = dateStr.split(/[/\-]/).map(Number);
+    const month = parts[0];
+    const year = parts[1];
+    const d = new Date(year, month - 1, 1);
+    return d.toISOString().split('T')[0];
+  }
+
+  private parseEndMonthYear(dateStr: string): string {
+    const parts = dateStr.split(/[/\-]/).map(Number);
+    const month = parts[0];
+    const year = parts[1];
+    const d = new Date(year, month, 0);
+    return d.toISOString().split('T')[0];
+  }
+
+  async listPendingDividends(
+    start: string,
+    end: string,
+    userId: number,
+  ): Promise<DividendStatusResponseDto[]> {
+    const dataInicio = this.parseStartMonthYear(start);
+    const dataFim = this.parseEndMonthYear(end);
+
+    const assets = await this.prisma.asset.findMany({
+      where: {
+        createdBy: userId,
+        tipo: { in: [AssetType.FII, AssetType.ACOES] },
+      },
+    });
+
+    if (assets.length === 0) return [];
+
+    const papeisTipos = assets.map((a) => ({
+      papel: a.ticker,
+      tipo: a.tipo === AssetType.FII ? 1 : 2,
+    }));
+
+    const proventosResponse = await this.pythonApiService.fetchProventos({
+      papeis_tipos: papeisTipos,
+      dataInicio,
+      dataFim,
+    });
+
+    const results: DividendStatusResponseDto[] = [];
+
+    for (const item of proventosResponse) {
+      for (const provento of item.proventos) {
+        const { value, payment_date, date_com } = provento;
+
+        const [day, month, year] = payment_date.split('/').map(Number);
+        const paymentDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+
+        const qtdAtDateCom = await this.calculateQtdAtDate(
+          item.ticker,
+          paymentDate,
+          userId,
+        );
+
+        if (qtdAtDateCom <= 0) continue;
+
+        const existing = await this.prisma.operation.findFirst({
+          where: {
+            ticker: item.ticker,
+            precoUn: value,
+            data: {
+              gte: new Date(Date.UTC(year, month - 1, day, 0, 0, 0)),
+              lt: new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0)),
+            },
+            tipoOperacao: OperationType.Proventos,
+            createdBy: userId,
+          },
+        });
+
+        if (existing) continue;
+
+        const assetTipo = papeisTipos.find(
+          (p) => p.papel === item.ticker,
+        )?.tipo;
+
+        results.push({
+          ticker: item.ticker,
+          dataCom: date_com,
+          dataPagamento: payment_date,
+          valor: value,
+          tipo: assetTipo === 1 ? 'FII' : 'ACOES',
+          quantidadeCarteira: qtdAtDateCom,
+          status: 'no_registered',
+        });
+      }
+    }
+
+    return results;
+  }
+
+  async listAllDividendsByYear(
+    year: string,
+    userId: number,
+  ): Promise<DividendStatusResponseDto[]> {
+    const dataInicio = `${year}-01-01`;
+    const dataFim = `${year}-12-31`;
+
+    const assets = await this.prisma.asset.findMany({
+      where: {
+        createdBy: userId,
+        tipo: { in: [AssetType.FII, AssetType.ACOES] },
+      },
+    });
+
+    if (assets.length === 0) return [];
+
+    const papeisTipos = assets.map((a) => ({
+      papel: a.ticker,
+      tipo: a.tipo === AssetType.FII ? 1 : 2,
+    }));
+
+    const proventosResponse = await this.pythonApiService.fetchProventos({
+      papeis_tipos: papeisTipos,
+      dataInicio,
+      dataFim,
+    });
+
+    const results: DividendStatusResponseDto[] = [];
+
+    for (const item of proventosResponse) {
+      for (const provento of item.proventos) {
+        const { value, payment_date, date_com } = provento;
+
+        const [day, month, yearNum] = payment_date.split('/').map(Number);
+        const paymentDate = new Date(Date.UTC(yearNum, month - 1, day, 0, 0, 0));
+
+        const qtdAtDateCom = await this.calculateQtdAtDate(
+          item.ticker,
+          paymentDate,
+          userId,
+        );
+
+        if (qtdAtDateCom <= 0) continue;
+
+        const existing = await this.prisma.operation.findFirst({
+          where: {
+            ticker: item.ticker,
+            precoUn: value,
+            data: {
+              gte: new Date(Date.UTC(yearNum, month - 1, day, 0, 0, 0)),
+              lt: new Date(Date.UTC(yearNum, month - 1, day + 1, 0, 0, 0)),
+            },
+            tipoOperacao: OperationType.Proventos,
+            createdBy: userId,
+          },
+        });
+
+        const assetTipo = papeisTipos.find(
+          (p) => p.papel === item.ticker,
+        )?.tipo;
+
+        results.push({
+          ticker: item.ticker,
+          dataCom: date_com,
+          dataPagamento: payment_date,
+          valor: value,
+          tipo: assetTipo === 1 ? 'FII' : 'ACOES',
+          quantidadeCarteira: qtdAtDateCom,
+          status: existing ? 'registered' : 'no_registered',
+        });
+      }
+    }
+
+    return results;
+  }
+
+  private async calculateQtdAtDate(
+    ticker: string,
+    date: Date,
+    userId: number,
+  ): Promise<number> {
+    const operations = await this.prisma.operation.findMany({
+      where: {
+        ticker,
+        createdBy: userId,
+        data: { lte: date },
+        tipoOperacao: { in: [OperationType.Compra, OperationType.Venda] },
+      },
+    });
+
+    let qtd = 0;
+    for (const op of operations) {
+      if (op.tipoOperacao === OperationType.Compra) {
+        qtd += op.qtd ?? 0;
+      } else if (op.tipoOperacao === OperationType.Venda) {
+        qtd -= op.qtd ?? 0;
+      }
+    }
+
+    return Math.max(0, qtd);
   }
 }

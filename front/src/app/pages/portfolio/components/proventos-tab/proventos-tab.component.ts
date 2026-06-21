@@ -1,61 +1,83 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
-import { PortfolioService, type DividendDto } from '../../service/portfolio.service';
+import { PortfolioService } from '../../service/portfolio.service';
+import { MovimentacoesService } from '../../../movimentacoes/service/movimentacoes.service';
+import { ToastService } from '../../../../components/Toast/toast.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import type { PortfolioDividend } from '../../../../models/portfolio.model';
+import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
+import { formatDateBr } from '../../../../utils/format-date.utils';
+import type { DividendStatus } from '../../../movimentacoes/service/movimentacoes.service';
 
-const MESES: Record<number, string> = {
-  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
-  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
-};
-
-function formatShortDate(d: string): string {
-  const date = new Date(d);
-  return `${date.getDate()} ${MESES[date.getMonth() + 1] || ''}, ${date.getFullYear()}`;
+interface CompleteDividend {
+  ticker: string;
+  dataCom: string;
+  dataPagamento: string;
+  valor: number;
+  tipo: string;
+  qtd: number;
+  total: number;
+  status: 'registered' | 'no_registered';
 }
 
 @Component({
   selector: 'app-proventos-tab',
   standalone: true,
-  imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule, CommonModule],
+  imports: [AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule],
   templateUrl: './proventos-tab.component.html',
 })
 export class ProventosTabComponent implements OnInit, OnDestroy {
   private portfolioService = inject(PortfolioService);
+  private movimentacoesService = inject(MovimentacoesService);
+  private toast = inject(ToastService);
 
   selectedYear = signal<string>(new Date().getFullYear().toString());
   selectedMonthIndex = signal<number | null>(null);
 
-  dividends = signal<PortfolioDividend[]>([]);
+  dividends = signal<CompleteDividend[]>([]);
+  loading = signal<boolean>(true);
+  selectedIds = signal<Set<string>>(new Set());
+  statusFilter = signal<'all' | 'registered' | 'no_registered'>('all');
+
+  protected readonly formatDateBr = formatDateBr;
 
   private loadSub: Subscription | null = null;
 
   ngOnInit(): void {
-    this.loadSub = this.portfolioService.loadDividends().subscribe({
-      next: (res) => {
-        this.dividends.set(
-          res.data.data.map((d: DividendDto) => ({
-            id: String(d.id),
-            data: formatShortDate(d.data),
-            ticker: d.ticker,
-            tipo: d.tipo,
-            qtd: d.qtd,
-            valorUn: d.valorUn,
-            total: d.total,
-            status: d.status as PortfolioDividend['status'],
-          })),
-        );
-      },
-    });
+    this.loadData();
   }
 
   ngOnDestroy(): void {
     this.loadSub?.unsubscribe();
+  }
+
+  private loadData(): void {
+    this.loadSub?.unsubscribe();
+    this.loading.set(true);
+    this.loadSub = this.portfolioService.loadDividendsWithStatus(this.selectedYear()).subscribe({
+      next: (res) => {
+        this.dividends.set(
+          res.data.map((d: DividendStatus) => ({
+            ticker: d.ticker,
+            dataCom: d.dataCom,
+            dataPagamento: d.dataPagamento,
+            valor: d.valor,
+            tipo: d.tipo,
+            qtd: d.quantidadeCarteira,
+            total: d.valor * d.quantidadeCarteira,
+            status: d.status,
+          })),
+        );
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
+    });
   }
 
   months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -70,15 +92,20 @@ export class ProventosTabComponent implements OnInit, OnDestroy {
     this.selectedYear.set(year);
     this.selectedMonthIndex.set(null);
     this.currentPage.set(1);
+    this.loadData();
   }
 
   chartSeries = computed(() => {
     const year = this.selectedYear();
-    const monthlyTotals = this.months.map(month =>
-      this.dividends()
-        .filter(d => d.data.includes(month) && d.data.includes(year))
-        .reduce((sum, d) => sum + d.total, 0)
-    );
+    const monthlyTotals = this.months.map((month, idx) => {
+      const monthStr = String(idx + 1).padStart(2, '0');
+      return this.dividends()
+        .filter(d => {
+          const parts = d.dataPagamento.split('/');
+          return parts[1] === monthStr && parts[2] === year;
+        })
+        .reduce((sum, d) => sum + d.total, 0);
+    });
 
     return [{
       name: 'Proventos',
@@ -87,32 +114,92 @@ export class ProventosTabComponent implements OnInit, OnDestroy {
   });
 
   columns: TableColumn[] = [
+    { key: 'checkbox', label: '', align: 'center' },
     { key: 'data', label: 'Data' },
     { key: 'ticker', label: 'Ticker' },
     { key: 'tipo', label: 'Tipo' },
     { key: 'qtd', label: 'Qtd.', align: 'right' },
     { key: 'valorUn', label: 'Valor Un.', align: 'right' },
     { key: 'total', label: 'Total', align: 'right' },
-    { key: 'status', label: 'Status', align: 'center' }
+    { key: 'status', label: 'Status', align: 'center' },
+    { key: 'actions', label: '', align: 'center' },
   ];
 
-  filteredDividends = computed<PortfolioDividend[]>(() => {
+  filteredDividends = computed<CompleteDividend[]>(() => {
     const idx = this.selectedMonthIndex();
     if (idx === null) return [];
 
-    const monthAbbr = this.months[idx];
+    const monthStr = String(idx + 1).padStart(2, '0');
     const yearStr = this.selectedYear();
+    const status = this.statusFilter();
 
     return this.dividends().filter(d => {
-      return d.data.includes(monthAbbr) && d.data.includes(yearStr);
+      const parts = d.dataPagamento.split('/');
+      const matchesMonth = parts[1] === monthStr && parts[2] === yearStr;
+      const matchesStatus = status === 'all' || d.status === status;
+      return matchesMonth && matchesStatus;
     });
   });
+
+  selectedCount = computed(() => this.selectedIds().size);
+
+  hasSelection = computed(() => this.selectedIds().size > 0);
+
+  hasPendingVisible = computed(() =>
+    this.filteredDividends().some(d => d.status === 'no_registered')
+  );
+
+  allVisibleSelected = computed(() => {
+    const visible = this.filteredDividends().filter(d => d.status === 'no_registered');
+    const ids = this.selectedIds();
+    return visible.length > 0 && visible.every(d => ids.has(this.rowKey(d)));
+  });
+
+  rowKey(d: CompleteDividend): string {
+    return `${d.ticker}|${d.dataPagamento}|${d.valor}`;
+  }
+
+  toggleRow(d: CompleteDividend): void {
+    const key = this.rowKey(d);
+    this.selectedIds.update(ids => {
+      const next = new Set(ids);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  isRowSelected(d: CompleteDividend): boolean {
+    return this.selectedIds().has(this.rowKey(d));
+  }
+
+  toggleAllVisible(): void {
+    const pending = this.filteredDividends().filter(d => d.status === 'no_registered');
+    const ids = this.selectedIds();
+    const allSelected = pending.length > 0 && pending.every(d => ids.has(this.rowKey(d)));
+
+    this.selectedIds.set(
+      allSelected
+        ? new Set([...ids].filter(id => !pending.some(d => this.rowKey(d) === id)))
+        : new Set([...ids, ...pending.map(d => this.rowKey(d))])
+    );
+  }
+
+  setStatusFilter(status: 'all' | 'registered' | 'no_registered'): void {
+    this.statusFilter.set(status);
+    this.currentPage.set(1);
+    this.selectedIds.set(new Set());
+  }
 
   totalMonthlySum = computed(() =>
     this.filteredDividends().reduce((acc, d) => acc + d.total, 0)
   );
 
   onColumnSelect(index: number): void {
+    this.selectedIds.set(new Set());
     if (this.selectedMonthIndex() === index) {
       this.selectedMonthIndex.set(null);
     } else {
@@ -123,7 +210,10 @@ export class ProventosTabComponent implements OnInit, OnDestroy {
 
   classBreakdown = computed(() => {
     const year = this.selectedYear();
-    const dividendsInYear = this.dividends().filter(d => d.data.includes(year));
+    const dividendsInYear = this.dividends().filter(d => {
+      const parts = d.dataPagamento.split('/');
+      return parts[2] === year;
+    });
 
     let fiis = 0, acoes = 0, rf = 0;
 
@@ -198,6 +288,65 @@ export class ProventosTabComponent implements OnInit, OnDestroy {
 
   totalPages(): number {
     return this.pageSize > 0 ? Math.ceil(this.filteredDividends().length / this.pageSize) : 0;
+  }
+
+  registerDividend(d: CompleteDividend): void {
+    const [dia, mes, ano] = d.dataPagamento.split('/');
+    const dataIso = `${ano}-${mes}-${dia}`;
+    const tipoEnum = d.tipo === 'FII' ? AssetTypeEnum.FII : AssetTypeEnum.ACOES;
+
+    this.movimentacoesService.createBatchWithFile([{
+      ticker: d.ticker,
+      tipoOperacao: OperationTypeEnum.Proventos,
+      tipo: tipoEnum,
+      data: dataIso,
+      qtd: d.qtd,
+      precoUn: d.valor,
+      taxas: 0,
+      total: d.total,
+    }]).subscribe({
+      next: () => {
+        this.toast.success({ title: 'Sucesso', message: `Provento ${d.ticker} cadastrado com sucesso.` });
+        this.loadData();
+      },
+      error: () => {
+        this.toast.error({ title: 'Erro', message: 'Erro ao cadastrar provento.' });
+      },
+    });
+  }
+
+  registerSelected(): void {
+    const ids = this.selectedIds();
+    if (ids.size === 0) return;
+
+    const allDividends = this.dividends();
+    const selected = allDividends.filter(d => ids.has(this.rowKey(d)));
+
+    const operations = selected.map(d => {
+      const [dia, mes, ano] = d.dataPagamento.split('/');
+      const tipoEnum = d.tipo === 'FII' ? AssetTypeEnum.FII : AssetTypeEnum.ACOES;
+      return {
+        ticker: d.ticker,
+        tipoOperacao: OperationTypeEnum.Proventos,
+        tipo: tipoEnum,
+        data: `${ano}-${mes}-${dia}`,
+        qtd: d.qtd,
+        precoUn: d.valor,
+        taxas: 0,
+        total: d.total,
+      };
+    });
+
+    this.movimentacoesService.createBatchWithFile(operations).subscribe({
+      next: () => {
+        this.toast.success({ title: 'Sucesso', message: `${selected.length} provento(s) cadastrado(s) com sucesso.` });
+        this.selectedIds.set(new Set());
+        this.loadData();
+      },
+      error: () => {
+        this.toast.error({ title: 'Erro', message: 'Erro ao cadastrar proventos.' });
+      },
+    });
   }
 
   chartOptions = computed(() => {

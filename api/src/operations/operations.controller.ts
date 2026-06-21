@@ -31,6 +31,9 @@ import { CreateOperationDto } from './dto/create-operation.dto';
 import { UpdateOperationDto } from './dto/update-operation.dto';
 import { ListOperationsDto } from './dto/list-operations.dto';
 import { OperationResponseDto } from './dto/operation-response.dto';
+import { DividendsListQueryDto } from './dto/dividends-list-query.dto';
+import { DividendsYearQueryDto } from './dto/dividends-year-query.dto';
+import { DividendStatusResponseDto } from './dto/dividend-status-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -131,6 +134,24 @@ export class OperationsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<OperationResponseDto[]> {
     return this.operationsService.createBatch(operations, user.sub, arquivo);
+  }
+
+  @Get('dividends-list')
+  @ApiOperation({ summary: 'Listar proventos pendentes de registro' })
+  async listPendingDividends(
+    @Query() dto: DividendsListQueryDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<DividendStatusResponseDto[]> {
+    return this.operationsService.listPendingDividends(dto.start, dto.end, user.sub);
+  }
+
+  @Get('dividends-all')
+  @ApiOperation({ summary: 'Listar proventos com status de registro (registered/no_registered)' })
+  async listAllDividendsByYear(
+    @Query() dto: DividendsYearQueryDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<DividendStatusResponseDto[]> {
+    return this.operationsService.listAllDividendsByYear(dto.year, user.sub);
   }
 
   @Get(':id')

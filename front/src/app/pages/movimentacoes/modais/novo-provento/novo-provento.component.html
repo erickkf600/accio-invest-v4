@@ -35,26 +35,6 @@
             <span class="text-xs text-red-400 mt-1 block">{{ proventoForm.dataOperacao().errors()[0].message }}</span>
           }
         </div>
-
-        <div class="space-y-2 flex flex-col mb-4">
-          <label class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Tipo de Provento</label>
-          <div class="relative">
-            <select
-              [formField]="$any(proventoForm.tipoProvento)"
-              class="w-full appearance-none bg-[#2c313c]/60 border border-[#2c313c] rounded-lg px-4 py-2.5 text-sm text-white outline-none cursor-pointer pr-10"
-            >
-              <option [value]="null" disabled selected hidden>Selecione</option>
-              <option [value]="1">Dividendos</option>
-              <option [value]="2">JCP</option>
-              <option [value]="3">Rendimento</option>
-            </select>
-            <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-[16px]">keyboard_arrow_down</span>
-
-          </div>
-          @if (proventoForm.tipoProvento().touched() && proventoForm.tipoProvento().errors().length) {
-            <span class="text-xs text-red-400 mt-1 block">{{ proventoForm.tipoProvento().errors()[0].message }}</span>
-          }
-        </div>
       </div>
 
       <div class="space-y-3">
@@ -186,7 +166,7 @@
                 <tr class="hover:bg-[#2c313c]/30">
                   <td class="px-4 py-3 font-medium">{{ row.data }}</td>
                   <td class="px-4 py-3 font-medium">{{ row.ticker }}</td>
-                  <td class="px-4 py-3">{{ row.tipoLabel }}</td>
+                  <td class="px-4 py-3">{{ row.tipo ? assetTypeLabel[row.tipo] : '-' }}</td>
                   <td class="px-4 py-3 text-right">{{ row.quantidade }}</td>
                   <td class="px-4 py-3 text-right">R$ {{ row.valorUnitario | abbreviateNumber }}</td>
                   <td class="px-4 py-3 text-right font-bold text-primary">R$ {{ row.total | abbreviateNumber }}</td>

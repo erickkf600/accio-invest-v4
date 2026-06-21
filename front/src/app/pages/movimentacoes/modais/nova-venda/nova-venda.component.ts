@@ -1,6 +1,6 @@
 import { Component, signal, computed, output, inject, input, effect } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { lastValueFrom } from 'rxjs';
+
 import { FormField, form, submit, required, min, disabled } from '@angular/forms/signals';
 import { CurrencyMaskDirective, parseCurrencyBRL, formatCurrencyBRL } from '../../../../directives/currency-mask.directive';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
@@ -158,22 +158,17 @@ export class NovaVendaComponent {
     return `${ano}-${mes}-${dia}`;
   }
 
-  /** Submit handler – validates, calculates summary and emits */
-  async onSubmit(): Promise<void> {
-    const isValid = await submit(this.vendaForm);
-    if (!isValid) return;
-
+  onSubmit(): void {
     this.submitError.set('');
-    this.isSubmitting.set(true);
+    submit(this.vendaForm, async () => {
+      this.isSubmitting.set(true);
+      const m = this.model();
+      const precoUn = parseCurrencyBRL(m.precoUnitario);
+      const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
+      const qtd = m.quantidade ?? 0;
+      const total = precoUn * qtd - taxas;
 
-    const m = this.model();
-    const precoUn = parseCurrencyBRL(m.precoUnitario);
-    const taxas = m.taxas ? parseCurrencyBRL(m.taxas) : 0;
-    const qtd = m.quantidade ?? 0;
-    const total = precoUn * qtd - taxas;
-
-    try {
-      await lastValueFrom(this.movimentacoesService.createBatchWithFile([{
+      this.movimentacoesService.createBatchWithFile([{
         ticker: m.ticker,
         tipoOperacao: OperationTypeEnum.Venda,
         tipo: m.tipo ?? undefined,
@@ -183,15 +178,17 @@ export class NovaVendaComponent {
         taxas,
         total,
         observacoes: m.observacoes || '',
-      }], m.anexo.file ?? undefined));
-
-      this.confirmed.emit();
-      this.close.emit();
-    } catch {
-      this.toast.error({ title: 'Erro', message: 'Erro ao salvar a venda.' });
-    } finally {
-      this.isSubmitting.set(false);
-    }
+      }], m.anexo.file ?? undefined).subscribe({
+        next: () => {
+          this.confirmed.emit();
+          this.close.emit();
+        },
+        error: () => {
+          this.toast.error({ title: 'Erro', message: 'Erro ao salvar a venda.' });
+        },
+        complete: () => this.isSubmitting.set(false),
+      });
+    });
   }
 
   /** Close button handler */

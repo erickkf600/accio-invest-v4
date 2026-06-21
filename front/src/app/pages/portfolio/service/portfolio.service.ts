@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { HAS_LOADING } from '../../../core/constants/http-context';
 import type { ApiResponse } from '../../../core/models/auth.models';
+import type { DividendStatus } from '../../movimentacoes/service/movimentacoes.service';
 
 export interface PositionDto {
   id: number;
@@ -75,6 +77,13 @@ export class PortfolioService {
   loadDividends(): Observable<ApiResponse<{ data: DividendDto[]; meta: PaginationMeta }>> {
     return this.http.get<ApiResponse<{ data: DividendDto[]; meta: PaginationMeta }>>(`${this.apiUrl}/dividends`, {
       params: { limit: 100 },
+    });
+  }
+
+  loadDividendsWithStatus(year: string): Observable<ApiResponse<DividendStatus[]>> {
+    return this.http.get<ApiResponse<DividendStatus[]>>(`${environment.apiUrl}/operations/dividends-all`, {
+      params: { year },
+      context: new HttpContext().set(HAS_LOADING, false),
     });
   }
 

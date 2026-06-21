@@ -16,24 +16,12 @@ import { NovaVendaComponent } from './modais/nova-venda/nova-venda.component';
 import { NovaPosicaoComponent } from './modais/nova-posicao/nova-posicao.component';
 import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
 import { OperationTypeEnum } from '../../models/enums';
-
-const MESES_ABR: Record<number, string> = {
-  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
-  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
-};
-
-function formatDate(d: string): string {
-  const date = new Date(d);
-  const dia = date.getDate();
-  const mes = MESES_ABR[date.getMonth() + 1] || '';
-  const ano = date.getFullYear();
-  return `${dia} ${mes}, ${ano}`;
-}
+import { formatDateIso } from '../../utils/format-date.utils';
 
 function mapOperation(op: OperationResponseDto): Operation {
   return {
     id: String(op.id),
-    data: formatDate(op.data),
+    data: formatDateIso(op.data),
     dataIso: op.data,
     ativo: op.ticker,
     tipoOperacao: op.tipoOperacao as Operation['tipoOperacao'],

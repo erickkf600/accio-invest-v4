@@ -27,6 +27,16 @@ export interface PaginationMeta {
   limit: number;
 }
 
+export interface DividendStatus {
+  ticker: string;
+  dataCom: string;
+  dataPagamento: string;
+  valor: number;
+  tipo: string;
+  quantidadeCarteira: number;
+  status: 'registered' | 'no_registered';
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -74,5 +84,11 @@ export class MovimentacoesService {
       formData.append('arquivo', file, file.name);
     }
     return this.http.patch<ApiResponse<any>>(`${this.apiUrl}/${id}`, formData);
+  }
+
+  listPendingDividends(start: string, end: string): Observable<ApiResponse<DividendStatus[]>> {
+    return this.http.get<ApiResponse<DividendStatus[]>>(`${this.apiUrl}/dividends-list`, {
+      params: { start, end },
+    });
   }
 }

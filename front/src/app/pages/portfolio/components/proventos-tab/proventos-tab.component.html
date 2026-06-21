@@ -25,68 +25,103 @@
 
     <!-- Donut Chart: Total pago por classe -->
     <div class="glass-card rounded-2xl p-6 lg:col-span-4 flex flex-col">
-      <h2 class="text-sm font-semibold text-white tracking-wide">Total pago por classe</h2>
-
-      <div class="flex flex-col sm:flex-row items-center justify-around gap-6 pt-4 my-auto">
-        <div class="relative w-40 h-40 rounded-full flex items-center justify-center"
-             [style]="conicGradientStyle()">
-          <div class="absolute w-[116px] h-[116px] bg-[#111827] rounded-full flex flex-col items-center justify-center text-center">
-            <span class="text-[10px] uppercase font-semibold text-[#475569] tracking-wider">Total</span>
-            <span class="text-base font-bold text-white mt-0.5">R$ {{ totalYearDividends() | abbreviateNumber }}</span>
+      @if (loading()) {
+        <div class="animate-pulse space-y-4 pt-1">
+          <div class="h-3 w-32 bg-white/5 rounded"></div>
+          <div class="flex flex-col sm:flex-row items-center justify-around gap-6 pt-4">
+            <div class="w-40 h-40 rounded-full bg-white/5"></div>
+            <div class="space-y-3 w-full sm:w-auto min-w-[160px]">
+              <div class="h-2 w-full bg-white/5 rounded"></div>
+              <div class="h-2 w-full bg-white/5 rounded"></div>
+              <div class="h-2 w-full bg-white/5 rounded"></div>
+              <div class="h-2 w-3/4 bg-white/5 rounded"></div>
+            </div>
           </div>
         </div>
+      } @else {
+        <h2 class="text-sm font-semibold text-white tracking-wide">Total pago por classe</h2>
 
-        <div class="space-y-5 text-xs w-full sm:w-auto min-w-[160px]">
-          <div class="flex items-center justify-between text-[#475569] border-b border-[#1e293b] pb-1 mb-1">
-            <span>Classe</span>
-            <span>Valores pagos</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#a3e635]"></span>
-              <span class="text-white font-medium">FIIs</span>
+        <div class="flex flex-col sm:flex-row items-center justify-around gap-6 pt-4 my-auto">
+          <div class="relative w-40 h-40 rounded-full flex items-center justify-center"
+               [style]="conicGradientStyle()">
+            <div class="absolute w-[116px] h-[116px] bg-[#111827] rounded-full flex flex-col items-center justify-center text-center">
+              <span class="text-[10px] uppercase font-semibold text-[#475569] tracking-wider">Total</span>
+              <span class="text-base font-bold text-white mt-0.5">R$ {{ totalYearDividends() | abbreviateNumber }}</span>
             </div>
-            <span class="text-white font-semibold">R$ {{ classBreakdown().fiis | abbreviateNumber }}</span>
           </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
-              <span class="text-white font-medium">Ações</span>
+
+          <div class="space-y-5 text-xs w-full sm:w-auto min-w-[160px]">
+            <div class="flex items-center justify-between text-[#475569] border-b border-[#1e293b] pb-1 mb-1">
+              <span>Classe</span>
+              <span>Valores pagos</span>
             </div>
-            <span class="text-white font-semibold">R$ {{ classBreakdown().acoes | abbreviateNumber }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#64748b]"></span>
-              <span class="text-white font-medium">RF</span>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#a3e635]"></span>
+                <span class="text-white font-medium">FIIs</span>
+              </div>
+              <span class="text-white font-semibold">R$ {{ classBreakdown().fiis | abbreviateNumber }}</span>
             </div>
-            <span class="text-white font-semibold">R$ {{ classBreakdown().rf | abbreviateNumber }}</span>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span>
+                <span class="text-white font-medium">Ações</span>
+              </div>
+              <span class="text-white font-semibold">R$ {{ classBreakdown().acoes | abbreviateNumber }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#64748b]"></span>
+                <span class="text-white font-medium">RF</span>
+              </div>
+              <span class="text-white font-semibold">R$ {{ classBreakdown().rf | abbreviateNumber }}</span>
+            </div>
           </div>
         </div>
-      </div>
+      }
     </div>
 
     <!-- Bar Chart: Gráfico de Proventos -->
     <div class="glass-card rounded-2xl p-6 lg:col-span-8 flex flex-col justify-between">
-      <h2 class="text-sm font-semibold text-white tracking-wide">Gráfico de Proventos</h2>
+      @if (loading()) {
+        <div class="animate-pulse space-y-4 pt-1">
+          <div class="h-3 w-40 bg-white/5 rounded"></div>
+          <div class="h-[220px] w-full bg-white/5 rounded-lg mt-6 flex items-end justify-around gap-2 px-4 pb-4">
+            <div class="w-8 bg-white/[0.03] rounded-t h-[40%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[70%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[55%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[30%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[90%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[20%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[60%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[45%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[35%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[50%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[25%]"></div>
+            <div class="w-8 bg-white/[0.03] rounded-t h-[65%]"></div>
+          </div>
+        </div>
+      } @else {
+        <h2 class="text-sm font-semibold text-white tracking-wide">Gráfico de Proventos</h2>
 
-      <div class="relative mt-6">
-        @if (chartOptions()) {
-          <apx-chart
-            [series]="chartOptions().series"
-            [chart]="chartOptions().chart"
-            [colors]="chartOptions().colors"
-            [plotOptions]="chartOptions().plotOptions"
-            [dataLabels]="chartOptions().dataLabels"
-            [grid]="chartOptions().grid"
-            [xaxis]="chartOptions().xaxis"
-            [yaxis]="chartOptions().yaxis"
-            [states]="chartOptions().states"
-            [stroke]="chartOptions().stroke"
-            [tooltip]="chartOptions().tooltip"
-          ></apx-chart>
-        }
-      </div>
+        <div class="relative mt-6">
+          @if (chartOptions()) {
+            <apx-chart
+              [series]="chartOptions().series"
+              [chart]="chartOptions().chart"
+              [colors]="chartOptions().colors"
+              [plotOptions]="chartOptions().plotOptions"
+              [dataLabels]="chartOptions().dataLabels"
+              [grid]="chartOptions().grid"
+              [xaxis]="chartOptions().xaxis"
+              [yaxis]="chartOptions().yaxis"
+              [states]="chartOptions().states"
+              [stroke]="chartOptions().stroke"
+              [tooltip]="chartOptions().tooltip"
+            ></apx-chart>
+          }
+        </div>
+      }
     </div>
 
   </div>
@@ -101,15 +136,72 @@
     <div class="glass-card rounded-2xl overflow-hidden">
 
       <div class="p-6 flex items-center justify-between border-b border-[#1e293b]">
-        <h2 class="text-sm font-semibold text-white tracking-wide">Histórico Detalhado</h2>
         <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
+            @if(hasPendingVisible()){
+            <input
+              type="checkbox"
+              class="w-4 h-4 rounded border-gray-600 bg-[#202124] text-[#025bd4] focus:ring-[#025bd4] focus:ring-offset-0 accent-[#025bd4]"
+              [class.cursor-pointer]="hasPendingVisible()"
+              [class.cursor-not-allowed]="!hasPendingVisible()"
+              [class.opacity-40]="!hasPendingVisible()"
+              [checked]="allVisibleSelected()"
+              [disabled]="!hasPendingVisible()"
+              (change)="toggleAllVisible()"
+            />
+            }
+            <h2 class="text-sm font-semibold text-white tracking-wide">Histórico Detalhado</h2>
+          </div>
+          <div class="inline-flex items-center gap-1 bg-[#202124] rounded-lg p-1">
+            <button
+              class="px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer"
+              [class.bg-[#025bd4]]="statusFilter() === 'all'"
+              [class.text-white]="statusFilter() === 'all'"
+              [class.text-gray-400]="statusFilter() !== 'all'"
+              [class.hover:text-white]="statusFilter() !== 'all'"
+              (click)="setStatusFilter('all')"
+            >
+              Todos
+            </button>
+            <button
+              class="px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer"
+              [class.bg-amber-500/20]="statusFilter() === 'no_registered'"
+              [class.text-amber-400]="statusFilter() === 'no_registered'"
+              [class.text-gray-400]="statusFilter() !== 'no_registered'"
+              [class.hover:text-white]="statusFilter() !== 'no_registered'"
+              (click)="setStatusFilter('no_registered')"
+            >
+              Pendente
+            </button>
+            <button
+              class="px-3 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer"
+              [class.bg-emerald-500/20]="statusFilter() === 'registered'"
+              [class.text-emerald-400]="statusFilter() === 'registered'"
+              [class.text-gray-400]="statusFilter() !== 'registered'"
+              [class.hover:text-white]="statusFilter() !== 'registered'"
+              (click)="setStatusFilter('registered')"
+            >
+              Cadastrado
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          @if (hasSelection()) {
+            <button
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#025bd4] text-white hover:bg-[#024db8] transition-colors cursor-pointer"
+              (click)="registerSelected()"
+            >
+              <span class="material-symbols-outlined text-[14px]">add_task</span>
+              Cadastrar {{ selectedCount() }} selecionado(s)
+            </button>
+          }
           <app-pdf-button
             [title]="'Relatório de Proventos - ' + monthsFull[selectedMonthIndex()!] + ' de ' + selectedYear()"
             [columns]="columns"
             [data]="filteredDividends()"
             [filename]="'proventos_' + monthsFull[selectedMonthIndex()!].toLowerCase() + '_' + selectedYear() + '.pdf'"
           ></app-pdf-button>
-        <span class="text-sm font-bold text-white">R$ {{ totalMonthlySum() | abbreviateNumber }}</span>
+          <span class="text-sm font-bold text-white">R$ {{ totalMonthlySum() | abbreviateNumber }}</span>
         </div>
       </div>
 
@@ -122,6 +214,28 @@
         [hidePagination]="true"
         (pageChange)="onPageChange($event)"
       >
+
+        <ng-template appCellTemplate="checkbox" let-row="row">
+          @if(row.status === 'no_registered') {
+          <div class="flex items-center justify-center">
+            <input
+              type="checkbox"
+              class="w-4 h-4 rounded border-gray-600 bg-[#202124] text-[#025bd4] focus:ring-[#025bd4] focus:ring-offset-0 accent-[#025bd4]"
+              [class.cursor-pointer]="row.status === 'no_registered'"
+              [class.cursor-not-allowed]="row.status === 'registered'"
+              [class.opacity-40]="row.status === 'registered'"
+              [checked]="isRowSelected(row)"
+              [disabled]="row.status === 'registered'"
+              (change)="toggleRow(row)"
+            />
+          </div>
+        }
+        </ng-template>
+
+        <ng-template appCellTemplate="data" let-row="row">
+            <span class="font-bold text-white">{{ formatDateBr(row.dataPagamento) }}</span>
+        </ng-template>
+
         <ng-template appCellTemplate="ticker" let-row="row">
           <span class="font-bold text-white">{{ row.ticker }}</span>
         </ng-template>
@@ -135,7 +249,7 @@
         </ng-template>
 
         <ng-template appCellTemplate="valorUn" let-row="row">
-          <span>R$ {{ row.valorUn | abbreviateNumber }}</span>
+          <span>R$ {{ row.valor | abbreviateNumber }}</span>
         </ng-template>
 
         <ng-template appCellTemplate="total" let-row="row">
@@ -143,16 +257,28 @@
         </ng-template>
 
         <ng-template appCellTemplate="status" let-row="row">
-          @if (row.status === 'Pago') {
+          @if (row.status === 'registered') {
             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              Pago
+              Registrado
             </span>
           } @else {
             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
               Pendente
             </span>
+          }
+        </ng-template>
+
+        <ng-template appCellTemplate="actions" let-row="row">
+          @if (row.status === 'no_registered') {
+            <button
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-[#025bd4] text-white hover:bg-[#024db8] transition-colors cursor-pointer"
+              (click)="registerDividend(row)"
+            >
+              <span class="material-symbols-outlined text-[14px]">add</span>
+              Cadastrar
+            </button>
           }
         </ng-template>
       </app-table>

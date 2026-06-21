@@ -1,5 +1,5 @@
 import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
-import { lastValueFrom } from 'rxjs';
+
 import { DatePipe } from '@angular/common';
 import { FormField, form, submit, required } from '@angular/forms/signals';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
@@ -66,49 +66,37 @@ export class NovaPosicaoComponent {
     });
   }
 
-  async onSubmit(): Promise<void> {
-    const isValid = await submit(this.novaPosicaoForm);
-    if (!isValid) return;
-
+  onSubmit(): void {
     this.submitError.set('');
-    this.isSubmitting.set(true);
-
-    try {
+    submit(this.novaPosicaoForm, async () => {
+      this.isSubmitting.set(true);
       const m = this.model();
+      const payload = {
+        ticker: m.ticker,
+        dataOperacao: this.toDateIso(m.dataOperacao),
+        tipo: m.tipo,
+        fator: m.fator,
+        ratioDe: m.ratioDe,
+        ratioPara: m.ratioPara,
+        observacoes: m.observacoes || '',
+      };
 
-      if (this.isEditing()) {
-        const op = this.operation()!;
-        await lastValueFrom(this.movimentacoesService.updateRepositioning(op.id, {
-          ticker: m.ticker,
-          dataOperacao: this.toDateIso(m.dataOperacao),
-          tipo: m.tipo,
-          fator: m.fator,
-          ratioDe: m.ratioDe,
-          ratioPara: m.ratioPara,
-          observacoes: m.observacoes || '',
-        }));
-      } else {
-        await lastValueFrom(this.movimentacoesService.createRepositioning({
-          ticker: m.ticker,
-          dataOperacao: this.toDateIso(m.dataOperacao),
-          tipo: m.tipo,
-          fator: m.fator,
-          ratioDe: m.ratioDe,
-          ratioPara: m.ratioPara,
-          observacoes: m.observacoes || '',
-        }));
-      }
+      const request$ = this.isEditing()
+        ? this.movimentacoesService.updateRepositioning(this.operation()!.id, payload)
+        : this.movimentacoesService.createRepositioning(payload);
 
-      this.toast.success({
-        message: 'Reposicionamento registrado com sucesso!',
+      request$.subscribe({
+        next: () => {
+          this.toast.success({ message: 'Reposicionamento registrado com sucesso!' });
+          this.confirmed.emit();
+          this.close.emit();
+        },
+        error: () => {
+          this.toast.error({ title: 'Erro', message: 'Erro ao salvar reposicionamento.' });
+        },
+        complete: () => this.isSubmitting.set(false),
       });
-      this.confirmed.emit();
-      this.close.emit();
-    } catch {
-      this.toast.error({ title: 'Erro', message: 'Erro ao salvar reposicionamento.' });
-    } finally {
-      this.isSubmitting.set(false);
-    }
+    });
   }
 
   private toDateIso(ddmmyyyy: string): string {

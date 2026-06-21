@@ -7,10 +7,11 @@ import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { DateRangePickerComponent } from '../../../../components/dateRangePicker/date-range-picker.component';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import type { DividendStatus } from '../../service/movimentacoes.service';
 import { AssetsService } from '../../service/assets.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
 import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
-import { AssetTypeEnum, OperationTypeEnum } from '../../../../models/enums';
+import { AssetTypeEnum, AssetTypeLabel, OperationTypeEnum } from '../../../../models/enums';
 import type { Operation } from '../../movimentacoes';
 import type { AssetDto } from '../../service/assets.service';
 
@@ -25,7 +26,6 @@ interface ProventoAsset {
 interface SummaryProventoAsset {
   ticker: string;
   tipo: AssetTypeEnum | null;
-  tipoLabel: string;
   quantidade: number;
   valorUnitario: number;
   total: number;
@@ -41,6 +41,8 @@ interface SummaryProventoAsset {
 })
 
 export class NovoProventoComponent {
+  protected readonly assetTypeLabel = AssetTypeLabel;
+
   private movimentacoesService = inject(MovimentacoesService);
   private assetsService = inject(AssetsService);
   private toast = inject(ToastService);
@@ -64,7 +66,6 @@ export class NovoProventoComponent {
 
   model = signal({
     dataOperacao: '',
-    tipoProvento: null as number | null,
     observacoes: '',
     ativos: [
       { tipo: null, ticker: '', quantidade: null, valorUnitario: '', data: '' }
@@ -73,7 +74,6 @@ export class NovoProventoComponent {
 
   proventoForm = form(this.model, (s) => {
     required(s.dataOperacao, { message: 'Obrigatório' });
-    required(s.tipoProvento, { message: 'Obrigatório' });
     applyEach(s.ativos, (item) => {
       required(item.tipo, { message: 'Obrigatório' });
       required(item.ticker, { message: 'Obrigatório' });
@@ -100,7 +100,6 @@ export class NovoProventoComponent {
         const tipo = (op.tipo as AssetTypeEnum) || AssetTypeEnum.ACOES;
         this.model.set({
           dataOperacao: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
-          tipoProvento: 1,
           observacoes: '',
           ativos: [{
             tipo,
@@ -151,14 +150,24 @@ export class NovoProventoComponent {
   }
 
   onDateRangeSelected(range: { startDate: string; endDate: string }): void {
-    const simulatedDividends: ProventoAsset[] = [
-      { tipo: AssetTypeEnum.ACOES, ticker: 'PETR4', quantidade: 100, valorUnitario: 'R$ 1,45', data: range.startDate },
-      { tipo: AssetTypeEnum.FII, ticker: 'ITUB4', quantidade: 80, valorUnitario: 'R$ 1,02', data: range.startDate },
-      { tipo: AssetTypeEnum.FII, ticker: 'MXRF11', quantidade: 50, valorUnitario: 'R$ 0,90', data: range.endDate },
-    ];
-    this.calculateSummaryFrom(simulatedDividends);
-    this.fromAutoSearch.set(true);
-    this.showSubmodal.set(true);
+    this.movimentacoesService.listPendingDividends(range.startDate.replace('/', '-'), range.endDate.replace('/', '-')).subscribe({
+      next: (res) => {
+        const dividends = res.data;
+        const proventoAssets: ProventoAsset[] = dividends.map((d: DividendStatus) => ({
+          tipo: d.tipo === 'FII' ? AssetTypeEnum.FII : AssetTypeEnum.ACOES,
+          ticker: d.ticker,
+          quantidade: d.quantidadeCarteira,
+          valorUnitario: formatCurrencyBRL(d.valor),
+          data: d.dataPagamento,
+        }));
+        this.calculateSummaryFrom(proventoAssets);
+        this.fromAutoSearch.set(true);
+        this.showSubmodal.set(true);
+      },
+      error: () => {
+        this.toast.error({ title: 'Erro', message: 'Erro ao buscar proventos.' });
+      },
+    });
   }
 
   onSubmit(): void {
@@ -204,14 +213,9 @@ export class NovoProventoComponent {
       const preco = parseCurrencyBRL(a.valorUnitario);
       const qtd = a.quantidade ?? 0;
       const sub = qtd * preco;
-      let label = 'Dividendos';
-      if (a.tipo === AssetTypeEnum.FII) label = 'JCP';
-      if (a.tipo === AssetTypeEnum.BDR) label = 'Rendimento';
-      if (!a.tipo) label = '-';
       return {
         ticker: a.ticker,
         tipo: a.tipo,
-        tipoLabel: label,
         quantidade: qtd,
         valorUnitario: preco,
         total: sub,

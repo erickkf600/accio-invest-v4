@@ -1,4 +1,5 @@
 import { Component, signal, computed, output, input } from '@angular/core';
+import { CdkOverlayOrigin, CdkConnectedOverlay } from '@angular/cdk/overlay';
 import { DateMaskDirective } from '../../directives/date-mask.directive';
 import { FormField, form } from '@angular/forms/signals';
 
@@ -22,7 +23,7 @@ function parseDate(value: string): number {
 @Component({
   selector: 'app-date-range-picker',
   standalone: true,
-  imports: [DateMaskDirective, FormField],
+  imports: [DateMaskDirective, FormField, CdkOverlayOrigin, CdkConnectedOverlay],
   templateUrl: './date-range-picker.component.html',
 })
 export class DateRangePickerComponent {
@@ -46,7 +47,7 @@ export class DateRangePickerComponent {
     const startVal = parse(s);
     const endVal = parse(e);
     if (startVal === 0 || endVal === 0) return '';
-    if (startVal >= endVal) return 'Data inicial deve ser anterior à data final';
+    if (startVal > endVal) return 'Data inicial deve ser anterior à data final';
     return '';
   });
 
@@ -67,5 +68,13 @@ export class DateRangePickerComponent {
       });
       this.close();
     }
+  }
+
+  setMonthRange(): void {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const value = `${month}/${year}`;
+    this.model.update((m) => ({ ...m, startDate: value, endDate: value }));
   }
 }
