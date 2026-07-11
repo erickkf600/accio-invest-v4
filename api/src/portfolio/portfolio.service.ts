@@ -7,6 +7,7 @@ import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
+import { PortfolioSummaryResponseDto } from './dto/portfolio-summary-response.dto';
 import { CreateFixedIncomeDto } from './dto/create-fixed-income.dto';
 import { UpdateFixedIncomeDto } from './dto/update-fixed-income.dto';
 import { CreateFixedIncomeYieldDto } from './dto/create-fixed-income-yield.dto';
@@ -70,35 +71,61 @@ export class PortfolioService {
     const { page = 1, limit = 20, ticker } = filter || { page: 1, limit: 20 };
     const { skip, take } = getPaginationParams(page, limit);
 
-    const where: Record<string, unknown> = {
-      asset: { createdBy: userId },
-    };
-    if (ticker) where['ticker'] = { contains: ticker };
+    const portfolioWhere: Record<string, unknown> = { userId };
+    const fiWhere: Record<string, unknown> = { createdBy: userId };
 
-    const [positions, total] = await Promise.all([
+    if (ticker) {
+      portfolioWhere['ticker'] = { contains: ticker };
+      fiWhere['emissor'] = { contains: ticker };
+    }
+
+    const [portfolioPositions, fiPositions] = await Promise.all([
       this.prisma.portfolioPosition.findMany({
-        where,
-        skip,
-        take,
+        where: portfolioWhere,
         include: { asset: true },
         orderBy: { ticker: 'asc' },
       }),
-      this.prisma.portfolioPosition.count({ where }),
+      this.prisma.fixedIncomePosition.findMany({
+        where: fiWhere,
+        orderBy: { emissor: 'asc' },
+      }),
     ]);
 
-    const totalValor = positions.reduce((acc, p) => acc + p.custoTotal, 0);
+    const allPositions: PositionResponseDto[] = [
+      ...portfolioPositions.map((p) => ({
+        id: p.id,
+        ticker: p.ticker,
+        tipo: p.asset.tipo as unknown as PositionResponseDto['tipo'],
+        qtd: p.qtd,
+        precoMedio: p.precoMedio,
+        custoTotal: p.custoTotal,
+        precoAtual: 0,
+        valorAtual: p.qtd * p.precoMedio,
+        lucroPrejuizo: 0,
+        lucroPrejuizoPct: 0,
+        participacao: 0,
+      })),
+      ...fiPositions.map((p) => ({
+        id: p.id + FI_ID_PREFIX,
+        ticker: p.emissor,
+        tipo: 'Renda Fixa' as unknown as PositionResponseDto['tipo'],
+        qtd: 1,
+        precoMedio: p.valorAplicado,
+        custoTotal: p.valorAplicado,
+        precoAtual: 0,
+        valorAtual: p.valorAplicado,
+        lucroPrejuizo: 0,
+        lucroPrejuizoPct: 0,
+        participacao: 0,
+      })),
+    ];
 
-    const data: PositionResponseDto[] = positions.map((p) => ({
-      id: p.id,
-      ticker: p.ticker,
-      tipo: p.asset.tipo as PositionResponseDto['tipo'],
-      qtd: p.qtd,
-      precoMedio: p.precoMedio,
-      custoTotal: p.custoTotal,
-      precoAtual: 0,
-      valorAtual: p.qtd * p.precoMedio,
-      lucroPrejuizo: 0,
-      lucroPrejuizoPct: 0,
+    allPositions.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    const total = allPositions.length;
+    const totalValor = allPositions.reduce((acc, p) => acc + p.custoTotal, 0);
+
+    const data = allPositions.slice(skip, skip + take).map((p) => ({
+      ...p,
       participacao: totalValor > 0 ? (p.custoTotal / totalValor) * 100 : 0,
     }));
 
@@ -390,6 +417,53 @@ export class PortfolioService {
       orderBy: { emissor: 'asc' },
     });
     return result.map(r => r.emissor);
+  }
+
+  async getSummary(userId: number): Promise<PortfolioSummaryResponseDto> {
+    const [
+      portfolioAgg,
+      fiPosAgg,
+      fiYieldsAgg,
+      proventosAgg,
+      positions,
+    ] = await Promise.all([
+      this.prisma.portfolioPosition.aggregate({
+        where: { userId },
+        _sum: { custoTotal: true },
+      }),
+      this.prisma.fixedIncomePosition.aggregate({
+        where: { createdBy: userId },
+        _sum: { valorAplicado: true },
+      }),
+      this.prisma.fixedIncomeYield.aggregate({
+        where: { createdBy: userId },
+        _sum: { valor: true },
+      }),
+      this.prisma.operation.aggregate({
+        where: { createdBy: userId, tipoOperacao: OperationType.Proventos },
+        _sum: { total: true },
+      }),
+      this.prisma.portfolioPosition.findMany({
+        where: { userId },
+        select: { precoMedio: true, qtd: true },
+      }),
+    ]);
+
+    const patrimonio =
+      (portfolioAgg._sum.custoTotal ?? 0) +
+      (fiPosAgg._sum.valorAplicado ?? 0) +
+      (fiYieldsAgg._sum.valor ?? 0) +
+      (proventosAgg._sum.total ?? 0);
+
+    const saldoMedio = positions.reduce(
+      (acc, p) => acc + p.precoMedio * p.qtd,
+      0,
+    );
+
+    const totalRendimento =
+      (proventosAgg._sum.total ?? 0) + (fiYieldsAgg._sum.valor ?? 0);
+
+    return { patrimonio, saldoMedio, totalRendimento };
   }
 
   async removeFixedIncome(id: number, userId: number): Promise<void> {

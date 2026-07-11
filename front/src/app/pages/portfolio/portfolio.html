@@ -12,21 +12,21 @@
           <span class="text-text-muted">Patrimônio</span>
           <span class="material-symbols-outlined text-sm text-primary-success">trending_up</span>
         </div>
-        <div class="text-lg font-bold text-white mt-1">R$ 305,86</div>
+        <div class="text-lg font-bold text-white mt-1">R$ {{ patrimonio() | abbreviateNumber }}</div>
       </div>
       <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px] relative overflow-hidden">
         <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
           <span class="text-text-muted">Saldo Médio</span>
           <span class="material-symbols-outlined text-primary-success text-lg">account_balance_wallet</span>
         </div>
-        <div class="text-lg font-bold text-white mt-1">R$ 730,66</div>
+        <div class="text-lg font-bold text-white mt-1">R$ {{ saldoMedio() | abbreviateNumber }}</div>
       </div>
       <div class="bg-[#111827] border border-[#1e293b] rounded-xl p-4 min-w-[200px]">
         <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#475569]">
           <span class="text-text-muted">Total Rendimento</span>
           <span class="material-symbols-outlined text-primary-success text-lg">payments</span>
         </div>
-        <div class="text-lg font-bold text-[#22c55e] mt-1">R$ 18,47</div>
+        <div class="text-lg font-bold text-[#22c55e] mt-1">R$ {{ totalRendimento() | abbreviateNumber }}</div>
       </div>
     </div>
   </div>

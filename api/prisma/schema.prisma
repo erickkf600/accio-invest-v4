@@ -53,6 +53,7 @@ model User {
   fixedIncomeHistories FixedIncomeHistory[]
   fixedIncomeYields    FixedIncomeYield[]
   notas                Nota[]
+  portfolioPositions   PortfolioPosition[]
 
   @@map("users")
 }
@@ -84,12 +85,15 @@ model PortfolioPosition {
   qtd        Int
   precoMedio Float    @map("preco_medio")
   custoTotal Float    @map("custo_total")
+  userId     Int      @map("user_id")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   asset         Asset          @relation(fields: [assetId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
   repositionings Repositioning[]
 
+  @@index([userId])
   @@map("portfolio_positions")
 }
 

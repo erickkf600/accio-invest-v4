@@ -53,6 +53,7 @@ export class PositionSyncService {
         qtd,
         precoMedio,
         custoTotal,
+        userId,
       },
       update: {
         ticker,

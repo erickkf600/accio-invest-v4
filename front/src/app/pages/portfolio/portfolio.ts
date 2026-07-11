@@ -1,9 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { TabsComponent, TabOption } from '../../components/tabs/tabs.component';
 import { MeusProdutosComponent } from './components/meus-produtos/meus-produtos.component';
 import { ProventosTabComponent } from './components/proventos-tab/proventos-tab.component';
 import { RendimentosTabComponent } from './components/rendimentos-tab/rendimentos-tab.component';
 import { AnalisesTabComponent } from './components/analises-tab/analises-tab.component';
+import { PortfolioService } from './service/portfolio.service';
+import { AbbreviateNumberPipe } from '../../../pipes/abbreviate-number.pipe';
 
 @Component({
   selector: 'app-portfolio',
@@ -14,12 +16,19 @@ import { AnalisesTabComponent } from './components/analises-tab/analises-tab.com
     ProventosTabComponent,
     RendimentosTabComponent,
     AnalisesTabComponent,
+    AbbreviateNumberPipe,
   ],
   templateUrl: './portfolio.html',
   styleUrl: './portfolio.scss',
 })
-export default class Portfolio {
+export default class Portfolio implements OnInit {
   protected readonly title = 'Portfólio';
+
+  private portfolioService = inject(PortfolioService);
+
+  patrimonio = signal(0);
+  saldoMedio = signal(0);
+  totalRendimento = signal(0);
 
   tabOptions = signal<TabOption[]>([
     { id: 'produtos', label: 'Meus Produtos', icon: 'grid_view' },
@@ -29,6 +38,16 @@ export default class Portfolio {
   ]);
 
   activeTabId = signal<string>('produtos');
+
+  ngOnInit(): void {
+    this.portfolioService.loadSummary().subscribe({
+      next: (res) => {
+        this.patrimonio.set(res.data.patrimonio);
+        this.saldoMedio.set(res.data.saldoMedio);
+        this.totalRendimento.set(res.data.totalRendimento);
+      },
+    });
+  }
 
   onTabChange(tabId: string): void {
     this.activeTabId.set(tabId);

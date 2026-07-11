@@ -35,6 +35,7 @@ import { FixedIncomeYieldResponseDto } from './dto/fixed-income-yield-response.d
 import { PositionResponseDto } from './dto/position-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
+import { PortfolioSummaryResponseDto } from './dto/portfolio-summary-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -63,6 +64,12 @@ export class PortfolioController {
     @CurrentUser() user: JwtPayload,
   ): Promise<PaginatedResult<DividendResponseDto>> {
     return this.portfolioService.getDividends(user.sub, filter);
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Obter resumo do portfólio (patrimônio, saldo médio, total rendimento)' })
+  async getSummary(@CurrentUser() user: JwtPayload): Promise<PortfolioSummaryResponseDto> {
+    return this.portfolioService.getSummary(user.sub);
   }
 
   @Get('yields')
