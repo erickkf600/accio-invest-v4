@@ -11,20 +11,26 @@ export class RepositioningResponseDto {
   dataOperacao: Date;
 
   @ApiProperty()
-  tipo: string;
-
-  @ApiProperty()
-  fator: string;
-
-  @ApiProperty()
   ratioDe: string;
 
   @ApiProperty()
   ratioPara: string;
+
+  @ApiProperty()
+  qtdOriginal: number;
+
+  @ApiProperty()
+  precoMedioOriginal: number;
+
+  @ApiProperty()
+  custoTotalOriginal: number;
 
   @ApiPropertyOptional()
   observacoes?: string;
 
   @ApiProperty()
   createdAt: Date;
+
+  @ApiPropertyOptional()
+  portfolioPositionId?: number;
 }

@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, linkedSignal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, linkedSignal, effect, OnInit, OnDestroy } from '@angular/core';
 import { UpperCasePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -6,7 +6,7 @@ import { TableComponent, TableColumn } from '../../components/Table/table.compon
 import { CellTemplateDirective } from '../../components/Table/cell-template.directive';
 import { FilterCardComponent } from '../../components/FilterCard/filter-card.component';
 import { MenuComponent } from '../../components/Menu/menu.component';
-import { MovimentacoesService, type OperationResponseDto } from './service/movimentacoes.service';
+import { MovimentacoesService, type OperationResponseDto, type PaginationMeta } from './service/movimentacoes.service';
 import { ToastService } from '../../components/Toast/toast.service';
 import MovimentacoesEmptyState from './component/movimentacoes-empty-state/movimentacoes-empty-state';
 import { NovaCompraComponent } from './modais/nova-compra/nova-compra.component';
@@ -33,7 +33,35 @@ function mapOperation(op: OperationResponseDto): Operation {
     observacoes: op.observacoes ?? '',
     fileId: op.fileId ?? undefined,
     vencimento: op.vencimento ?? undefined,
+    isRepositioning: (op as any).isRepositioning ?? false,
+    ratioDe: (op as any).ratioDe,
+    ratioPara: (op as any).ratioPara,
   };
+}
+
+function getLastDayOfMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+function convertFilterDate(value: string, isEnd = false): string {
+  if (!value) return '';
+  const parts = value.split('/');
+  if (parts.length === 2) {
+    const month = parts[0].padStart(2, '0');
+    const year = parts[1];
+    if (isEnd) {
+      const day = getLastDayOfMonth(Number(year), Number(month));
+      return `${year}-${month}-${String(day).padStart(2, '0')}`;
+    }
+    return `${year}-${month}-01`;
+  }
+  if (parts.length === 3) {
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  return value;
 }
 
 export interface Operation {
@@ -50,6 +78,9 @@ export interface Operation {
   observacoes?: string;
   vencimento?: string;
   fileId?: number;
+  isRepositioning?: boolean;
+  ratioDe?: string;
+  ratioPara?: string;
 }
 
 export interface OperationTypeOption {
@@ -88,10 +119,14 @@ export default class Movimentacoes implements OnInit, OnDestroy {
 
   public appliedSearchTerm = signal('');
   public appliedSelectedType = signal('Todos');
-  
+  public appliedStartDate = signal('');
+  public appliedEndDate = signal('');
+
   private filterTrigger = computed(() => ({
     term: this.appliedSearchTerm(),
-    type: this.appliedSelectedType()
+    type: this.appliedSelectedType(),
+    startDate: this.appliedStartDate(),
+    endDate: this.appliedEndDate(),
   }));
 
   public currentPage = linkedSignal(() => {
@@ -100,10 +135,18 @@ export default class Movimentacoes implements OnInit, OnDestroy {
   });
 
   public pageSize = 10;
+  public totalItems = signal(0);
+  public totalPages = signal(0);
 
   public operations = signal<Operation[]>([]);
 
   private loadSub: Subscription | null = null;
+
+  private filterEffect = effect(() => {
+    this.filterTrigger();
+    const page = this.currentPage();
+    this.loadOperations();
+  });
 
   public columns: TableColumn[] = [
     { key: 'data', label: 'Data' },
@@ -117,8 +160,6 @@ export default class Movimentacoes implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
-    this.loadOperations();
-
     const openModal = this.route.snapshot.queryParamMap.get('openModal');
     if (openModal) {
       this.activeModalType.set(Number(openModal));
@@ -130,40 +171,20 @@ export default class Movimentacoes implements OnInit, OnDestroy {
     this.loadSub?.unsubscribe();
   }
 
-  // Filtered operations based on applied search and type
-  public filteredOperations = computed(() => {
-    const term = this.appliedSearchTerm().toLowerCase().trim();
-    const type = this.appliedSelectedType();
-
-    return this.operations().filter((op) => {
-      const matchesSearch = term === '' || op.ativo.toLowerCase().includes(term);
-      const matchesType = type === 'Todos' || op.tipoOperacao === type;
-      return matchesSearch && matchesType;
-    });
-  });
-
-  // Sliced data based on pagination
-  public paginatedOperations = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredOperations().slice(start, start + this.pageSize);
-  });
-
-  // Total count for current filtered set
-  public totalItems = computed(() => this.filteredOperations().length);
-
-  // Handles filter applied from FilterCard component
-  public onFilterApplied(model: { searchTerm: string; selectedType: string }) {
+  public onFilterApplied(model: { searchTerm: string; selectedType: string; startDate: string; endDate: string }) {
     this.appliedSearchTerm.set(model.searchTerm);
     this.appliedSelectedType.set(model.selectedType);
+    this.appliedStartDate.set(model.startDate);
+    this.appliedEndDate.set(model.endDate);
   }
 
-  // Handles filters cleared from FilterCard component
   public onFiltersCleared() {
     this.appliedSearchTerm.set('');
     this.appliedSelectedType.set('Todos');
+    this.appliedStartDate.set('');
+    this.appliedEndDate.set('');
   }
 
-  // Handles page change output from table component
   public onPageChange(page: number) {
     this.currentPage.set(page);
   }
@@ -179,17 +200,32 @@ export default class Movimentacoes implements OnInit, OnDestroy {
 
   private loadOperations(): void {
     this.loadSub?.unsubscribe();
-    this.loadSub = this.movimentacoesService.loadOperations().subscribe({
-      next: (res) => {
-        const items = res.data.data;
-        const operations = items.map(mapOperation);
-        this.operations.set(operations);
-        this.hasData.set(operations.length > 0);
-      },
-      error: () => {
-        this.hasData.set(false);
-      },
-    });
+    this.loadSub = this.movimentacoesService
+      .loadOperations({
+        page: this.currentPage(),
+        limit: this.pageSize,
+        ticker: this.appliedSearchTerm() || undefined,
+        tipoOperacao: this.appliedSelectedType() !== 'Todos' ? this.appliedSelectedType() : undefined,
+        dataInicio: convertFilterDate(this.appliedStartDate()) || undefined,
+        dataFim: convertFilterDate(this.appliedEndDate(), true) || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          const items = res.data.data;
+          const meta = res.data.meta;
+          const operations = items.map(mapOperation);
+          this.operations.set(operations);
+          this.totalItems.set(meta.total);
+          this.totalPages.set(meta.totalPages);
+          this.hasData.set(true);
+        },
+        error: () => {
+          this.hasData.set(false);
+          this.operations.set([]);
+          this.totalItems.set(0);
+          this.totalPages.set(0);
+        },
+      });
   }
 
   protected refreshOperations(): void {
@@ -226,7 +262,11 @@ export default class Movimentacoes implements OnInit, OnDestroy {
     const op = this.deletingOperation();
     if (!op) return;
 
-    this.movimentacoesService.deleteOperation(op.id).subscribe({
+    const delete$ = op.tipoOperacao === OperationTypeEnum.Reposicionamento
+      ? this.movimentacoesService.deleteRepositioning(op.id)
+      : this.movimentacoesService.deleteOperation(op.id);
+
+    delete$.subscribe({
       next: () => {
         this.operations.update((list) => list.filter((item) => item.id !== op.id));
         this.deletingOperation.set(null);

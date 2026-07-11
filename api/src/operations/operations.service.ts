@@ -123,47 +123,45 @@ export class OperationsService {
     const { page = 1, limit = 20, ticker, tipoOperacao, dataInicio, dataFim } = dto;
     const { skip, take } = getPaginationParams(page, limit);
 
-    const includeFi = !tipoOperacao || tipoOperacao === 'Renda Fixa' || tipoOperacao === 'Renda Fixa - Rendimento';
-    const includeOp = !tipoOperacao || (tipoOperacao !== 'Renda Fixa' && tipoOperacao !== 'Rendimento');
+    const isRepFilter = tipoOperacao === 'Reposicionamento';
+    const isFiFilter = tipoOperacao === 'Renda Fixa' || tipoOperacao === 'Renda Fixa - Rendimento';
+    const includeOp = !tipoOperacao || (!isRepFilter && !isFiFilter);
+    const includeFi = !tipoOperacao || isFiFilter;
+    const includeRep = !tipoOperacao || isRepFilter;
 
-    const opWhere: Record<string, unknown> = {};
-    if (userId) opWhere['createdBy'] = userId;
-    if (ticker) opWhere['ticker'] = { contains: ticker };
-    if (tipoOperacao && includeOp) opWhere['tipoOperacao'] = tipoOperacao;
-    if (dataInicio || dataFim) {
-      opWhere['data'] = {};
-      if (dataInicio) opWhere['data']['gte'] = new Date(dataInicio);
-      if (dataFim) opWhere['data']['lte'] = new Date(dataFim);
-    }
+    // Helper to build ticker filter
+    const buildTickerFilter = (field: string, tickers?: string): Record<string, unknown> | undefined => {
+      if (!tickers) return undefined;
+      const list = tickers.split(',').map((t) => t.trim()).filter(Boolean);
+      if (list.length === 0) return undefined;
+      if (list.length === 1) return { [field]: { contains: list[0] } };
+      return { [field]: { in: list } };
+    };
 
-    const fiWhere: Record<string, unknown> = {};
-    if (userId) fiWhere['createdBy'] = userId;
-    if (ticker) fiWhere['emissor'] = { contains: ticker };
-    if (dataInicio || dataFim) {
-      fiWhere['dataCompra'] = {};
-      if (dataInicio) fiWhere['dataCompra']['gte'] = new Date(dataInicio);
-      if (dataFim) fiWhere['dataCompra']['lte'] = new Date(dataFim);
-    }
-
-    const yieldWhere: Record<string, unknown> = {};
-    if (userId) yieldWhere['createdBy'] = userId;
-    if (ticker) yieldWhere['emissor'] = { contains: ticker };
-    if (dataInicio || dataFim) {
-      yieldWhere['dataOperacao'] = {};
-      if (dataInicio) yieldWhere['dataOperacao']['gte'] = new Date(dataInicio);
-      if (dataFim) yieldWhere['dataOperacao']['lte'] = new Date(dataFim);
-    }
-
-    const mergeTake = skip + take;
+    // Helper to build date filter
+    const buildDateFilter = (field: string): Record<string, unknown> | undefined => {
+      if (!dataInicio && !dataFim) return undefined;
+      const filter: Record<string, unknown> = {};
+      if (dataInicio) filter['gte'] = new Date(dataInicio);
+      if (dataFim) filter['lte'] = new Date(dataFim);
+      return { [field]: filter };
+    };
 
     let total = 0;
     let all: OperationResponseDto[] = [];
 
     if (includeOp) {
+      const opWhere: Record<string, unknown> = {};
+      if (userId) opWhere['createdBy'] = userId;
+      const tickerFilter = buildTickerFilter('ticker', ticker);
+      if (tickerFilter) Object.assign(opWhere, tickerFilter);
+      if (tipoOperacao && !isRepFilter && !isFiFilter) opWhere['tipoOperacao'] = tipoOperacao;
+      const dateFilter = buildDateFilter('data');
+      if (dateFilter) Object.assign(opWhere, dateFilter);
+
       const [ops, opCount] = await Promise.all([
         this.prisma.operation.findMany({
           where: opWhere,
-          take: mergeTake,
           orderBy: { data: 'desc' },
         }),
         this.prisma.operation.count({ where: opWhere }),
@@ -172,21 +170,74 @@ export class OperationsService {
       total += opCount;
     }
 
+    if (includeRep) {
+      const repWhere: Record<string, unknown> = {};
+      if (userId) repWhere['createdBy'] = userId;
+      const tickerFilter = buildTickerFilter('ticker', ticker);
+      if (tickerFilter) Object.assign(repWhere, tickerFilter);
+      const dateFilter = buildDateFilter('dataOperacao');
+      if (dateFilter) Object.assign(repWhere, dateFilter);
+
+      const [repositionings, repCount] = await Promise.all([
+        this.prisma.repositioning.findMany({
+          where: repWhere,
+          orderBy: { dataOperacao: 'desc' },
+        }),
+        this.prisma.repositioning.count({ where: repWhere }),
+      ]);
+
+      const repositioningDtos: OperationResponseDto[] = repositionings.map((r) => ({
+        id: r.id,
+        assetId: r.portfolioPositionId ?? 0,
+        ticker: r.ticker,
+        tipoOperacao: 'Reposicionamento',
+        data: r.dataOperacao,
+        qtd: null,
+        precoUn: 0,
+        taxas: 0,
+        total: 0,
+        tipo: undefined,
+        fileId: undefined,
+        observacoes: r.observacoes,
+        vencimento: undefined,
+        createdAt: r.createdAt,
+        updatedAt: r.createdAt,
+        ratioDe: r.ratioDe,
+        ratioPara: r.ratioPara,
+        isRepositioning: true,
+      }));
+
+      all = [...all, ...repositioningDtos];
+      total += repCount;
+    }
+
     if (includeFi) {
+      const fiWhere: Record<string, unknown> = {};
+      if (userId) fiWhere['createdBy'] = userId;
+      const tickerFilter = buildTickerFilter('emissor', ticker);
+      if (tickerFilter) Object.assign(fiWhere, tickerFilter);
+      const dateFilter = buildDateFilter('dataCompra');
+      if (dateFilter) Object.assign(fiWhere, dateFilter);
+
       const [fi, fiCount] = await Promise.all([
         this.prisma.fixedIncomePosition.findMany({
           where: fiWhere,
-          take: mergeTake,
           orderBy: { dataCompra: 'desc' },
         }),
         this.prisma.fixedIncomePosition.count({ where: fiWhere }),
       ]);
       const fiDtos = fi.map(toFiDto);
 
+      const yieldWhere: Record<string, unknown> = {};
+      if (userId) yieldWhere['createdBy'] = userId;
+      const yieldTickerFilter = buildTickerFilter('emissor', ticker);
+      if (yieldTickerFilter) Object.assign(yieldWhere, yieldTickerFilter);
+      const yieldDateFilter = buildDateFilter('dataOperacao');
+      if (yieldDateFilter) Object.assign(yieldWhere, yieldDateFilter);
+
       const [yields, yieldCount] = await Promise.all([
         this.prisma.fixedIncomeYield.findMany({
           where: yieldWhere,
-          take: mergeTake,
           orderBy: { dataOperacao: 'desc' },
         }),
         this.prisma.fixedIncomeYield.count({ where: yieldWhere }),

@@ -46,4 +46,14 @@ export class OperationResponseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  // Campos específicos para repositioning
+  @ApiProperty({ required: false })
+  ratioDe?: string;
+
+  @ApiProperty({ required: false })
+  ratioPara?: string;
+
+  @ApiProperty({ required: false })
+  isRepositioning?: boolean;
 }

@@ -1,21 +1,24 @@
-import { Component, signal, output, inject, input, computed, effect } from '@angular/core';
+import { Component, signal, output, inject, input, computed, effect, OnInit } from '@angular/core';
 
 import { DatePipe } from '@angular/common';
 import { FormField, form, submit, required } from '@angular/forms/signals';
 import { DateMaskDirective } from '../../../../directives/date-mask.directive';
 import { ToastService } from '../../../../components/Toast/toast.service';
 import { MovimentacoesService } from '../../service/movimentacoes.service';
+import { AssetsService } from '../../service/assets.service';
+import { AutocompleteComponent } from '../../../../components/autocomplete/autocomplete.component';
 import type { Operation } from '../../movimentacoes';
 
 @Component({
   selector: 'app-nova-posicao',
   standalone: true,
-  imports: [FormField, DateMaskDirective],
+  imports: [FormField, DateMaskDirective, AutocompleteComponent],
   providers: [DatePipe],
   templateUrl: './nova-posicao.component.html',
 })
-export class NovaPosicaoComponent {
+export class NovaPosicaoComponent implements OnInit {
   private movimentacoesService = inject(MovimentacoesService);
+  private assetsService = inject(AssetsService);
   private toast = inject(ToastService);
   private datePipe = inject(DatePipe);
 
@@ -25,13 +28,11 @@ export class NovaPosicaoComponent {
   operation = input<Operation | null>(null);
   isEditing = computed(() => this.operation() !== null);
 
-  tickerDatalist = ['AAPL', 'TSLA', 'MSFT', 'PETR4', 'VALE3', 'ITUB4', 'MXRF11', 'XPML11'];
+  tickerOptions = signal<string[]>([]);
 
   model = signal({
     ticker: '',
     dataOperacao: '',
-    tipo: '',
-    fator: '',
     ratioDe: '',
     ratioPara: '',
     observacoes: '',
@@ -40,14 +41,25 @@ export class NovaPosicaoComponent {
   novaPosicaoForm = form(this.model, (s) => {
     required(s.ticker, { message: 'Cód. Ativo é obrigatório' });
     required(s.dataOperacao, { message: 'Data da operação é obrigatória' });
-    required(s.tipo, { message: 'Tipo é obrigatório' });
-    required(s.fator, { message: 'Fator é obrigatório' });
     required(s.ratioDe, { message: 'Proporção (De) é obrigatória' });
     required(s.ratioPara, { message: 'Proporção (Para) é obrigatória' });
   });
 
   isSubmitting = signal(false);
   submitError = signal('');
+
+  ngOnInit(): void {
+    this.assetsService.list({ limit: 9999 }).subscribe({
+      next: (res) => {
+        const tickers = res.data.data.map(a => a.ticker);
+        this.tickerOptions.set(tickers);
+      },
+    });
+  }
+
+  onTickerSelected(ticker: string): void {
+    this.model.update(m => ({ ...m, ticker }));
+  }
 
   constructor() {
     effect(() => {
@@ -56,10 +68,8 @@ export class NovaPosicaoComponent {
         this.model.set({
           ticker: op.ativo,
           dataOperacao: this.datePipe.transform(op.dataIso, 'dd/MM/yyyy') as string,
-          tipo: 'Desdobramento',
-          fator: 'Desdobramento',
-          ratioDe: '1',
-          ratioPara: '2',
+          ratioDe: op.ratioDe || '',
+          ratioPara: op.ratioPara || '',
           observacoes: op.observacoes ?? '',
         });
       }
@@ -74,8 +84,6 @@ export class NovaPosicaoComponent {
       const payload = {
         ticker: m.ticker,
         dataOperacao: this.toDateIso(m.dataOperacao),
-        tipo: m.tipo,
-        fator: m.fator,
         ratioDe: m.ratioDe,
         ratioPara: m.ratioPara,
         observacoes: m.observacoes || '',

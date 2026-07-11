@@ -42,6 +42,7 @@ export interface ProximoPagamentoItemDto {
   dataPagamento: string;
   dataCom: string;
   percentual: string;
+  status: 'registered' | 'no_registered'
 }
 
 @Injectable({

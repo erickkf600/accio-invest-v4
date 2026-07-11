@@ -24,6 +24,7 @@ export class TableComponent {
   pageSize = input<number>(10);
   currentPage = input<number>(1);
   hidePagination = input<boolean>(false);
+  backPag = input(false);
 
   // Pagination output
   pageChange = output<number>();
@@ -43,6 +44,7 @@ export class TableComponent {
   });
 
   paginatedData = computed(() => {
+    if (this.backPag()) return this.data();
     const start = (this.currentPage() - 1) * this.pageSize();
     const end = start + this.pageSize();
     return this.data().slice(start, end);

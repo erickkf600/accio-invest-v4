@@ -74,11 +74,12 @@
     <!-- Transactions Table Card -->
     <div class="glass-card rounded-2xl overflow-hidden">
       <app-table
-        [data]="paginatedOperations()"
+        [data]="operations()"
         [columns]="columns"
         [totalItems]="totalItems()"
         [pageSize]="pageSize"
         [currentPage]="currentPage()"
+        [backPag]="true"
         (pageChange)="onPageChange($event)"
       >
         <!-- Column Data Templates -->

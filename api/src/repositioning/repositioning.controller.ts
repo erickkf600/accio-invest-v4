@@ -1,7 +1,9 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -25,6 +27,12 @@ import { JwtPayload } from '../auth/types/jwt-payload.interface';
 export class RepositioningController {
   constructor(private readonly repositioningService: RepositioningService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Listar todos os reposicionamentos' })
+  async findAll(@CurrentUser() user: JwtPayload): Promise<RepositioningResponseDto[]> {
+    return this.repositioningService.findAll(user.sub);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Criar reposicionamento (desdobramento/grupamento)' })
@@ -43,5 +51,15 @@ export class RepositioningController {
     @CurrentUser() user: JwtPayload,
   ): Promise<RepositioningResponseDto> {
     return this.repositioningService.update(id, dto, user.sub);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Excluir reposicionamento e reverter quantidade' })
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    return this.repositioningService.delete(id, user.sub);
   }
 }

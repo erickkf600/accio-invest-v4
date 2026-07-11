@@ -16,18 +16,6 @@ export class UpdateRepositioningDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(20)
-  tipo?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  fator?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
   @MaxLength(10)
   ratioDe?: string;
 

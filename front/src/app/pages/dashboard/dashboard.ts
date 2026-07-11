@@ -39,6 +39,7 @@ interface PagamentoView {
   tipo: string;
   valor: string;
   pago: boolean;
+  cadastrado: boolean;
 }
 
 @Component({
@@ -129,6 +130,7 @@ export default class Dashboard implements OnInit {
               dataDia: dia,
               dataMes: MESES_ABREV[parseInt(mes) - 1],
               pago: dataPagamento <= hoje,
+              cadastrado: item.status == 'registered'
             };
           }),
         );

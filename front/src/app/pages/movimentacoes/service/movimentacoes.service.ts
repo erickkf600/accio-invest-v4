@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import type { ApiResponse } from '../../../core/models/auth.models';
@@ -18,6 +18,9 @@ export interface OperationResponseDto {
   observacoes?: string;
   fileId?: number;
   vencimento?: string;
+  isRepositioning?: boolean;
+  ratioDe?: string;
+  ratioPara?: string;
 }
 
 export interface PaginationMeta {
@@ -37,6 +40,15 @@ export interface DividendStatus {
   status: 'registered' | 'no_registered';
 }
 
+export interface LoadOperationsParams {
+  page?: number;
+  limit?: number;
+  ticker?: string;
+  tipoOperacao?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -44,9 +56,17 @@ export class MovimentacoesService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/operations`;
 
-  loadOperations(): Observable<ApiResponse<{ data: OperationResponseDto[]; meta: PaginationMeta }>> {
+  loadOperations(params?: LoadOperationsParams): Observable<ApiResponse<{ data: OperationResponseDto[]; meta: PaginationMeta }>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          httpParams = httpParams.set(key, String(value));
+        }
+      }
+    }
     return this.http.get<ApiResponse<{ data: OperationResponseDto[]; meta: PaginationMeta }>>(this.apiUrl, {
-      params: { limit: 100 },
+      params: httpParams,
     });
   }
 
@@ -71,6 +91,10 @@ export class MovimentacoesService {
 
   updateRepositioning(id: string, data: Record<string, any>): Observable<ApiResponse<any>> {
     return this.http.patch<ApiResponse<any>>(`${this.repositioningUrl}/${id}`, data);
+  }
+
+  deleteRepositioning(id: string): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.repositioningUrl}/${id}`);
   }
 
   updateOperation(id: string, data: Record<string, any>, file?: File): Observable<ApiResponse<any>> {

@@ -11,22 +11,12 @@ export class CreateRepositioningDto {
   @IsDateString()
   dataOperacao: string;
 
-  @ApiProperty({ example: 'Desdobramento' })
-  @IsString()
-  @MaxLength(20)
-  tipo: string;
-
-  @ApiProperty({ example: '2:1' })
-  @IsString()
-  @MaxLength(20)
-  fator: string;
-
   @ApiProperty({ example: '1' })
   @IsString()
   @MaxLength(10)
   ratioDe: string;
 
-  @ApiProperty({ example: '2' })
+  @ApiProperty({ example: '10' })
   @IsString()
   @MaxLength(10)
   ratioPara: string;

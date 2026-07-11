@@ -87,7 +87,8 @@ model PortfolioPosition {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  asset Asset @relation(fields: [assetId], references: [id])
+  asset         Asset          @relation(fields: [assetId], references: [id])
+  repositionings Repositioning[]
 
   @@map("portfolio_positions")
 }
@@ -122,18 +123,21 @@ model Operation {
 }
 
 model Repositioning {
-  id           Int      @id @default(autoincrement())
-  ticker       String   @db.VarChar(20)
-  dataOperacao DateTime @map("data_operacao")
-  tipo         String   @db.VarChar(20)
-  fator        String   @db.VarChar(20)
-  ratioDe      String   @db.VarChar(10) @map("ratio_de")
-  ratioPara    String   @db.VarChar(10) @map("ratio_para")
-  observacoes  String?  @db.VarChar(150)
-  createdBy    Int?     @map("created_by")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id              Int       @id @default(autoincrement())
+  ticker          String    @db.VarChar(20)
+  dataOperacao    DateTime  @map("data_operacao")
+  ratioDe         String    @db.VarChar(10) @map("ratio_de")
+  ratioPara       String    @db.VarChar(10) @map("ratio_para")
+  qtdOriginal     Int       @map("qtd_original")
+  precoMedioOriginal Float @map("preco_medio_original")
+  custoTotalOriginal Float @map("custo_total_original")
+  observacoes     String?   @db.VarChar(150)
+  createdBy       Int?      @map("created_by")
+  portfolioPositionId Int?   @unique @map("portfolio_position_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
-  user User? @relation(fields: [createdBy], references: [id])
+  user              User?              @relation(fields: [createdBy], references: [id])
+  portfolioPosition PortfolioPosition? @relation(fields: [portfolioPositionId], references: [id])
 
   @@index([createdBy])
   @@map("repositionings")

@@ -18,4 +18,7 @@ export class ProximoPagamentoDto {
 
   @ApiProperty({ description: 'Percentual sobre o preço base' })
   percentual: string;
+
+  @ApiProperty({ description: 'Status do cadastro (registered/no_registered)' })
+  status: string;
 }

@@ -266,25 +266,48 @@ export class DashboardService {
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
     const fmt = (d: Date) => d.toISOString().split('T')[0];
+
     const result = await this.pythonApi.fetchProventos({
       papeis_tipos: papeisTipos,
       dataInicio: fmt(primeiroDia),
       dataFim: fmt(ultimoDia),
     });
-    
 
-    return result
-      .flatMap((r) =>
-        r.proventos.map((p) => ({
+    const proventosComStatus: ProximoPagamentoDto[] = [];
+
+    for (const r of result) {
+      for (const p of r.proventos) {
+        const [day, month, year] = p.date_com.split('/').map(Number);
+
+        const existing = await this.prisma.operation.findFirst({
+          where: {
+            ticker: r.ticker,
+            precoUn: p.value,
+            data: {
+              gte: new Date(Date.UTC(year, month - 1, day, 0, 0, 0)),
+              lt: new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0)),
+            },
+            tipoOperacao: OperationType.Proventos,
+            createdBy: userId,
+          },
+        });
+
+        proventosComStatus.push({
           ticker: r.ticker,
           tipo: 'Dividendo',
           valor: p.value,
           dataPagamento: p.payment_date,
           dataCom: p.date_com,
           percentual: p.percent,
-        })),
-      )
-      .sort((a, b) => a.dataPagamento.localeCompare(b.dataPagamento));
+          status: existing ? 'registered' : 'no_registered',
+        });
+      }
+    }
+
+    return proventosComStatus.sort((a, b) =>
+      a.dataPagamento.localeCompare(b.dataPagamento),
+    );
+  
   }
 
   private async calcularAvailableYears(userId: number): Promise<number[]> {
