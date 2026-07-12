@@ -33,6 +33,7 @@ import { UpdateFixedIncomeDto } from './dto/update-fixed-income.dto';
 import { CreateFixedIncomeYieldDto } from './dto/create-fixed-income-yield.dto';
 import { FixedIncomeYieldResponseDto } from './dto/fixed-income-yield-response.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
+import { ClassSummaryItemDto } from './dto/class-summary-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
 import { PortfolioSummaryResponseDto } from './dto/portfolio-summary-response.dto';
@@ -64,6 +65,12 @@ export class PortfolioController {
     @CurrentUser() user: JwtPayload,
   ): Promise<PaginatedResult<DividendResponseDto>> {
     return this.portfolioService.getDividends(user.sub, filter);
+  }
+
+  @Get('class-summary')
+  @ApiOperation({ summary: 'Obter resumo por classe (saldo, rentabilidade 30d, 12m e histórica)' })
+  async getClassSummary(@CurrentUser() user: JwtPayload): Promise<ClassSummaryItemDto[]> {
+    return this.portfolioService.getClassSummary(user.sub);
   }
 
   @Get('summary')

@@ -1,12 +1,13 @@
 import { Component, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { PortfolioService, type PositionDto } from '../../service/portfolio.service';
+import { PortfolioService, type PositionDto, type ClassSummaryItem } from '../../service/portfolio.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
+import { TooltipDirective } from '../../../../components/Tooltip/tooltip.directive';
 import { AssetTypeEnum } from '../../../../models/enums';
 import type { PortfolioProduct } from '../../../../models/portfolio.model';
 
@@ -22,15 +23,13 @@ function mapPosition(p: PositionDto): PortfolioProduct {
     lucroPrejuizo: p.lucroPrejuizo,
     lucroPrejuizoPct: p.lucroPrejuizoPct,
     participacao: p.participacao,
-    rent30d: 0,
-    rent12m: 0,
   };
 }
 
 @Component({
   selector: 'app-meus-produtos',
   standalone: true,
-  imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule],
+  imports: [DecimalPipe, AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule, TooltipDirective],
   templateUrl: './meus-produtos.component.html',
 })
 export class MeusProdutosComponent implements OnInit, OnDestroy {
@@ -39,18 +38,24 @@ export class MeusProdutosComponent implements OnInit, OnDestroy {
   private portfolioService = inject(PortfolioService);
 
   products = signal<PortfolioProduct[]>([]);
+  classSummaryData = signal<ClassSummaryItem[]>([]);
   currentPage = signal(1);
 
   private loadSub: Subscription | null = null;
+  private classSummarySub: Subscription | null = null;
 
   ngOnInit(): void {
     this.loadSub = this.portfolioService.loadPositions().subscribe({
       next: (res) => this.products.set(res.data.data.map(mapPosition)),
     });
+    this.classSummarySub = this.portfolioService.loadClassSummary().subscribe({
+      next: (res) => this.classSummaryData.set(res.data),
+    });
   }
 
   ngOnDestroy(): void {
     this.loadSub?.unsubscribe();
+    this.classSummarySub?.unsubscribe();
   }
 
   totalCost = computed(() =>
@@ -83,10 +88,10 @@ export class MeusProdutosComponent implements OnInit, OnDestroy {
     { key: 'ticker', label: 'Ticker' },
     { key: 'tipo', label: 'Tipo' },
     { key: 'qtd', label: 'Qtd.', align: 'right' },
-    { key: 'precoMedio', label: 'Preço Médio', align: 'right' },
-    { key: 'custoTotal', label: 'Custo Total', align: 'right' },
-    { key: 'precoAtual', label: 'Preço Atual', align: 'right' },
-    { key: 'valorAtual', label: 'Valor Atual', align: 'right' },
+    { key: 'precoMedio', label: 'P. Médio', align: 'right' },
+    { key: 'custoTotal', label: 'C. Total', align: 'right' },
+    { key: 'precoAtual', label: 'P. Atual', align: 'right' },
+    { key: 'valorAtual', label: 'V. Atual', align: 'right' },
     { key: 'lucroPrejuizo', label: 'Lucro/Prejuízo', align: 'right' },
     { key: 'participacao', label: 'Part. (%)', align: 'right' },
   ];
@@ -97,7 +102,7 @@ export class MeusProdutosComponent implements OnInit, OnDestroy {
     [AssetTypeEnum.BDR]: '#8b5cf6',
     [AssetTypeEnum.ETF]: '#06b6d4',
     [AssetTypeEnum.CRIPTO]: '#f97316',
-    'Renda Fixa': '#f59e0b',
+    'RF': '#f59e0b',
     'Outros': '#a855f7',
   };
 
@@ -112,39 +117,6 @@ export class MeusProdutosComponent implements OnInit, OnDestroy {
       tipo,
       valor,
       pct: parseFloat(((valor / total) * 100).toFixed(1)),
-    }));
-  });
-
-  classSummary = computed(() => {
-    const products = this.products();
-    const map = new Map<string, {
-      tipo: string; qtd: number; custoTotal: number; valorAtual: number;
-      rent30dW: number; rent12mW: number; rentHistW: number;
-      weight30: number; weight12: number; weightHist: number;
-    }>();
-
-    for (const p of products) {
-      const g = map.get(p.tipo) || { tipo: p.tipo, qtd: 0, custoTotal: 0, valorAtual: 0, rent30dW: 0, rent12mW: 0, rentHistW: 0, weight30: 0, weight12: 0, weightHist: 0 };
-      g.qtd += p.qtd;
-      g.custoTotal += p.custoTotal;
-      g.valorAtual += p.valorAtual;
-      g.rent30dW += p.rent30d * p.valorAtual;
-      g.rent12mW += p.rent12m * p.valorAtual;
-      g.rentHistW += p.lucroPrejuizoPct * p.custoTotal;
-      g.weight30 += p.valorAtual;
-      g.weight12 += p.valorAtual;
-      g.weightHist += p.custoTotal;
-      map.set(p.tipo, g);
-    }
-
-    return Array.from(map.entries()).map(([tipo, g]) => ({
-      tipo,
-      qtd: g.qtd,
-      saldoPM: g.custoTotal,
-      saldoCotacao: g.valorAtual,
-      rent30d: g.weight30 > 0 ? g.rent30dW / g.weight30 : 0,
-      rent12m: g.weight12 > 0 ? g.rent12mW / g.weight12 : 0,
-      rentHistorica: g.weightHist > 0 ? (g.rentHistW / g.weightHist) : 0,
     }));
   });
 

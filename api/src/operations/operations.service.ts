@@ -31,7 +31,7 @@ function toFiDto(fi: Record<string, any>): OperationResponseDto {
     id: fi.id + FI_ID_PREFIX,
     assetId: fi.assetId ?? 0,
     ticker: fi.emissor,
-    tipoOperacao: 'Renda Fixa',
+    tipoOperacao: 'RF',
     data: fi.dataCompra,
     qtd: null,
     precoUn: fi.valorAplicado,
@@ -51,7 +51,7 @@ function toYieldDto(y: Record<string, any>): OperationResponseDto {
     id: y.id + FI_YIELD_PREFIX,
     assetId: 0,
     ticker: y.emissor,
-    tipoOperacao: 'Renda Fixa - Rendimento',
+    tipoOperacao: 'RF - Rendimento',
     data: y.dataOperacao,
     qtd: null,
     precoUn: y.valor,
@@ -124,7 +124,7 @@ export class OperationsService {
     const { skip, take } = getPaginationParams(page, limit);
 
     const isRepFilter = tipoOperacao === 'Reposicionamento';
-    const isFiFilter = tipoOperacao === 'Renda Fixa' || tipoOperacao === 'Renda Fixa - Rendimento';
+    const isFiFilter = tipoOperacao === 'RF' || tipoOperacao === 'RF - Rendimento';
     const includeOp = !tipoOperacao || (!isRepFilter && !isFiFilter);
     const includeFi = !tipoOperacao || isFiFilter;
     const includeRep = !tipoOperacao || isRepFilter;

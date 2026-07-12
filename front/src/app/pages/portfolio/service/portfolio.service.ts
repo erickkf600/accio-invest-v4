@@ -6,6 +6,16 @@ import { HAS_LOADING } from '../../../core/constants/http-context';
 import type { ApiResponse } from '../../../core/models/auth.models';
 import type { DividendStatus } from '../../movimentacoes/service/movimentacoes.service';
 
+export interface ClassSummaryItem {
+  tipo: string;
+  qtd: number;
+  saldoPM: number;
+  saldoCotacao: number;
+  rent30d: number;
+  rent12m: number;
+  rentHistorica: number;
+}
+
 export interface PortfolioSummary {
   patrimonio: number;
   saldoMedio: number;
@@ -97,6 +107,10 @@ export class PortfolioService {
     return this.http.get<ApiResponse<{ data: YieldDto[]; meta: PaginationMeta }>>(`${this.apiUrl}/yields`, {
       params: { limit: 100 },
     });
+  }
+
+  loadClassSummary(): Observable<ApiResponse<ClassSummaryItem[]>> {
+    return this.http.get<ApiResponse<ClassSummaryItem[]>>(`${this.apiUrl}/class-summary`);
   }
 
   loadSummary(): Observable<ApiResponse<PortfolioSummary>> {

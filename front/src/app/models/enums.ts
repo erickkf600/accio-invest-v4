@@ -25,9 +25,9 @@ export enum OperationTypeEnum {
   Compra = 'Compra',
   Venda = 'Venda',
   Proventos = 'Proventos',
-  RendaFixa = 'Renda Fixa',
+  RendaFixa = 'RF',
   Reposicionamento = 'Reposicionamento',
-  RendaFixaRendimento = 'Renda Fixa - Rendimento',
+  RendaFixaRendimento = 'RF - Rendimento',
 }
 
 export enum TipoValorEnum {

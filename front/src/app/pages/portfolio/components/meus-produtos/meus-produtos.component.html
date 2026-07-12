@@ -60,7 +60,8 @@
         (pageChange)="currentPage.set($event)"
       >
         <ng-template appCellTemplate="ticker" let-row="row">
-          <span class="font-bold text-text-light">{{ row.ticker }}</span>
+          <div class="truncate max-w-[100px] font-bold text-text-light"
+                [appTooltip]="row.ticker">{{ row.ticker }}</div>
         </ng-template>
 
         <ng-template appCellTemplate="precoMedio" let-row="row">
@@ -98,10 +99,10 @@
         <h3 class="text-sm font-semibold text-white tracking-wide mb-6">Meus ativos por classe</h3>
       </div>
       <app-table
-        [data]="classSummary()"
+        [data]="classSummaryData()"
         [columns]="columnsClassSummary"
-        [totalItems]="classSummary().length"
-        [pageSize]="classSummary().length"
+        [totalItems]="classSummaryData().length"
+        [pageSize]="classSummaryData().length"
         [currentPage]="1"
         [hidePagination]="true"
       >

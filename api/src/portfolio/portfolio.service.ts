@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../app/prisma/prisma.service';
 import { MinioService } from '../integrations/minio/minio.service';
+import { PythonApiService } from '../integrations/python-api/python-api.service';
 import { OperationType, NotaTipo } from '../generated/prisma/client';
 import { buildFileName, generateObjectKey } from '../common/utils/file-generator.utils';
 import { PortfolioFilterDto } from './dto/portfolio-filter.dto';
 import { PositionResponseDto } from './dto/position-response.dto';
+import { ClassSummaryItemDto } from './dto/class-summary-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
 import { PortfolioSummaryResponseDto } from './dto/portfolio-summary-response.dto';
@@ -18,9 +20,12 @@ import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
 
 @Injectable()
 export class PortfolioService {
+  private readonly logger = new Logger(PortfolioService.name);
+
   constructor(
     private prisma: PrismaService,
     private minioService: MinioService,
+    private pythonApi: PythonApiService,
   ) {}
 
   private async uploadAndCreateNota(
@@ -91,28 +96,45 @@ export class PortfolioService {
       }),
     ]);
 
+    const tickers = portfolioPositions.map((p) => p.ticker);
+    let quoteMap = new Map<string, number>();
+    if (tickers.length > 0) {
+      try {
+        const quotes = await this.pythonApi.getQuotes(tickers);
+        quoteMap = new Map(quotes.map((q) => [q.ticker, q.precoAtual]));
+      } catch (err) {
+        this.logger.warn(`Failed to fetch quotes: ${(err as Error).message}`);
+      }
+    }
+
     const allPositions: PositionResponseDto[] = [
-      ...portfolioPositions.map((p) => ({
-        id: p.id,
-        ticker: p.ticker,
-        tipo: p.asset.tipo as unknown as PositionResponseDto['tipo'],
-        qtd: p.qtd,
-        precoMedio: p.precoMedio,
-        custoTotal: p.custoTotal,
-        precoAtual: 0,
-        valorAtual: p.qtd * p.precoMedio,
-        lucroPrejuizo: 0,
-        lucroPrejuizoPct: 0,
-        participacao: 0,
-      })),
+      ...portfolioPositions.map((p) => {
+        const precoAtual = quoteMap.get(p.ticker) ?? p.precoMedio;
+        const valorAtual = p.qtd * precoAtual;
+        const lucroPrejuizo = valorAtual - p.custoTotal;
+        const lucroPrejuizoPct = p.custoTotal > 0 ? (lucroPrejuizo / p.custoTotal) * 100 : 0;
+        return {
+          id: p.id,
+          ticker: p.ticker,
+          tipo: p.asset.tipo as unknown as PositionResponseDto['tipo'],
+          qtd: p.qtd,
+          precoMedio: p.precoMedio,
+          custoTotal: p.custoTotal,
+          precoAtual,
+          valorAtual,
+          lucroPrejuizo,
+          lucroPrejuizoPct,
+          participacao: 0,
+        };
+      }),
       ...fiPositions.map((p) => ({
         id: p.id + FI_ID_PREFIX,
         ticker: p.emissor,
-        tipo: 'Renda Fixa' as unknown as PositionResponseDto['tipo'],
+        tipo: 'RF' as unknown as PositionResponseDto['tipo'],
         qtd: 1,
         precoMedio: p.valorAplicado,
         custoTotal: p.valorAplicado,
-        precoAtual: 0,
+        precoAtual: p.valorAplicado,
         valorAtual: p.valorAplicado,
         lucroPrejuizo: 0,
         lucroPrejuizoPct: 0,
@@ -133,6 +155,145 @@ export class PortfolioService {
       data,
       meta: calculatePaginationMeta(total, page, limit),
     };
+  }
+
+  async getClassSummary(userId: number): Promise<ClassSummaryItemDto[]> {
+    const [portfolioPositions, fiPositions] = await Promise.all([
+      this.prisma.portfolioPosition.findMany({
+        where: { userId },
+        include: { asset: true },
+      }),
+      this.prisma.fixedIncomePosition.findMany({
+        where: { createdBy: userId },
+      }),
+    ]);
+
+    const tickers = portfolioPositions.map((p) => p.ticker);
+    let precoMap = new Map<string, number>();
+    let histMap = new Map<string, { preco30d: number; preco12m: number }>();
+
+    if (tickers.length > 0) {
+      try {
+        const now = new Date();
+        const data30d = new Date(now);
+        data30d.setDate(data30d.getDate() - 30);
+        const data12m = new Date(now);
+        data12m.setFullYear(data12m.getFullYear() - 1);
+        const data30dStr = data30d.toISOString().split('T')[0];
+        const data12mStr = data12m.toISOString().split('T')[0];
+
+        const [quotes, history] = await Promise.all([
+          this.pythonApi.getQuotes(tickers),
+          this.pythonApi.fetchHistory(tickers, data12mStr, now.toISOString().split('T')[0]),
+        ]);
+
+        precoMap = new Map(quotes.map((q) => [q.ticker, q.precoAtual]));
+
+        for (const h of history) {
+          const sorted = [...h.valores].reverse();
+          let preco30d = 0;
+          let preco12m = 0;
+          for (const v of sorted) {
+            const d = new Date(v.data);
+            if (!preco12m && d >= data30d) preco30d = parseFloat(v.valor);
+            if (!preco12m && d >= data12m) preco12m = parseFloat(v.valor);
+            if (preco30d && preco12m) break;
+          }
+          histMap.set(h.ticker, {
+            preco30d: preco30d || 0,
+            preco12m: preco12m || 0,
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to fetch quotes/history: ${(err as Error).message}`);
+      }
+    }
+
+    const allPositions: {
+      tipo: string;
+      qtd: number;
+      custoTotal: number;
+      valorAtual: number;
+      rent30d: number;
+      rent12m: number;
+      lucroPrejuizoPct: number;
+    }[] = [
+      ...portfolioPositions.map((p) => {
+        const precoAtual = precoMap.get(p.ticker) ?? p.precoMedio;
+        const valorAtual = p.qtd * precoAtual;
+        const lucroPrejuizo = valorAtual - p.custoTotal;
+        const lucroPrejuizoPct = p.custoTotal > 0 ? (lucroPrejuizo / p.custoTotal) * 100 : 0;
+        const hist = histMap.get(p.ticker);
+        const preco30d = hist?.preco30d ?? p.precoMedio;
+        const preco12m = hist?.preco12m ?? p.precoMedio;
+        return {
+          tipo: p.asset.tipo,
+          qtd: p.qtd,
+          custoTotal: p.custoTotal,
+          valorAtual,
+          rent30d: preco30d > 0 ? ((precoAtual / preco30d) - 1) * 100 : 0,
+          rent12m: preco12m > 0 ? ((precoAtual / preco12m) - 1) * 100 : 0,
+          lucroPrejuizoPct,
+        };
+      }),
+      ...fiPositions.map((p) => ({
+        tipo: 'RF',
+        qtd: 1,
+        custoTotal: p.valorAplicado,
+        valorAtual: p.valorAplicado,
+        rent30d: 0,
+        rent12m: 0,
+        lucroPrejuizoPct: 0,
+      })),
+    ];
+
+    const groups = new Map<string, {
+      tipo: string;
+      qtd: number;
+      saldoPM: number;
+      saldoCotacao: number;
+      rent30dW: number;
+      rent12mW: number;
+      rentHistW: number;
+      weight30: number;
+      weight12: number;
+      weightHist: number;
+    }>();
+
+    for (const p of allPositions) {
+      const g = groups.get(p.tipo) ?? {
+        tipo: p.tipo,
+        qtd: 0,
+        saldoPM: 0,
+        saldoCotacao: 0,
+        rent30dW: 0,
+        rent12mW: 0,
+        rentHistW: 0,
+        weight30: 0,
+        weight12: 0,
+        weightHist: 0,
+      };
+      g.qtd += p.qtd;
+      g.saldoPM += p.custoTotal;
+      g.saldoCotacao += p.valorAtual;
+      g.rent30dW += p.rent30d * p.valorAtual;
+      g.rent12mW += p.rent12m * p.valorAtual;
+      g.rentHistW += p.lucroPrejuizoPct * p.custoTotal;
+      g.weight30 += p.valorAtual;
+      g.weight12 += p.valorAtual;
+      g.weightHist += p.custoTotal;
+      groups.set(p.tipo, g);
+    }
+
+    return Array.from(groups.entries()).map(([, g]) => ({
+      tipo: g.tipo,
+      qtd: g.qtd,
+      saldoPM: g.saldoPM,
+      saldoCotacao: g.saldoCotacao,
+      rent30d: g.weight30 > 0 ? g.rent30dW / g.weight30 : 0,
+      rent12m: g.weight12 > 0 ? g.rent12mW / g.weight12 : 0,
+      rentHistorica: g.weightHist > 0 ? g.rentHistW / g.weightHist : 0,
+    }));
   }
 
   async getDividends(
