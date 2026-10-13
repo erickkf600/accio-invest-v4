@@ -1,19 +1,13 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '../../generated/prisma/client';
-import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor() {
-    const url = new URL(process.env['DATABASE_URL'] ?? 'mysql://root:@localhost:3306/accio_invest');
-    const adapter = new PrismaMariaDb({
-      host: url.hostname,
-      port: Number(url.port) || 3306,
-      user: decodeURIComponent(url.username),
-      password: decodeURIComponent(url.password),
-      database: url.pathname.replace(/^\//, ''),
-    });
-    super({ adapter });
+    const connectionString =
+      process.env['DATABASE_URL'] ?? 'postgresql://postgres:postgres@localhost:5432/accio_invest';
+    super({ adapter: new PrismaPg({ connectionString }) });
   }
 
   async onModuleInit() {

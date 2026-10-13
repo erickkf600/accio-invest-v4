@@ -7,6 +7,9 @@ export class RepositioningResponseDto {
   @ApiProperty()
   ticker: string;
 
+  @ApiPropertyOptional({ description: 'Tipo do ativo (FII, ACOES, ...)' })
+  tipo?: string;
+
   @ApiProperty()
   dataOperacao: Date;
 

@@ -134,8 +134,8 @@ export class OperationsService {
       if (!tickers) return undefined;
       const list = tickers.split(',').map((t) => t.trim()).filter(Boolean);
       if (list.length === 0) return undefined;
-      if (list.length === 1) return { [field]: { contains: list[0] } };
-      return { [field]: { in: list } };
+      if (list.length === 1) return { [field]: { contains: list[0], mode: 'insensitive' } };
+      return { OR: list.map((t) => ({ [field]: { equals: t, mode: 'insensitive' } })) };
     };
 
     // Helper to build date filter
@@ -688,11 +688,9 @@ export class OperationsService {
         const { value, payment_date, date_com } = provento;
 
         const [day, month, year] = payment_date.split('/').map(Number);
-        const paymentDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-
         const qtdAtDateCom = await this.calculateQtdAtDate(
           item.ticker,
-          paymentDate,
+          this.parseBrDateEndOfDay(date_com),
           userId,
         );
 
@@ -732,6 +730,29 @@ export class OperationsService {
     return results;
   }
 
+  async getAvailableYears(userId: number): Promise<string[]> {
+    const oldestPurchase = await this.prisma.operation.findFirst({
+      where: {
+        tipoOperacao: OperationType.Compra,
+        createdBy: userId,
+      },
+      orderBy: { data: 'asc' },
+      select: { data: true },
+    });
+
+    const currentYear = new Date().getFullYear();
+    const oldestYear = oldestPurchase?.data.getUTCFullYear();
+    const startYear =
+      oldestYear && oldestYear <= currentYear ? oldestYear : currentYear;
+
+    const years: string[] = [];
+    for (let year = startYear; year <= currentYear; year++) {
+      years.push(String(year));
+    }
+
+    return years;
+  }
+
   async listAllDividendsByYear(
     year: string,
     userId: number,
@@ -766,15 +787,6 @@ export class OperationsService {
         const { value, payment_date, date_com } = provento;
 
         const [day, month, yearNum] = payment_date.split('/').map(Number);
-        const paymentDate = new Date(Date.UTC(yearNum, month - 1, day, 0, 0, 0));
-
-        const qtdAtDateCom = await this.calculateQtdAtDate(
-          item.ticker,
-          paymentDate,
-          userId,
-        );
-
-        if (qtdAtDateCom <= 0) continue;
 
         const existing = await this.prisma.operation.findFirst({
           where: {
@@ -788,6 +800,18 @@ export class OperationsService {
             createdBy: userId,
           },
         });
+
+        // Provento já cadastrado: mantém a quantidade gravada na época do cadastro,
+        // para que compras posteriores não alterem o histórico.
+        const qtdAtDateCom = existing
+          ? (existing.qtd ?? 0)
+          : await this.calculateQtdAtDate(
+              item.ticker,
+              this.parseBrDateEndOfDay(date_com),
+              userId,
+            );
+
+        if (qtdAtDateCom <= 0) continue;
 
         const assetTipo = papeisTipos.find(
           (p) => p.papel === item.ticker,
@@ -806,6 +830,11 @@ export class OperationsService {
     }
 
     return results;
+  }
+
+  private parseBrDateEndOfDay(dateStr: string): Date {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
   }
 
   private async calculateQtdAtDate(

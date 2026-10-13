@@ -22,7 +22,7 @@ export class AssetsService {
     if (tipo) where['tipo'] = tipo;
     if (search) {
       where['OR'] = [
-        { ticker: { contains: search } },
+        { ticker: { contains: search, mode: 'insensitive' } },
       ];
     }
 

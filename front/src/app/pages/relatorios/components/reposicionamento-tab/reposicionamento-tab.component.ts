@@ -1,10 +1,11 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RelatorioReposicionamento } from '../../../../models/relatorios.model';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { FiltroRelatorioComponent } from '../filtroRelatorio/filtro-relatorio.component';
-import { MOCK_REPOSICIONAMENTOS } from '../../service/mock/relatorios.mock';
+import { RelatoriosService, toDmy } from '../../service/relatorios.service';
 
 @Component({
   selector: 'app-reposicionamento-tab',
@@ -13,9 +14,34 @@ import { MOCK_REPOSICIONAMENTOS } from '../../service/mock/relatorios.mock';
   templateUrl: './reposicionamento-tab.component.html',
 })
 export class ReposicionamentoTabComponent {
-  reposicionamentos = signal<RelatorioReposicionamento[]>(MOCK_REPOSICIONAMENTOS);
+  private relatoriosService = inject(RelatoriosService);
+  private destroyRef = inject(DestroyRef);
+
+  reposicionamentos = signal<RelatorioReposicionamento[]>([]);
 
   searchTerm = signal<string>('');
+
+  constructor() {
+    this.relatoriosService.getReposicionamentos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.reposicionamentos.set(
+          (res.data || []).map((r) => {
+            const de = Number(r.ratioDe);
+            const para = Number(r.ratioPara);
+            return {
+              id: String(r.id),
+              ticker: r.ticker,
+              data: toDmy(r.dataOperacao),
+              tipo: r.tipo ?? '',
+              fator: para > de ? 'Desdobramento' : 'Agrupamento',
+              proporcaoDe: de,
+              proporcaoPara: para,
+            };
+          }),
+        );
+      },
+    });
+  }
 
   filteredReposicionamentos = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();

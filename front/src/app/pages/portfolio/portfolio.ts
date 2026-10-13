@@ -34,7 +34,7 @@ export default class Portfolio implements OnInit {
     { id: 'produtos', label: 'Meus Produtos', icon: 'grid_view' },
     { id: 'proventos', label: 'Proventos', icon: 'payments' },
     { id: 'rendimentos', label: 'Rendimentos', icon: 'trending_up' },
-    { id: 'analises', label: 'Análises', icon: 'analytics' },
+    // { id: 'analises', label: 'Análises', icon: 'analytics' },
   ]);
 
   activeTabId = signal<string>('produtos');

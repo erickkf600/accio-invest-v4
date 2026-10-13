@@ -1,19 +1,18 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: accio-mysql
+  postgres:
+    image: postgres:17-alpine
+    container_name: accio-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: accio_invest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: accio_invest
     ports:
-      - '3307:3306'
+      - '5432:5432'
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-proot']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d accio_invest']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +38,7 @@ services:
     ports:
       - '8080:8080'
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
   api:
@@ -51,7 +50,7 @@ services:
     ports:
       - '3000:3000'
     environment:
-      DATABASE_URL: 'mysql://root:root@mysql:3306/accio_invest'
+      DATABASE_URL: 'postgresql://postgres:postgres@postgres:5432/accio_invest'
       JWT_SECRET: 'accio-invest-jwt-secret-key-change-in-production'
       JWT_EXPIRES_IN: '15m'
       JWT_REFRESH_EXPIRES_IN: '7d'
@@ -59,7 +58,7 @@ services:
       NODE_ENV: production
       CORS_ORIGIN: 'http://localhost:4200'
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
   front:
@@ -85,5 +84,5 @@ services:
       - FLASK_DEBUG=False
 
 volumes:
-  mysql_data:
+  postgres_data:
   minio_data:

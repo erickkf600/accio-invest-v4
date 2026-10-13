@@ -1,25 +1,26 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { Subscription } from 'rxjs';
-import { PortfolioService, type YieldDto } from '../../service/portfolio.service';
+import { type IncomeDashboardDto, PortfolioService } from '../../service/portfolio.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { TooltipDirective } from '../../../../components/Tooltip/tooltip.directive';
-import { CHART_DATA_PORTFOLIO } from '../../service/mock/portfolio.mock';
-import type { PortfolioYield } from '../../../../models/portfolio.model';
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-const MESES: Record<number, string> = {
-  1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
-  7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez',
-};
 const abbreviatePipe = new AbbreviateNumberPipe();
+const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const EMPTY_DASHBOARD: IncomeDashboardDto = { rendaFixa: [], rentabilidadeMensal: [], dividendosPorAno: [] };
 
-function formatShortDate(d: string): string {
-  const date = new Date(d);
-  return `${date.getDate()} ${MESES[date.getMonth() + 1] || ''}, ${date.getFullYear()}`;
+function formatShortDate(value: string): string {
+  const [year, month, day] = value.slice(0, 10).split('-');
+  return `${day} ${MONTHS[Number(month) - 1]}, ${year}`;
+}
+
+function formatMonth(value: string): string {
+  const [year, month] = value.split('-');
+  return `${month}/${year.slice(2)}`;
 }
 
 @Component({
@@ -29,33 +30,22 @@ function formatShortDate(d: string): string {
   templateUrl: './rendimentos-tab.component.html',
 })
 export class RendimentosTabComponent implements OnInit, OnDestroy {
-  private portfolioService = inject(PortfolioService);
-
-  yields = signal<PortfolioYield[]>([]);
-  chartDataCollection = signal(CHART_DATA_PORTFOLIO);
-
+  private readonly portfolioService = inject(PortfolioService);
   private loadSub: Subscription | null = null;
 
+  protected readonly dashboard = signal<IncomeDashboardDto>(EMPTY_DASHBOARD);
+  protected readonly selectedYear = signal(String(new Date().getFullYear()));
+  protected readonly rendaFixaCurrentPage = signal(1);
+  protected readonly rentabilidadeCurrentPage = signal(1);
+
+  readonly availableYears = computed(() => this.dashboard().dividendosPorAno.map(({ ano }) => ano));
+
   ngOnInit(): void {
-    this.loadSub = this.portfolioService.loadYields().subscribe({
-      next: (res) => {
-        this.yields.set(
-          res.data.data.map((y: YieldDto) => ({
-            id: String(y.id),
-            data: formatShortDate(y.dataCompra),
-            emissor: y.emissor,
-            tipo: y.tipo,
-            valorUn: y.valorAplicado,
-            total: y.valorAplicado,
-            tipoInvestimento: 'Renda Fixa',
-            tipoTitulo: y.liquidezDiaria ? 'LCA/LCI' : 'CDB',
-            dataCompra: formatShortDate(y.dataCompra),
-            dataVencimento: y.vencimento ? formatShortDate(y.vencimento) : '-',
-            indexador: y.indexador,
-            grossUp: `${y.taxaJuros}%`,
-            txJuros: `${y.taxaJuros}%`,
-          })),
-        );
+    this.loadSub = this.portfolioService.loadIncomeDashboard().subscribe({
+      next: ({ data }) => {
+        this.dashboard.set(data);
+        const years = data.dividendosPorAno.map(({ ano }) => ano);
+        if (years.length > 0 && !years.includes(this.selectedYear())) this.selectedYear.set(years[years.length - 1]);
       },
     });
   }
@@ -64,232 +54,82 @@ export class RendimentosTabComponent implements OnInit, OnDestroy {
     this.loadSub?.unsubscribe();
   }
 
-  selectedYear = signal<string>(new Date().getFullYear().toString());
-
-  rendaFixaCurrentPage = signal<number>(1);
-  rentabilidadeCurrentPage = signal<number>(1);
-
-  availableYears = computed(() => {
-    return Object.keys(this.chartDataCollection()).sort();
-  });
-
   onYearChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.selectedYear.set(target.value);
+    this.selectedYear.set((event.target as HTMLSelectElement).value);
   }
 
-  onRendaFixaPageChange(page: number): void {
-    this.rendaFixaCurrentPage.set(page);
-  }
+  onRendaFixaPageChange(page: number): void { this.rendaFixaCurrentPage.set(page); }
+  onRentabilidadePageChange(page: number): void { this.rentabilidadeCurrentPage.set(page); }
 
-  onRentabilidadePageChange(page: number): void {
-    this.rentabilidadeCurrentPage.set(page);
-  }
-
-  rendaFixaColumns: TableColumn[] = [
-    { key: 'emissor', label: 'Emissor' },
-    { key: 'tipoInvestimento', label: 'T. Invest.' },
-    { key: 'tipoTitulo', label: 'T. Título' },
-    { key: 'dataCompra', label: 'D. Compra' },
-    { key: 'dataVencimento', label: 'D. Venc.' },
-    { key: 'formaRendimento', label: 'F. Rend' },
-    { key: 'indexador', label: 'Indexador' },
-    { key: 'grossUp', label: 'Gross Up' },
-    { key: 'txJuros', label: 'Tx. Juros' },
-    { key: 'valorInvestido', label: 'V. Invest', align: 'right' },
+  readonly rendaFixaColumns: TableColumn[] = [
+    { key: 'emissor', label: 'Emissor' }, { key: 'tipoInvestimento', label: 'T. Invest.' },
+    { key: 'tipoTitulo', label: 'T. Título' }, { key: 'dataCompra', label: 'D. Compra' },
+    { key: 'dataVencimento', label: 'D. Venc.' }, { key: 'formaRendimento', label: 'F. Rend' },
+    { key: 'indexador', label: 'Indexador' }, { key: 'grossUp', label: 'Gross Up' },
+    { key: 'txJuros', label: 'Tx. Juros' }, { key: 'valorInvestido', label: 'V. Invest', align: 'right' },
     { key: 'rentabilidade', label: 'Rent.', align: 'right' },
   ];
-
-  rentabilidadeColumns: TableColumn[] = [
-    { key: 'mes', label: 'Mês' },
-    { key: 'patrimonio', label: 'Patrimônio' },
-    { key: 'patrimonioMedio', label: 'Patrimônio P. Médio' },
-    { key: 'proventos', label: 'Proventos Pagos' },
+  readonly rentabilidadeColumns: TableColumn[] = [
+    { key: 'mes', label: 'Mês' }, { key: 'patrimonio', label: 'Patrimônio' },
+    { key: 'patrimonioMedio', label: 'Patrimônio P. Médio' }, { key: 'proventos', label: 'Proventos Pagos' },
     { key: 'rentabilidade', label: 'Rentabilidade', align: 'right' },
   ];
 
-  rendaFixaData = computed(() => {
-    return this.yields().map(y => ({
-      id: y.id,
-      emissor: y.emissor,
-      tipoInvestimento: y.tipoInvestimento,
-      tipoTitulo: y.tipoTitulo,
-      dataCompra: y.dataCompra,
-      dataVencimento: y.dataVencimento,
-      formaRendimento: y.tipo === 'Pós-fixado' ? 'PÓS FIX' : 'PRÉ FIX',
-      indexador: y.indexador,
-      grossUp: y.grossUp,
-      txJuros: y.txJuros,
-      valorInvestido: `R$ ${y.total.toFixed(2)}`,
-      rentabilidade: `R$ ${(y.total - y.valorUn).toFixed(2)}`,
-    }));
-  });
+  readonly rendaFixaData = computed(() => this.dashboard().rendaFixa.map((item) => ({
+    id: item.id,
+    emissor: item.emissor,
+    tipoInvestimento: 'Renda Fixa',
+    tipoTitulo: item.tipo,
+    dataCompra: formatShortDate(item.dataCompra),
+    dataVencimento: item.vencimento ? formatShortDate(item.vencimento) : '-',
+    formaRendimento: item.tipo.toLocaleLowerCase('pt-BR').includes('pós') ? 'PÓS FIX' : 'PRÉ FIX',
+    indexador: item.indexador,
+    grossUp: '-',
+    txJuros: `${item.taxaJuros}%`,
+    valorInvestido: currencyFormatter.format(item.valorInvestido),
+    rentabilidade: currencyFormatter.format(item.rendimento),
+  })));
 
-  private rentabilidadeYear = new Date().getFullYear().toString();
+  readonly monthlyProfitability = computed(() => this.dashboard().rentabilidadeMensal.map((item) => ({
+    mes: formatMonth(item.mes),
+    patrimonio: currencyFormatter.format(item.patrimonio),
+    patrimonioMedio: currencyFormatter.format(item.patrimonioMedio),
+    proventos: currencyFormatter.format(item.proventos),
+    rentabilidade: `${item.rentabilidade >= 0 ? '+' : ''}${item.rentabilidade.toFixed(3)}%`,
+    rentabilidadeValue: item.rentabilidade,
+  })).reverse());
 
-  monthlyProfitability = computed(() => {
-    const data = this.chartDataCollection()[this.rentabilidadeYear];
-    if (!data) return [];
-    const months = data.yields;
-    const dividends = data.dividends;
-    let runningPatrimonio = 0;
-    return months.map((val, i) => {
-      runningPatrimonio += val;
-      const medio = runningPatrimonio - val + val / 2;
-      const rentPct = val > 0 ? ((dividends[i] || 0) / (runningPatrimonio || 1)) * 100 : 0;
-      return {
-        mes: `${String(i + 1).padStart(2, '0')}/${this.rentabilidadeYear.slice(2)}`,
-        patrimonio: `R$ ${runningPatrimonio.toFixed(2)}`,
-        patrimonioMedio: `R$ ${medio.toFixed(2)}`,
-        proventos: `R$ ${(dividends[i] || 0).toFixed(2)}`,
-        rentabilidade: `${rentPct >= 0 ? '+' : ''}${rentPct.toFixed(3)}%`,
-        rentabilidadeValue: rentPct,
-      };
-    }).reverse();
-  });
+  readonly currentYearLabel = computed(() => this.selectedYear());
+  readonly previousYearLabel = computed(() => String(Number(this.selectedYear()) - 1));
 
-  currentYearLabel = computed(() => this.selectedYear());
-  previousYearLabel = computed(() => {
-    const data = this.chartDataCollection();
-    const yearKeys = Object.keys(data).sort();
-    const curIdx = yearKeys.indexOf(this.selectedYear());
-    return curIdx > 0 ? yearKeys[curIdx - 1] : yearKeys[yearKeys.length - 1];
-  });
-
-  dividendChartOptions = computed(() => {
-    const data = this.chartDataCollection();
+  readonly dividendChartOptions = computed(() => {
     const currentYear = this.selectedYear();
-    const yearKeys = Object.keys(data).sort();
-    const curIdx = yearKeys.indexOf(currentYear);
-    const prevYear = curIdx > 0 ? yearKeys[curIdx - 1] : yearKeys[yearKeys.length - 1];
-
-    const current = data[currentYear]?.dividends || [];
-    const previous = data[prevYear]?.dividends || [];
-
+    const previousYear = String(Number(currentYear) - 1);
+    const years = new Map(this.dashboard().dividendosPorAno.map((item) => [item.ano, item.valores]));
     return {
-      series: [
-        { name: prevYear, data: previous },
-        { name: currentYear, data: current },
-      ],
-      chart: {
-        type: 'bar' as const,
-        height: 220,
-        toolbar: { show: false },
-        background: 'transparent',
-        foreColor: '#94a3b8',
-      },
-      colors: ['#6b7280', '#75d33b'],
-      legend: { show: false },
-      plotOptions: {
-        bar: {
-          borderRadius: 3,
-          columnWidth: '55%',
-          dataLabels: { position: 'top' },
-        },
-      },
-      dataLabels: {
-        enabled: false,
-      },
-      grid: {
-        show: true,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
-        strokeDashArray: 4,
-        yaxis: { lines: { show: true } },
-        xaxis: { lines: { show: false } },
-      },
-      xaxis: {
-        categories: MONTHS,
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-        labels: {
-          style: {
-            colors: '#94a3b8',
-            fontFamily: 'Plus Jakarta Sans, sans-serif',
-          },
-        },
-      },
-      yaxis: {
-        labels: { show: false },
-      },
-      states: {
-        active: {
-          allowMultipleDataPointsSelection: false,
-          filter: { type: 'darken' },
-        },
-        hover: {
-          filter: { type: 'darken', value: 0.15 },
-        },
-      },
-      tooltip: {
-        theme: 'dark' as const,
-        y: {
-          formatter: (val: number) => `R$ ${val.toFixed(2)}`,
-        },
-      },
+      series: [{ name: previousYear, data: years.get(previousYear) ?? Array(12).fill(0) }, { name: currentYear, data: years.get(currentYear) ?? Array(12).fill(0) }],
+      chart: { type: 'bar' as const, height: 220, toolbar: { show: false }, background: 'transparent', foreColor: '#94a3b8' },
+      colors: ['#6b7280', '#75d33b'], legend: { show: false },
+      plotOptions: { bar: { borderRadius: 3, columnWidth: '55%', dataLabels: { position: 'top' } } },
+      dataLabels: { enabled: false },
+      grid: { show: true, borderColor: 'rgba(255, 255, 255, 0.05)', strokeDashArray: 4, yaxis: { lines: { show: true } }, xaxis: { lines: { show: false } } },
+      xaxis: { categories: MONTHS, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { colors: '#94a3b8', fontFamily: 'Plus Jakarta Sans, sans-serif' } } },
+      yaxis: { labels: { show: false } },
+      states: { active: { allowMultipleDataPointsSelection: false, filter: { type: 'darken' } }, hover: { filter: { type: 'darken', value: 0.15 } } },
+      tooltip: { theme: 'dark' as const, y: { formatter: (value: number) => currencyFormatter.format(value) } },
     } as any;
   });
 
-  evolutionChartOptions = computed(() => {
-    const data = this.chartDataCollection();
-    const years = Object.keys(data).sort();
-    const yearlyTotals = years.map(year =>
-      data[year].yields.reduce((a: number, b: number) => a + b, 0)
-    );
-
+  readonly evolutionChartOptions = computed(() => {
+    const data = this.dashboard().rentabilidadeMensal;
     return {
-      series: [{
-        name: 'Patrimônio',
-        data: yearlyTotals,
-      }],
-      chart: {
-        type: 'area' as const,
-        height: 280,
-        toolbar: { show: false },
-        animations: { enabled: true, easing: 'easeinout' as const, speed: 800 },
-        background: 'transparent',
-        foreColor: '#94a3b8',
-      },
-      colors: ['#75d33b'],
-      stroke: {
-        curve: 'smooth' as const,
-        width: 2,
-      },
-      fill: {
-        type: 'gradient' as const,
-        gradient: {
-          type: 'vertical' as const,
-          shadeIntensity: 0,
-          opacityFrom: 0.45,
-          opacityTo: 0,
-          stops: [0, 100],
-        },
-      },
-      grid: {
-        show: true,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
-        strokeDashArray: 4,
-      },
-      dataLabels: { enabled: false },
-      xaxis: {
-        categories: years,
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-        labels: {
-          style: {
-            colors: '#94a3b8',
-            fontFamily: 'Plus Jakarta Sans, sans-serif',
-          },
-        },
-      },
-      yaxis: {
-        show: false,
-      },
-      tooltip: {
-        theme: 'dark' as const,
-        y: {
-          formatter: (val: number) => `R$ ${abbreviatePipe.transform(val)}`,
-        },
-      },
+      series: [{ name: 'Patrimônio', data: data.map(({ patrimonio }) => patrimonio) }],
+      chart: { type: 'area' as const, height: 280, toolbar: { show: false }, animations: { enabled: true, easing: 'easeinout' as const, speed: 800 }, background: 'transparent', foreColor: '#94a3b8' },
+      colors: ['#75d33b'], stroke: { curve: 'smooth' as const, width: 2 },
+      fill: { type: 'gradient' as const, gradient: { type: 'vertical' as const, shadeIntensity: 0, opacityFrom: 0.45, opacityTo: 0, stops: [0, 100] } },
+      grid: { show: true, borderColor: 'rgba(255, 255, 255, 0.05)', strokeDashArray: 4 }, dataLabels: { enabled: false },
+      xaxis: { categories: data.map(({ mes }) => formatMonth(mes)), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { colors: '#94a3b8', fontFamily: 'Plus Jakarta Sans, sans-serif' } } },
+      yaxis: { show: false }, tooltip: { theme: 'dark' as const, y: { formatter: (value: number) => `R$ ${abbreviatePipe.transform(value)}` } },
     };
   });
 }

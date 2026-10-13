@@ -9,7 +9,6 @@ import { CellTemplateDirective } from '../../../../components/Table/cell-templat
 import { PdfButtonComponent } from '../../../../components/pdfButton/pdf-button.component';
 import { FiltroRelatorioComponent } from '../filtroRelatorio/filtro-relatorio.component';
 import { RelatorioAporte } from '../../../../models/relatorios.model';
-import { CHART_DATA_APORTES } from '../../service/mock/relatorios.mock';
 
 @Component({
   selector: 'app-aporte-tab',
@@ -22,8 +21,6 @@ export class AporteTabComponent {
   private destroyRef = inject(DestroyRef);
 
   aportes = signal<RelatorioAporte[]>([]);
-  chartDataCollection = signal<Record<string, number[]>>(CHART_DATA_APORTES);
-
   selectedYear = signal<string>(new Date().getFullYear().toString());
   selectedMonthIndex = signal<number | null>(null);
   months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -32,7 +29,23 @@ export class AporteTabComponent {
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  availableYears = computed(() => Object.keys(this.chartDataCollection()).sort());
+  chartDataCollection = computed<Record<string, number[]>>(() => {
+    const collection: Record<string, number[]> = {};
+    for (const a of this.aportes()) {
+      const monthIdx = this.monthsFull.indexOf(a.mes);
+      if (monthIdx < 0) continue;
+      const key = String(a.ano);
+      collection[key] ??= new Array(12).fill(0);
+      collection[key][monthIdx] += a.valor;
+    }
+    return collection;
+  });
+
+  availableYears = computed(() => {
+    const years = new Set(Object.keys(this.chartDataCollection()));
+    years.add(new Date().getFullYear().toString());
+    return [...years].sort();
+  });
 
   readonly viewDetails = output<RelatorioAporte>();
 

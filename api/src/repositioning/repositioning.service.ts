@@ -96,10 +96,21 @@ export class RepositioningService {
   }
 
   async findAll(userId: number): Promise<RepositioningResponseDto[]> {
-    return this.prisma.repositioning.findMany({
+    const list = await this.prisma.repositioning.findMany({
       where: { createdBy: userId },
       orderBy: { dataOperacao: 'desc' },
     });
+
+    const assets = await this.prisma.asset.findMany({
+      where: {
+        createdBy: userId,
+        ticker: { in: [...new Set(list.map((r) => r.ticker))] },
+      },
+      select: { ticker: true, tipo: true },
+    });
+    const tipoByTicker = new Map(assets.map((a) => [a.ticker, a.tipo]));
+
+    return list.map((r) => ({ ...r, tipo: tipoByTicker.get(r.ticker) }));
   }
 
   async update(

@@ -9,7 +9,7 @@
         <select class="appearance-none bg-[#202124] hover:bg-[#28292c] text-gray-200 text-sm font-medium pl-4 pr-10 py-1.5 rounded-lg border border-gray-700/50 cursor-pointer focus:outline-none focus:border-gray-500 transition-colors"
           (change)="onYearChange($any($event.target).value)"
         >
-          @for (y of availableYears; track y) {
+          @for (y of (availableYears$ | async) ?? []; track y) {
             <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
           }
         </select>

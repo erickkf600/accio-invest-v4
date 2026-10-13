@@ -14,6 +14,10 @@ import { CreateFixedIncomeDto } from './dto/create-fixed-income.dto';
 import { UpdateFixedIncomeDto } from './dto/update-fixed-income.dto';
 import { CreateFixedIncomeYieldDto } from './dto/create-fixed-income-yield.dto';
 import { FixedIncomeYieldResponseDto } from './dto/fixed-income-yield-response.dto';
+import {
+  IncomeDashboardResponseDto,
+  type MonthlyProfitabilityDto,
+} from './dto/income-dashboard-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { calculatePaginationMeta, getPaginationParams } from '../common/utils/pagination.utils';
 import { FI_ID_PREFIX, FI_YIELD_PREFIX } from '../common/constants';
@@ -80,8 +84,8 @@ export class PortfolioService {
     const fiWhere: Record<string, unknown> = { createdBy: userId };
 
     if (ticker) {
-      portfolioWhere['ticker'] = { contains: ticker };
-      fiWhere['emissor'] = { contains: ticker };
+      portfolioWhere['ticker'] = { contains: ticker, mode: 'insensitive' };
+      fiWhere['emissor'] = { contains: ticker, mode: 'insensitive' };
     }
 
     const [portfolioPositions, fiPositions] = await Promise.all([
@@ -310,7 +314,7 @@ export class PortfolioService {
       createdBy: userId,
       tipo: OperationType.Proventos,
     };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
     if (dataInicio || dataFim) {
       where['data'] = {};
       if (dataInicio) where['data']['gte'] = new Date(dataInicio);
@@ -352,7 +356,7 @@ export class PortfolioService {
     const { skip, take } = getPaginationParams(page, limit);
 
     const where: Record<string, unknown> = { createdBy: userId };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
 
     const [data, total] = await Promise.all([
       this.prisma.fixedIncomePosition.findMany({
@@ -367,6 +371,106 @@ export class PortfolioService {
     return {
       data,
       meta: calculatePaginationMeta(total, page, limit),
+    };
+  }
+
+  async getIncomeDashboard(userId: number): Promise<IncomeDashboardResponseDto> {
+    const [operations, fixedIncomePositions, fixedIncomeYields] = await Promise.all([
+      this.prisma.operation.findMany({
+        where: { createdBy: userId },
+        select: { tipoOperacao: true, data: true, total: true },
+        orderBy: { data: 'asc' },
+      }),
+      this.prisma.fixedIncomePosition.findMany({
+        where: { createdBy: userId },
+        include: {
+          fixedIncomeYields: {
+            where: { createdBy: userId },
+            select: { valor: true },
+          },
+        },
+        orderBy: { dataCompra: 'desc' },
+      }),
+      this.prisma.fixedIncomeYield.findMany({
+        where: { createdBy: userId },
+        select: { dataOperacao: true, valor: true },
+        orderBy: { dataOperacao: 'asc' },
+      }),
+    ]);
+
+    const monthEvents = new Map<string, { aportes: number; resgates: number; proventos: number }>();
+    const dividendYears = new Map<string, number[]>();
+    const ensureMonth = (date: Date) => {
+      const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+      if (!monthEvents.has(key)) {
+        monthEvents.set(key, { aportes: 0, resgates: 0, proventos: 0 });
+      }
+      return { key, event: monthEvents.get(key) };
+    };
+
+    for (const operation of operations) {
+      const { key, event } = ensureMonth(operation.data);
+      if (!event) continue;
+      if (operation.tipoOperacao === OperationType.Compra) event.aportes += operation.total;
+      if (operation.tipoOperacao === OperationType.Venda) event.resgates += operation.total;
+      if (operation.tipoOperacao === OperationType.Proventos) {
+        event.proventos += operation.total;
+        const year = String(operation.data.getUTCFullYear());
+        const values = dividendYears.get(year) ?? Array.from({ length: 12 }, () => 0);
+        values[operation.data.getUTCMonth()] += operation.total;
+        dividendYears.set(year, values);
+      }
+    }
+
+    for (const position of fixedIncomePositions) {
+      const { event } = ensureMonth(position.dataCompra);
+      if (event) event.aportes += position.valorAplicado;
+    }
+
+    for (const yieldEntry of fixedIncomeYields) {
+      const { event } = ensureMonth(yieldEntry.dataOperacao);
+      if (event) event.proventos += yieldEntry.valor;
+    }
+
+    const keys = Array.from(monthEvents.keys()).sort();
+    const rentabilidadeMensal: MonthlyProfitabilityDto[] = [];
+    let patrimonio = 0;
+    for (const key of keys) {
+      const event = monthEvents.get(key);
+      if (!event) continue;
+      const patrimonioInicial = patrimonio;
+      patrimonio += event.aportes - event.resgates + event.proventos;
+      const patrimonioMedio = patrimonioInicial + (event.aportes - event.resgates) / 2;
+      rentabilidadeMensal.push({
+        mes: key,
+        patrimonio,
+        patrimonioMedio,
+        proventos: event.proventos,
+        rentabilidade: patrimonioMedio > 0 ? (event.proventos / patrimonioMedio) * 100 : 0,
+      });
+    }
+
+    return {
+      rendaFixa: fixedIncomePositions.map((position) => {
+        const rendimento = position.fixedIncomeYields.reduce((total, item) => total + item.valor, 0);
+        return {
+          id: position.id,
+          emissor: position.emissor,
+          tipo: position.tipo,
+          indexador: position.indexador,
+          taxaJuros: position.taxaJuros,
+          valorInvestido: position.valorAplicado,
+          valorAtual: position.valorAplicado + rendimento,
+          rendimento,
+          dataCompra: position.dataCompra,
+          vencimento: position.vencimento ?? undefined,
+          liquidezDiaria: position.liquidezDiaria,
+        };
+      }),
+      rentabilidadeMensal,
+      dividendosPorAno: Array.from(dividendYears.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([ano, valores]) => ({ ano, valores })),
     };
   }
 

@@ -1,9 +1,10 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { AbbreviateNumberPipe } from '../../../../../pipes/abbreviate-number.pipe';
 import { PortfolioService } from '../../service/portfolio.service';
 import { MovimentacoesService } from '../../../movimentacoes/service/movimentacoes.service';
+import { AvailableYearsService } from '../../../../core/services/available-years.service';
 import { ToastService } from '../../../../components/Toast/toast.service';
 import { TableComponent, TableColumn } from '../../../../components/Table/table.component';
 import { CellTemplateDirective } from '../../../../components/Table/cell-template.directive';
@@ -27,12 +28,13 @@ interface CompleteDividend {
 @Component({
   selector: 'app-proventos-tab',
   standalone: true,
-  imports: [AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule],
+  imports: [AbbreviateNumberPipe, TableComponent, CellTemplateDirective, PdfButtonComponent, NgApexchartsModule, AsyncPipe],
   templateUrl: './proventos-tab.component.html',
 })
 export class ProventosTabComponent implements OnInit, OnDestroy {
   private portfolioService = inject(PortfolioService);
   private movimentacoesService = inject(MovimentacoesService);
+  private availableYearsService = inject(AvailableYearsService);
   private toast = inject(ToastService);
 
   selectedYear = signal<string>(new Date().getFullYear().toString());
@@ -86,7 +88,7 @@ export class ProventosTabComponent implements OnInit, OnDestroy {
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  availableYears = ['2023', '2024', '2025', '2026'];
+  availableYears$ = this.availableYearsService.getAvailableYears();
 
   onYearChange(year: string): void {
     this.selectedYear.set(year);

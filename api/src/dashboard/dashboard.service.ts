@@ -40,7 +40,11 @@ export class DashboardService {
     const patrimonioTotal = totalCompras - totalVendas + totalProventos;
     const totalInvestido = totalCompras;
 
-    const rendimentos = await this.calcularRendimentos(userId, targetYear, totalInvestido);
+    const rendimentos = await this.calcularRendimentos(
+      userId,
+      targetYear,
+      totalInvestido,
+    );
     const distribuicao = await this.calcularDistribuicao(userId);
     const availableYears = await this.calcularAvailableYears(userId);
     const aportes = this.agruparAportes(operations);
@@ -61,7 +65,12 @@ export class DashboardService {
   }
 
   private agruparAportes(
-    operations: { data: Date; tipoOperacao: string; total: number; taxas: number | null }[],
+    operations: {
+      data: Date;
+      tipoOperacao: string;
+      total: number;
+      taxas: number | null;
+    }[],
   ): AporteInfoDto[] {
     const grouped = new Map<string, AporteInfoDto>();
 
@@ -88,7 +97,9 @@ export class DashboardService {
       .slice(0, 5);
   }
 
-  private async calcularDistribuicao(userId: number): Promise<DistribuicaoItemDto[]> {
+  private async calcularDistribuicao(
+    userId: number,
+  ): Promise<DistribuicaoItemDto[]> {
     const positions = await this.prisma.portfolioPosition.findMany({
       where: {
         asset: { createdBy: userId },
@@ -112,19 +123,40 @@ export class DashboardService {
 
     const totalFI = fixedIncome.reduce((acc, fi) => acc + fi.valorAplicado, 0);
 
-    const categorias: Record<string, { valor: number; cor: string; rotulo: string }> = {
-      [AssetType.ACOES]: { valor: tipoValor.get(AssetType.ACOES) || 0, cor: '#75d33b', rotulo: 'Ações' },
-      [AssetType.FII]: { valor: tipoValor.get(AssetType.FII) || 0, cor: '#3b82f6', rotulo: 'FIIs' },
+    const categorias: Record<
+      string,
+      { valor: number; cor: string; rotulo: string }
+    > = {
+      [AssetType.ACOES]: {
+        valor: tipoValor.get(AssetType.ACOES) || 0,
+        cor: '#75d33b',
+        rotulo: 'Ações',
+      },
+      [AssetType.FII]: {
+        valor: tipoValor.get(AssetType.FII) || 0,
+        cor: '#3b82f6',
+        rotulo: 'FIIs',
+      },
       RENDA_FIXA: { valor: totalFI, cor: '#fb923c', rotulo: 'Renda Fixa' },
     };
 
     const outrosTipos = [AssetType.BDR, AssetType.ETF, AssetType.CRIPTO];
-    const outrosValor = outrosTipos.reduce((acc, t) => acc + (tipoValor.get(t) || 0), 0);
+    const outrosValor = outrosTipos.reduce(
+      (acc, t) => acc + (tipoValor.get(t) || 0),
+      0,
+    );
     if (outrosValor > 0) {
-      categorias['OUTROS'] = { valor: outrosValor, cor: '#64748b', rotulo: 'Outros' };
+      categorias['OUTROS'] = {
+        valor: outrosValor,
+        cor: '#64748b',
+        rotulo: 'Outros',
+      };
     }
 
-    const total = Object.values(categorias).reduce((acc, c) => acc + c.valor, 0);
+    const total = Object.values(categorias).reduce(
+      (acc, c) => acc + c.valor,
+      0,
+    );
 
     if (total === 0) return [];
 
@@ -154,8 +186,12 @@ export class DashboardService {
       orderBy: { data: 'asc' },
     });
 
-    const proventos = operations.filter((op) => op.tipoOperacao === OperationType.Proventos);
-    const compras = operations.filter((op) => op.tipoOperacao === OperationType.Compra);
+    const proventos = operations.filter(
+      (op) => op.tipoOperacao === OperationType.Proventos,
+    );
+    const compras = operations.filter(
+      (op) => op.tipoOperacao === OperationType.Compra,
+    );
 
     const fixedIncomeHistories = await this.prisma.fixedIncomeHistory.findMany({
       where: {
@@ -168,7 +204,10 @@ export class DashboardService {
     });
 
     const totalProventosAno = proventos.reduce((acc, p) => acc + p.total, 0);
-    const totalRendimentoRF = fixedIncomeHistories.reduce((acc, f) => acc + f.rendimentoBruto, 0);
+    const totalRendimentoRF = fixedIncomeHistories.reduce(
+      (acc, f) => acc + f.rendimentoBruto,
+      0,
+    );
     const temProventos = totalProventosAno > 0 || totalRendimentoRF > 0;
 
     const cdiData = await this.fetchCDI(ano);
@@ -176,9 +215,17 @@ export class DashboardService {
     const meses = Array.from({ length: 12 }, (_, i) => i + 1);
     const rendimentos: RendimentoMensalDto[] = [];
 
-    const firstMonthCompras = compras.filter((c) => new Date(c.data).getMonth() + 1 === 1);
-    const firstCusto = firstMonthCompras.reduce((acc, c) => acc + c.precoUn * (c.qtd ?? 0), 0);
-    const firstQtd = firstMonthCompras.reduce((acc, c) => acc + (c.qtd ?? 0), 0);
+    const firstMonthCompras = compras.filter(
+      (c) => new Date(c.data).getMonth() + 1 === 1,
+    );
+    const firstCusto = firstMonthCompras.reduce(
+      (acc, c) => acc + c.precoUn * (c.qtd ?? 0),
+      0,
+    );
+    const firstQtd = firstMonthCompras.reduce(
+      (acc, c) => acc + (c.qtd ?? 0),
+      0,
+    );
     const firstAvgPrice = firstQtd > 0 ? firstCusto / firstQtd : null;
 
     for (const mes of meses) {
@@ -204,9 +251,12 @@ export class DashboardService {
         .filter((c) => c.mes <= mes)
         .reduce((acc, c) => acc + c.valor, 0);
 
-      const cdiVal = cdiData.length > 0 ? parseFloat(cdiCumulativo.toFixed(2)) : null;
+      const cdiVal =
+        cdiData.length > 0 ? parseFloat(cdiCumulativo.toFixed(2)) : null;
 
-      const comprasAteMes = compras.filter((c) => new Date(c.data).getMonth() + 1 <= mes);
+      const comprasAteMes = compras.filter(
+        (c) => new Date(c.data).getMonth() + 1 <= mes,
+      );
       const totalCusto = comprasAteMes.reduce(
         (acc, c) => acc + c.precoUn * (c.qtd ?? 0),
         0,
@@ -277,7 +327,7 @@ export class DashboardService {
 
     for (const r of result) {
       for (const p of r.proventos) {
-        const [day, month, year] = p.date_com.split('/').map(Number);
+        const [day, month, year] = p.payment_date.split('/').map(Number);
 
         const existing = await this.prisma.operation.findFirst({
           where: {
@@ -307,7 +357,6 @@ export class DashboardService {
     return proventosComStatus.sort((a, b) =>
       a.dataPagamento.localeCompare(b.dataPagamento),
     );
-  
   }
 
   private async calcularAvailableYears(userId: number): Promise<number[]> {

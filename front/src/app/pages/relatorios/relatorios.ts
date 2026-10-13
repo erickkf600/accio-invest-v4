@@ -39,10 +39,10 @@ export default class Relatorios {
 
   tabOptions = signal<TabOption[]>([
     { id: 'aportes', label: 'Histórico de Aportes', icon: 'history' },
-    { id: 'alugueis', label: 'Recebidos de Aluguéis', icon: 'domain' },
+    // { id: 'alugueis', label: 'Recebidos de Aluguéis', icon: 'domain' },
     { id: 'vendas', label: 'Vendas', icon: 'sell' },
     { id: 'reposicionamento', label: 'Reposicionamento', icon: 'published_with_changes' },
-    { id: 'notas', label: 'Notas de Corretagem', icon: 'receipt_long' },
+    // { id: 'notas', label: 'Notas de Corretagem', icon: 'receipt_long' },
     { id: 'preco-medio', label: 'Preço Médio Histórico', icon: 'analytics' },
     { id: 'renda-fixa', label: 'Renda Fixa', icon: 'account_balance' },
   ]);

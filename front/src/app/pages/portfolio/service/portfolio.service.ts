@@ -60,6 +60,39 @@ export interface YieldDto {
   possuiImposto: boolean;
 }
 
+export interface FixedIncomePerformanceDto {
+  id: number;
+  emissor: string;
+  tipo: string;
+  indexador: string;
+  taxaJuros: number;
+  valorInvestido: number;
+  valorAtual: number;
+  rendimento: number;
+  dataCompra: string;
+  vencimento?: string;
+  liquidezDiaria: boolean;
+}
+
+export interface MonthlyProfitabilityDto {
+  mes: string;
+  patrimonio: number;
+  patrimonioMedio: number;
+  proventos: number;
+  rentabilidade: number;
+}
+
+export interface AnnualDividendDto {
+  ano: string;
+  valores: number[];
+}
+
+export interface IncomeDashboardDto {
+  rendaFixa: FixedIncomePerformanceDto[];
+  rentabilidadeMensal: MonthlyProfitabilityDto[];
+  dividendosPorAno: AnnualDividendDto[];
+}
+
 export interface PaginationMeta {
   total: number;
   currentPage: number;
@@ -107,6 +140,10 @@ export class PortfolioService {
     return this.http.get<ApiResponse<{ data: YieldDto[]; meta: PaginationMeta }>>(`${this.apiUrl}/yields`, {
       params: { limit: 100 },
     });
+  }
+
+  loadIncomeDashboard(): Observable<ApiResponse<IncomeDashboardDto>> {
+    return this.http.get<ApiResponse<IncomeDashboardDto>>(`${this.apiUrl}/income-dashboard`);
   }
 
   loadClassSummary(): Observable<ApiResponse<ClassSummaryItem[]>> {

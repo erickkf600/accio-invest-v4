@@ -37,6 +37,7 @@ import { ClassSummaryItemDto } from './dto/class-summary-response.dto';
 import { DividendResponseDto } from './dto/dividend-response.dto';
 import { YieldResponseDto } from './dto/yield-response.dto';
 import { PortfolioSummaryResponseDto } from './dto/portfolio-summary-response.dto';
+import { IncomeDashboardResponseDto } from './dto/income-dashboard-response.dto';
 import { PaginatedResult } from '../common/types/pagination.interface';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -86,6 +87,14 @@ export class PortfolioController {
     @CurrentUser() user: JwtPayload,
   ): Promise<PaginatedResult<YieldResponseDto>> {
     return this.portfolioService.getYields(user.sub, filter);
+  }
+
+  @Get('income-dashboard')
+  @ApiOperation({ summary: 'Obter os dados consolidados da aba de rendimentos' })
+  async getIncomeDashboard(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<IncomeDashboardResponseDto> {
+    return this.portfolioService.getIncomeDashboard(user.sub);
   }
 
   @Get('fixed-income/emissores')

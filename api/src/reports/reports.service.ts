@@ -124,7 +124,7 @@ export class ReportsService {
       createdBy: userId,
       tipoOperacao: OperationType.Proventos,
     };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
     if (dataInicio || dataFim) {
       where['data'] = {};
       if (dataInicio) where['data']['gte'] = new Date(dataInicio);
@@ -173,7 +173,7 @@ export class ReportsService {
       createdBy: userId,
       tipoOperacao: OperationType.Venda,
     };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
     if (dataInicio || dataFim) {
       where['data'] = {};
       if (dataInicio) where['data']['gte'] = new Date(dataInicio);
@@ -213,7 +213,7 @@ export class ReportsService {
       createdBy: userId,
       tipoOperacao: 'Proventos',
     };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
     if (dataInicio || dataFim) {
       where['data'] = {};
       if (dataInicio) where['data']['gte'] = new Date(dataInicio);
@@ -251,7 +251,7 @@ export class ReportsService {
       createdBy: userId,
       tipoOperacao: 'Proventos',
     };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
     if (dataInicio || dataFim) {
       where['data'] = {};
       if (dataInicio) where['data']['gte'] = new Date(dataInicio);
@@ -283,7 +283,7 @@ export class ReportsService {
     const where: Record<string, unknown> = {
       asset: { createdBy: userId },
     };
-    if (ticker) where['ticker'] = { contains: ticker };
+    if (ticker) where['ticker'] = { contains: ticker, mode: 'insensitive' };
 
     const [positions, total] = await Promise.all([
       this.prisma.portfolioPosition.findMany({

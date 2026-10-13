@@ -78,6 +78,15 @@ interface FixedIncomePositionDto {
   vencimento?: string;
 }
 
+export interface RepositioningDto {
+  id: number;
+  ticker: string;
+  tipo?: string;
+  dataOperacao: string;
+  ratioDe: string;
+  ratioPara: string;
+}
+
 export const MESES_FULL: Record<number, string> = {
   1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
   5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
@@ -117,6 +126,10 @@ export class RelatoriosService {
 
   getRendaFixa(): Observable<ApiResponse<{ data: FixedIncomePositionDto[]; meta: PaginationMeta }>> {
     return this.http.get<ApiResponse<{ data: FixedIncomePositionDto[]; meta: PaginationMeta }>>(`${this.apiUrl}/renda-fixa`, { params: { limit: 100 } });
+  }
+
+  getReposicionamentos(): Observable<ApiResponse<RepositioningDto[]>> {
+    return this.http.get<ApiResponse<RepositioningDto[]>>(`${environment.apiUrl}/repositioning`);
   }
 
   getNotas(): Observable<ApiResponse<{ data: NotaDto[] }>> {

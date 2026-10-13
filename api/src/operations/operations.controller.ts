@@ -154,6 +154,17 @@ export class OperationsController {
     return this.operationsService.listAllDividendsByYear(dto.year, user.sub);
   }
 
+  @Get('available-years')
+  @ApiOperation({
+    summary:
+      'Listar anos disponíveis para filtro (do primeiro registro de compra até o ano atual)',
+  })
+  async getAvailableYears(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<string[]> {
+    return this.operationsService.getAvailableYears(user.sub);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obter detalhes da operação' })
   async findById(
