@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 4444
 
 # Comando para rodar a aplicação
-CMD ["gunicorn", "main:app"]
+CMD gunicorn main:app --bind 0.0.0.0:${PORT:-4444} --workers 2 --timeout 120

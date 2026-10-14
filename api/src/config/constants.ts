@@ -14,6 +14,8 @@ export const FILE_CONSTANTS = {
 };
 
 export const TICKER_API_CONSTANTS = {
-  baseUrl: process.env['TICKER_API_URL'] || 'http://localhost:4444',
+  baseUrl: /^https?:\/\//.test(process.env['TICKER_API_URL'] ?? '')
+    ? process.env['TICKER_API_URL']!
+    : `http://${process.env['TICKER_API_URL'] || 'localhost:4444'}`,
   timeout: 10000,
 };

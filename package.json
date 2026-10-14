@@ -5,6 +5,7 @@
   "scripts": {
     "build:front": "nx build front",
     "front": "nx serve front",
+    "build:back": "nx build api",
     "back": "nx serve api",
     "ticker": "nx serve api-ticker"
   },

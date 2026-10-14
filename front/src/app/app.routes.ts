@@ -6,6 +6,7 @@ export const appRoutes: Route[] = [
   {
     path: '',
     pathMatch: 'full',
+    canActivate: [guestGuard],
     loadComponent: () => import('./pages/landing-page/landing-page').then((m) => m.default),
   },
   {

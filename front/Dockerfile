@@ -12,7 +12,8 @@ RUN npm exec nx run front:build --configuration=production
 
 FROM nginx:alpine AS runtime
 COPY --from=build /app/dist/front/browser /usr/share/nginx/html
-COPY front/nginx.conf /etc/nginx/conf.d/default.conf
+COPY front/nginx.conf /etc/nginx/templates/default.conf.template
+ENV PORT=80 API_UPSTREAM=api:3000
 
 EXPOSE 80
 

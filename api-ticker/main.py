@@ -94,4 +94,5 @@ def get_tickers_history_api():
         return jsonify({"error": str(e)}), 500 
     
            
-app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
